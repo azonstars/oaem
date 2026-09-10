@@ -1,0 +1,109 @@
+[
+  {
+    "id": "off-ho",
+    "name": "আঞ্চলিক কার্যালয়, রাঙ্গামাটি",
+    "type": "HeadOffice",
+    "code": "RO-3300",
+    "address": "বনরূপা, রাঙ্গামাটি",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3301",
+    "name": "কাপ্তাই শাখা (3301)",
+    "type": "SubOffice",
+    "code": "BO-3301",
+    "address": "নতুন বাজার, কাপ্তাই, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3302",
+    "name": "রাইখালী বাজার শাখা (3302)",
+    "type": "SubOffice",
+    "code": "BO-3302",
+    "address": "রাইখালী বাজার, কাপ্তাই, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3303",
+    "name": "বিলাইছড়ি শাখা (3303)",
+    "type": "SubOffice",
+    "code": "BO-3303",
+    "address": "বিলাইছড়ি, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3304",
+    "name": "রাজস্থলী শাখা (3304)",
+    "type": "SubOffice",
+    "code": "BO-3304",
+    "address": "রাজস্থলী, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3501",
+    "name": "রাঙ্গামাটি শাখা (3501)",
+    "type": "SubOffice",
+    "code": "BO-3501",
+    "address": "রাঙ্গামাটি সদর, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3502",
+    "name": "নানিয়ারচর শাখা (3502)",
+    "type": "SubOffice",
+    "code": "BO-3502",
+    "address": "নানিয়ারচর, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3503",
+    "name": "বরকল শাখা (3503)",
+    "type": "SubOffice",
+    "code": "BO-3503",
+    "address": "বরকল, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3504",
+    "name": "লংগদু শাখা (3504)",
+    "type": "SubOffice",
+    "code": "BO-3504",
+    "address": "লংগদু, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3505",
+    "name": "কাউখালী শাখা (3505)",
+    "type": "SubOffice",
+    "code": "BO-3505",
+    "address": "কলমপতি, কাউখালী, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3506",
+    "name": "জুড়াছড়ি শাখা (3506)",
+    "type": "SubOffice",
+    "code": "BO-3506",
+    "address": "জুড়াছড়ি, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-bo-3507",
+    "name": "বাঘাইছড়ি শাখা (3507)",
+    "type": "SubOffice",
+    "code": "BO-3507",
+    "address": "মারিশ্যা, বাঘাইছড়ি, রাঙ্গামাটি",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  }
+]

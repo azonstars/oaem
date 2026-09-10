@@ -1,0 +1,174 @@
+[
+  {
+    "id": "al-1787937419362",
+    "timestamp": "2026-08-28 17:16:59",
+    "userId": "usr-1",
+    "action": "RESET_PASSWORD",
+    "tableName": "Users",
+    "recordId": "usr-3",
+    "details": "Admin usr-1 reset password for user syl_manager",
+    "prevHash": "da75fe46421cc6e8edd38751aa4b8cd9e1bfe1a5d8c53c415f32fc76e900c1a2"
+  },
+  {
+    "id": "al-1787768852307",
+    "timestamp": "2026-08-26 18:27:32",
+    "userId": "usr-1",
+    "action": "DELETE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "1",
+    "details": "Deleted record 1 from Allocations"
+  },
+  {
+    "id": "al-1787768047137",
+    "timestamp": "2026-08-26 18:14:07",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787768047137",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787768046932",
+    "timestamp": "2026-08-26 18:14:06",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787768046931",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767978958",
+    "timestamp": "2026-08-26 18:12:58",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767978958",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767978718",
+    "timestamp": "2026-08-26 18:12:58",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767978717",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767517140",
+    "timestamp": "2026-08-26 18:05:17",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767517140",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767516843",
+    "timestamp": "2026-08-26 18:05:16",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767516843",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767516711",
+    "timestamp": "2026-08-26 18:05:16",
+    "userId": "usr-1",
+    "action": "CREATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-1787767516710",
+    "details": "Created record in Categories"
+  },
+  {
+    "id": "al-1787767454103",
+    "timestamp": "2026-08-26 18:04:14",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767454102",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767305906",
+    "timestamp": "2026-08-26 18:01:45",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767305905",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767305600",
+    "timestamp": "2026-08-26 18:01:45",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767305599",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767305474",
+    "timestamp": "2026-08-26 18:01:45",
+    "userId": "usr-1",
+    "action": "CREATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-1787767305474",
+    "details": "Created record in Categories"
+  },
+  {
+    "id": "al-1787765407552",
+    "timestamp": "2026-08-26 17:30:07",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787765407552",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787765344808",
+    "timestamp": "2026-08-26 17:29:04",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787765344808",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787764263639",
+    "timestamp": "2026-08-26 17:11:03",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787764263639",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1",
+    "timestamp": "2025-07-10 10:30:00",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATION",
+    "tableName": "Allocations",
+    "recordId": "alc-1",
+    "details": "Allocated 1,500,000 BDT to Chittagong for Salary"
+  },
+  {
+    "id": "al-2",
+    "timestamp": "2025-08-04 14:15:00",
+    "userId": "usr-2",
+    "action": "CREATE_EXPENSE",
+    "tableName": "Expenses",
+    "recordId": "exp-1",
+    "details": "Submitted expense 125,000 BDT for Chittagong"
+  },
+  {
+    "id": "al-3",
+    "timestamp": "2025-08-05 11:00:00",
+    "userId": "usr-1",
+    "action": "APPROVE_EXPENSE",
+    "tableName": "Expenses",
+    "recordId": "exp-1",
+    "details": "Approved expense exp-1 and NoteSheet ns-1"
+  }
+]

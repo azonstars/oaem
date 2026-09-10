@@ -1,0 +1,80 @@
+[
+  {
+    "id": "exp-1",
+    "financialYearId": "fy-2",
+    "officeId": "off-sub1",
+    "categoryId": "cat-1",
+    "amount": 125000,
+    "voucherNo": "V-CTG-001",
+    "voucherDate": "2025-08-01",
+    "expenseDate": "2025-08-05",
+    "description": "July 2025 Staff Salary disbursement",
+    "remarks": "Paid via bank",
+    "applicant": {
+      "type": "OwnOffice",
+      "name": "Mr. Rahman",
+      "designation": "Regional Manager",
+      "officeId": "off-sub1"
+    },
+    "entryOfficer": {
+      "name": "Mr. Rahman (CTG)",
+      "designation": "Regional Manager",
+      "officeId": "off-sub1",
+      "userId": "usr-2",
+      "dateTime": "2025-08-05 10:00:00"
+    },
+    "noteSheetId": "ns-1"
+  },
+  {
+    "id": "exp-2",
+    "financialYearId": "fy-2",
+    "officeId": "off-sub1",
+    "categoryId": "cat-2",
+    "amount": 25000,
+    "voucherNo": "V-CTG-002",
+    "voucherDate": "2025-08-08",
+    "expenseDate": "2025-08-10",
+    "description": "July 2025 Office Electricity Bill (PDB)",
+    "remarks": "Bill month July",
+    "applicant": {
+      "type": "PersonInstitution",
+      "name": "PDB",
+      "designation": "Utility",
+      "institutionName": "Power Development Board"
+    },
+    "entryOfficer": {
+      "name": "Mr. Rahman (CTG)",
+      "designation": "Regional Manager",
+      "officeId": "off-sub1",
+      "userId": "usr-2",
+      "dateTime": "2025-08-10 11:30:00"
+    },
+    "noteSheetId": "ns-2"
+  },
+  {
+    "id": "exp-3",
+    "financialYearId": "fy-2",
+    "officeId": "off-sub2",
+    "categoryId": "cat-3",
+    "amount": 12000,
+    "voucherNo": "V-SYL-001",
+    "voucherDate": "2025-08-11",
+    "expenseDate": "2025-08-12",
+    "description": "A4 paper reams and printer cartridges",
+    "remarks": "Urgent purchase",
+    "applicant": {
+      "type": "PersonInstitution",
+      "name": "Kamal Traders",
+      "designation": "Vendor",
+      "institutionName": "Kamal Traders Sylhet"
+    },
+    "entryOfficer": {
+      "name": "Ms. Farhana (SYL)",
+      "designation": "Branch Head",
+      "officeId": "off-sub2",
+      "userId": "usr-3",
+      "dateTime": "2025-08-12 14:00:00"
+    },
+    "noteSheetId": "ns-3"
+  }
+]

@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Office Allocation & Expense Management System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
+    
+    html { font-size: 16px; }
+    @media (min-width: 1536px) { html { font-size: 18px; } }
+    @media (min-width: 1920px) { html { font-size: 20px; } }
+    @media (min-width: 2560px) { html { font-size: 24px; } }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Hind Siliguri', sans-serif;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+    }
+    /* Themes */
+    .theme-custom aside { background-color: #120e24 !important; }
+    .theme-custom .bg-emerald-600 { background-color: #7c3aed !important; }
+    .theme-custom .hover\:bg-emerald-500:hover { background-color: #6d28d9 !important; }
+    .theme-custom .text-emerald-600 { color: #7c3aed !important; }
+    .theme-custom .text-emerald-400 { color: #f59e0b !important; }
+
+    .theme-dark { background-color: #0f172a !important; color: #f8fafc !important; }
+    .theme-dark header { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+    .theme-dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+    .theme-dark .text-slate-800, .theme-dark .text-slate-900 { color: #f8fafc !important; }
+    .theme-dark .text-slate-500, .theme-dark .text-slate-600 { color: #94a3b8 !important; }
+    .theme-dark .bg-slate-50 { background-color: #0f172a !important; border-color: #334155 !important; }
+  </style>
+</head>
+<body id="appBody" class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
+
+  <!-- LOGIN SCREEN VIEW -->
+  <div id="loginViewContainer" class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 flex flex-col items-center justify-center p-4 text-slate-100 z-50">
+    <div class="max-w-md w-full bg-slate-900/90 border border-slate-700/80 rounded-3xl shadow-2xl p-8 backdrop-blur-xl relative overflow-hidden">
+      
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 bg-gradient-to-r from-emerald-500 via-sky-500 to-blue-500 rounded-full"></div>
+
+      <div class="text-center mb-8">
+        <div id="loginLogoBox" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg border border-emerald-400/30 overflow-hidden">
+          <i data-lucide="shield-check" class="w-8 h-8"></i>
+        </div>
+        <h1 id="loginInstName" class="text-xl font-bold tracking-tight text-white">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h1>
+        <p id="loginAppName" class="text-xs text-sky-400 font-medium mt-1">অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম</p>
+        <div class="mt-3 inline-block bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded-full border border-slate-700 font-mono">
+          🔐 নিরাপদ অভ্যন্তরীণ লগইন পোর্টাল
+        </div>
+      </div>
+
+      <div id="loginError" class="hidden mb-6 bg-rose-500/10 border border-rose-500/30 text-rose-300 p-3.5 rounded-2xl text-xs flex items-center gap-2.5">
+        <i data-lucide="alert-circle" class="w-4 h-4 shrink-0 text-rose-400"></i>
+        <span id="loginErrorMsg">ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।</span>
+      </div>
+
+      <form onsubmit="handleGasLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">ইউজার আইডি / ইমেল</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="text" id="loginUserId" placeholder="e.g. admin or ctg_manager" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition font-mono" required />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">পাসওয়ার্ড</label>
+          <div class="relative">
+            <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input type="password" id="loginPassword" placeholder="••••••••" class="w-full bg-slate-950 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 transition font-mono" required />
+          </div>
+        </div>
+
+        <button type="submit" id="loginSubmitBtn" class="w-full bg-gradient-to-r from-emerald-600 to-sky-600 hover:from-emerald-500 hover:to-sky-500 text-white font-semibold py-3 rounded-xl text-xs shadow-lg transition flex items-center justify-center gap-2 mt-2">
+          <i data-lucide="log-in" class="w-4 h-4"></i>
+          <span>লগইন করুন</span>
+        </button>
+      </form>
+
+      <!-- Quick Demo Access Accounts -->
+      <div class="mt-8 pt-6 border-t border-slate-800">
+        <p class="text-xs text-slate-400 text-center mb-3 font-medium">পরীক্ষামূলক দ্রুত লগইন (Demo Quick Login):</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="fillDemoCredentials('admin', 'admin123')" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left transition group">
+            <div class="text-xs font-bold text-emerald-400">HO Admin</div>
+            <div class="text-xs text-slate-400 font-mono">ID: admin</div>
+          </button>
+          <button type="button" onclick="fillDemoCredentials('ctg_manager', 'password123')" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left transition group">
+            <div class="text-xs font-bold text-sky-400">Chittagong Office</div>
+            <div class="text-xs text-slate-400 font-mono">ID: ctg_manager</div>
+          </button>
+          <button type="button" onclick="fillDemoCredentials('syl_manager', 'password123')" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left transition group">
+            <div class="text-xs font-bold text-amber-400">Sylhet Office</div>
+            <div class="text-xs text-slate-400 font-mono">ID: syl_manager</div>
+          </button>
+          <button type="button" onclick="fillDemoCredentials('auditor', 'password123')" class="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-left transition group">
+            <div class="text-xs font-bold text-purple-400">Auditor</div>
+            <div class="text-xs text-slate-400 font-mono">ID: auditor</div>
+          </button>
+        </div>
+      </div>
+
+    </div>
+    <div class="mt-6 text-center text-xs text-slate-500">
+      © 2026 Government Allocation & Expense System • Secure Access Control
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER (Hidden until authenticated) -->
+  <div id="appMainContainer" class="hidden flex-1 flex flex-row min-h-screen">
+    
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="bg-slate-900 text-white w-64 shrink-0 flex flex-col border-r border-slate-800 transition-all duration-300 no-print">
+      <div class="h-16 flex items-center justify-between px-4 border-b border-slate-800">
+        <div class="flex items-center gap-2 truncate">
+          <div id="sidebarLogo" class="w-8 h-8 rounded bg-emerald-600 flex items-center justify-center font-bold text-white shrink-0">
+            বা
+          </div>
+          <span id="appTitleSidebar" class="font-bold text-sm truncate">বরাদ্দ ও ব্যয় ব্যবস্থাপনা</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu Items -->
+      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-sm font-medium">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition bg-emerald-600 text-white">
+          <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+          <span data-i18n="dashboard">ড্যাশবোর্ড</span>
+        </button>
+        <button onclick="switchTab('allocations')" id="nav-allocations" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+          <span data-i18n="allocations">বাজেট বরাদ্দ</span>
+        </button>
+        <button onclick="switchTab('additional')" id="nav-additional" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+          <span data-i18n="additional">অতিরিক্ত বরাদ্দ</span>
+        </button>
+        <button onclick="switchTab('adjustments')" id="nav-adjustments" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+          <span data-i18n="adjustments">বাজেট সমন্বয়</span>
+        </button>
+        <button onclick="switchTab('expenses')" id="nav-expenses" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="receipt" class="w-4 h-4"></i>
+          <span data-i18n="expenses">ব্যয় এন্ট্রি (Expense)</span>
+        </button>
+        <button onclick="switchTab('notesheets')" id="nav-notesheets" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="file-text" class="w-4 h-4"></i>
+          <span data-i18n="notesheets">নোট শিট (Note Sheet)</span>
+        </button>
+        <button onclick="switchTab('templates')" id="nav-templates" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="file-code" class="w-4 h-4"></i>
+          <span data-i18n="templates">নোট টেমপ্লেট</span>
+        </button>
+        <button onclick="switchTab('reports')" id="nav-reports" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+          <span data-i18n="reports">প্রতিবেদন ও লেজার</span>
+        </button>
+        <button onclick="switchTab('csvimport')" id="nav-csvimport" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="file-up" class="w-4 h-4"></i>
+          <span data-i18n="csvimport">সিএসভি ইম্পোর্ট</span>
+        </button>
+        <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="settings" class="w-4 h-4"></i>
+          <span data-i18n="settings">সিস্টেম সেটিংস</span>
+        </button>
+        <button onclick="switchTab('audit')" id="nav-audit" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="history" class="w-4 h-4"></i>
+          <span data-i18n="audit">অডিট লগ</span>
+        </button>
+        <button onclick="switchTab('apps-script')" id="nav-apps-script" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white">
+          <i data-lucide="file-code-2" class="w-4 h-4"></i>
+          <span data-i18n="apps-script">গুগল স্ক্রিপ্ট ডেপ্লয়</span>
+        </button>
+      </nav>
+
+      <!-- User Profile & Logout -->
+      <div class="p-4 border-t border-slate-800 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-3 truncate">
+          <div class="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center font-bold text-xs text-white shrink-0" id="userAvatar">A</div>
+          <div class="truncate">
+            <div class="text-xs font-semibold text-slate-200 truncate" id="userName">Admin User</div>
+            <div class="text-xs text-slate-400 truncate" id="userRole">HeadOfficeAdmin</div>
+          </div>
+        </div>
+        <button onclick="handleGasLogout()" title="লগআউট" class="text-slate-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-800 transition">
+          <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Body -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      
+      <!-- Top Header -->
+      <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 shrink-0 z-10 no-print">
+        <div class="flex items-center gap-4">
+          <h1 id="pageTitle" class="text-lg font-bold text-slate-800">ড্যাশবোর্ড</h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Theme Selector -->
+          <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-medium">
+            <button onclick="setTheme('light')" class="px-2 py-1 rounded-lg text-slate-700 hover:bg-white transition" title="Light Theme">☀️</button>
+            <button onclick="setTheme('ocean-blue')" class="px-2 py-1 rounded-lg text-slate-700 hover:bg-white transition" title="Ocean Blue Theme">🌊</button>
+            <button onclick="setTheme('dark')" class="px-2 py-1 rounded-lg text-slate-700 hover:bg-white transition" title="Dark Theme">🌙</button>
+          </div>
+
+          <!-- Language Toggle Button -->
+          <button onclick="toggleLanguage()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-xl text-xs font-bold text-slate-700 transition">
+            <i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-600"></i>
+            <span id="langLabel">English</span>
+          </button>
+
+          <!-- Developer Info Button -->
+          <button onclick="openAboutModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-sky-400"></i>
+            <span>তথ্য</span>
+          </button>
+
+          <!-- Financial Year Dropdown -->
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500 uppercase">অর্থবছর:</span>
+            <select id="fySelect" onchange="changeFY(this.value)" class="text-sm bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1 font-medium focus:ring-1 focus:ring-emerald-500">
+              <option value="fy-2">2025-2026 (Active)</option>
+              <option value="fy-1">2024-2025</option>
+            </select>
+          </div>
+        </div>
+      </header>
+
+      <!-- Notice Ticker (Dynamic) -->
+      <div id="noticeTickerContainer" class="hidden bg-emerald-50/50 border-b border-emerald-100 py-2 px-6 flex items-center justify-between gap-4 text-xs shrink-0 no-print">
+        <div class="flex items-center gap-2 text-emerald-600 shrink-0">
+          <i data-lucide="bell-ring" class="w-4 h-4 animate-bounce"></i>
+          <span class="font-bold">বিজ্ঞপ্তি:</span>
+        </div>
+        <div class="flex-1 overflow-hidden">
+          <div id="noticeTickerText" class="text-emerald-800 font-medium truncate transition-opacity duration-500"></div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0 text-emerald-600 font-mono text-xs" id="noticeTickerControls">
+        </div>
+      </div>
+
+      <!-- Scrollable Main View Area -->
+      <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 w-full max-w-[1600px] 2xl:max-w-[1800px] mx-auto flex flex-col" id="mainContainer">
+        
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="space-y-6">
+          
+          <!-- Banner -->
+          <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-sm border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="bg-emerald-500/20 text-emerald-400 text-xs px-2.5 py-0.5 rounded-full border border-emerald-500/30 font-medium">Head Office Portal</span>
+              </div>
+              <h2 id="welcomeLine1" class="text-2xl font-bold tracking-tight">স্বাগতম, অর্থ ও হিসাব শাখা</h2>
+              <p id="welcomeLine2" class="text-xs text-slate-400 mt-1">হিসাব সূত্র: প্রারম্ভিক স্থিতি + বরাদ্দ + অতিরিক্ত বরাদ্দ ± সমন্বয় - ব্যয় = অবশিষ্ট স্থিতি</p>
+            </div>
+            <div class="flex gap-2">
+              <button onclick="switchTab('expenses')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow transition flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-4 h-4"></i> নতুন ব্যয়
+              </button>
+            </div>
+          </div>
+
+          <!-- 6 Stat Cards -->
+          <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+              <div class="flex items-center gap-2 text-slate-500 mb-1">
+                <i data-lucide="dollar-sign" class="w-4 h-4 text-emerald-600"></i>
+                <span class="text-xs font-bold uppercase tracking-wider">মূল বরাদ্দ</span>
+              </div>
+              <div class="text-lg font-bold text-slate-900" id="stat-initial">৳ 0</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+              <div class="flex items-center gap-2 text-slate-500 mb-1">
+                <i data-lucide="plus-circle" class="w-4 h-4 text-blue-600"></i>
+                <span class="text-xs font-bold uppercase tracking-wider">অতিরিক্ত</span>
+              </div>
+              <div class="text-lg font-bold text-slate-900" id="stat-additional">৳ 0</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+              <div class="flex items-center gap-2 text-slate-500 mb-1">
+                <i data-lucide="arrow-right-left" class="w-4 h-4 text-amber-600"></i>
+                <span class="text-xs font-bold uppercase tracking-wider">সমন্বয়</span>
+              </div>
+              <div class="text-lg font-bold text-slate-900" id="stat-adjustment">৳ 0</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+              <div class="flex items-center gap-2 text-slate-500 mb-1">
+                <i data-lucide="receipt" class="w-4 h-4 text-rose-600"></i>
+                <span class="text-xs font-bold uppercase tracking-wider">মোট ব্যয়</span>
+              </div>
+              <div class="text-lg font-bold text-slate-900" id="stat-expense">৳ 0</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+              <div class="flex items-center gap-2 text-slate-500 mb-1">
+                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-600" id="balIcon"></i>
+                <span class="text-xs font-bold uppercase tracking-wider">অবশিষ্ট স্থিতি</span>
+              </div>
+              <div class="text-lg font-bold text-emerald-700" id="stat-balance">৳ 0</div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+              <div class="flex items-center gap-2 text-slate-500 mb-1">
+                <i data-lucide="clock" class="w-4 h-4 text-purple-600"></i>
+                <span class="text-xs font-bold uppercase tracking-wider">ব্যবহারের হার</span>
+              </div>
+              <div class="text-lg font-bold text-slate-900" id="stat-utilization">0%</div>
+            </div>
+          </div>
+
+          <!-- Category Breakdown Table -->
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h3 class="text-base font-bold text-slate-900 mb-4">খাতভিত্তিক বরাদ্দ ও ব্যয় সারাংশ</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm">
+                <thead class="bg-slate-50 text-slate-600 text-xs font-semibold uppercase">
+                  <tr>
+                    <th class="p-3">খাতের নাম</th>
+                    <th class="p-3">মোট বরাদ্দ</th>
+                    <th class="p-3">মোট ব্যয়</th>
+                    <th class="p-3">অবশিষ্ট স্থিতি</th>
+                    <th class="p-3">ব্যবহারের হার (%)</th>
+                  </tr>
+                </thead>
+                <tbody id="categoryBreakdownBody" class="divide-y divide-slate-100">
+                  <tr><td colspan="5" class="p-4 text-center text-slate-400">তথ্য লোড হচ্ছে...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ALLOCATION VIEW -->
+        <div id="view-allocations" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">বাজেট বরাদ্দ ব্যবস্থাপনা</h2>
+              <p class="text-xs text-slate-500 mt-0.5">মূল, অতিরিক্ত ও সমন্বয় বরাদ্দ এন্ট্রি করুন</p>
+            </div>
+            <button onclick="openAllocationModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="plus" class="w-4 h-4"></i> নতুন বরাদ্দ
+            </button>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="p-3">তারিখ</th>
+                  <th class="p-3">অফিস</th>
+                  <th class="p-3">খাত</th>
+                  <th class="p-3">ধরণ</th>
+                  <th class="p-3">পরিমাণ (টাকা)</th>
+                  <th class="p-3">স্মারক নং</th>
+                  <th class="p-3">মন্তব্য</th>
+                </tr>
+              </thead>
+              <tbody id="allocationsTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- EXPENSE VIEW -->
+        <div id="view-expenses" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">দৈনন্দিন অফিস ব্যয় এন্ট্রি</h2>
+              <p class="text-xs text-slate-500 mt-0.5">ভাউচারভিত্তিক ব্যয় সংরক্ষণ ও স্বয়ংক্রিয় নোট শিট তৈরি</p>
+            </div>
+            <button onclick="openExpenseModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="plus" class="w-4 h-4"></i> নতুন ব্যয় এন্ট্রি
+            </button>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="p-3">ভাউচার নং</th>
+                  <th class="p-3">তারিখ</th>
+                  <th class="p-3">অফিস</th>
+                  <th class="p-3">খাত</th>
+                  <th class="p-3">পরিমাণ (টাকা)</th>
+                  <th class="p-3">উদ্দেশ্য / বিবরণ</th>
+                  <th class="p-3">নোট শিট</th>
+                  <th class="p-3">অ্যাকশন</th>
+                </tr>
+              </thead>
+              <tbody id="expensesTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NOTE SHEETS VIEW -->
+        <div id="view-notesheets" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">সরকারি অনুমোদন নোট শিট</h2>
+              <p class="text-xs text-slate-500 mt-0.5">ব্যয়ের বিপরীতে স্বয়ংক্রিয়ভাবে প্রস্তুতকৃত নোট শিট (ব্র্যান্ডিং মুক্ত)</p>
+            </div>
+            <button onclick="bulkGenerateNoteSheetsClient()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="sparkles" class="w-4 h-4"></i> পেন্ডিং নোট শিট বাল্ক জেনারেট
+            </button>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="noteSheetsGrid"></div>
+        </div>
+
+        <!-- REPORTS VIEW -->
+        <div id="view-reports" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">আর্থিক প্রতিবেদন ও লেজার</h2>
+              <p class="text-xs text-slate-500 mt-0.5">অফিস ও খাতভিত্তিক পূর্ণাঙ্গ হিসাব বিবরণী</p>
+            </div>
+            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="printer" class="w-4 h-4"></i> প্রতিবেদন প্রিন্ট করুন
+            </button>
+          </div>
+          <div id="reportsContent" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200"></div>
+        </div>
+
+        <!-- ADDITIONAL ALLOCATION VIEW -->
+        <div id="view-additional" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">অতিরিক্ত বরাদ্দ (Additional Allocations)</h2>
+              <p class="text-xs text-slate-500 mt-0.5">অফিসসমূহের অনুকূলে অনুমোদিত অতিরিক্ত বাজেট বরাদ্দ তালিকা</p>
+            </div>
+            <button onclick="openAllocationModal('Additional')" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> নতুন অতিরিক্ত বরাদ্দ
+            </button>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="p-3">তারিখ</th>
+                  <th class="p-3">অফিস</th>
+                  <th class="p-3">খাত</th>
+                  <th class="p-3">পরিমাণ (টাকা)</th>
+                  <th class="p-3">স্মারক নং</th>
+                  <th class="p-3">মন্তব্য</th>
+                </tr>
+              </thead>
+              <tbody id="additionalTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BUDGET ADJUSTMENTS VIEW -->
+        <div id="view-adjustments" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">বাজেট সমন্বয় (Budget Adjustments)</h2>
+              <p class="text-xs text-slate-500 mt-0.5">বাজেট পুনর্বিন্যাস বা খাতের আন্তঃসমন্বয় রেকর্ড</p>
+            </div>
+            <button onclick="openAllocationModal('Adjustment')" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="arrow-right-left" class="w-4 h-4"></i> নতুন সমন্বয় এন্ট্রি
+            </button>
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="p-3">তারিখ</th>
+                  <th class="p-3">অফিস</th>
+                  <th class="p-3">খাত</th>
+                  <th class="p-3">সমন্বয় পরিমাণ (টাকা)</th>
+                  <th class="p-3">স্মারক নং</th>
+                  <th class="p-3">মন্তব্য</th>
+                </tr>
+              </thead>
+              <tbody id="adjustmentsTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NOTE TEMPLATES VIEW -->
+        <div id="view-templates" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">নোট শিট টেমপ্লেট ব্যবস্থাপনা</h2>
+              <p class="text-xs text-slate-500 mt-0.5">খাতভিত্তিক অটোমেটেড অনুমোদন নোটের ফরম্যাট তৈরি ও সম্পাদন</p>
+            </div>
+            <button onclick="openTemplateModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow">
+              <i data-lucide="plus" class="w-4 h-4"></i> নতুন টেমপ্লেট
+            </button>
+          </div>
+          <div class="bg-amber-50 border border-amber-200 p-3.5 rounded-2xl text-xs text-amber-800 font-mono flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4 text-amber-600 shrink-0"></i>
+            <span>প্লেসহোল্ডারসমূহ: {{OFFICE_NAME}}, {{CATEGORY_NAME}}, {{AMOUNT}}, {{DESCRIPTION}}, {{VOUCHER_NO}}, {{DATE}}, {{FINANCIAL_YEAR}}</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="templatesGrid"></div>
+        </div>
+
+        <!-- CSV IMPORT VIEW -->
+        <div id="view-csvimport" class="space-y-6 hidden">
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h2 class="text-xl font-bold text-slate-900 mb-1">সিএসভি বাল্ক ইম্পোর্ট (CSV Bulk Import)</h2>
+            <p class="text-xs text-slate-500 mb-6">একসাথে একাধিক বাজেট বরাদ্দ বা ব্যয় রেকর্ড দ্রুত ইম্পোর্ট করুন</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-2">ইম্পোর্টের ধরন নির্বাচন করুন</label>
+                <select id="csvTypeSelect" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-800 font-medium">
+                  <option value="allocations">বাজেট বরাদ্দ (Allocations CSV)</option>
+                  <option value="expenses">অফিস ব্যয় (Expenses CSV)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-2">সিএসভি ফাইল নির্বাচন বা টেক্সট পেস্ট করুন</label>
+                <input type="file" id="csvFileInput" accept=".csv" onchange="handleCsvFileUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100" />
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="block text-xs font-bold text-slate-700 mb-2">অথবা সরাসরি CSV টেক্সট পেস্ট করুন:</label>
+              <textarea id="csvTextarea" rows="6" placeholder="officeId,categoryId,allocatedAmount,date,referenceNo&#10;off-sub1,cat-1,500000,2025-07-15,REF-001" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono focus:outline-none focus:border-emerald-500"></textarea>
+            </div>
+
+            <div class="flex gap-3 justify-end">
+              <button onclick="parseAndPreviewCsv()" class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition">
+                প্রিভিউ দেখুন
+              </button>
+              <button onclick="executeCsvImport()" id="csvImportSubmitBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2">
+                <i data-lucide="file-up" class="w-4 h-4"></i> ডাটাবেসে সেভ করুন
+              </button>
+            </div>
+
+            <div id="csvPreviewArea" class="mt-6 hidden">
+              <h3 class="text-sm font-bold text-slate-800 mb-3">ইম্পোর্ট প্রিভিউ (Import Preview)</h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-xl">
+                <table class="w-full text-left text-xs">
+                  <thead id="csvPreviewHead" class="bg-slate-100 text-slate-700 font-bold uppercase"></thead>
+                  <tbody id="csvPreviewBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SETTINGS VIEW -->
+        <div id="view-settings" class="space-y-6 hidden">
+          <div class="flex border-b border-slate-200 gap-2 font-medium text-xs no-print">
+            <button onclick="switchSettingsSubTab('sys')" id="setTab-sys" class="px-4 py-2.5 border-b-2 border-emerald-600 text-emerald-600 font-bold">সিস্টেম কনফিগারেশন</button>
+            <button onclick="switchSettingsSubTab('welcome')" id="setTab-welcome" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800">ওয়েলকাম ও নোটিশ</button>
+            <button onclick="switchSettingsSubTab('offices')" id="setTab-offices" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800">অফিস তালিকা</button>
+            <button onclick="switchSettingsSubTab('categories')" id="setTab-categories" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800">ব্যয় খাতসমূহ</button>
+            <button onclick="switchSettingsSubTab('fys')" id="setTab-fys" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800">অর্থবছরসমূহ</button>
+            <button onclick="switchSettingsSubTab('users')" id="setTab-users" class="px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800">ইউজার ও রোল</button>
+          </div>
+
+          <!-- SubTab: System Config -->
+          <div id="subSet-sys" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 max-w-2xl">
+            <h3 class="text-base font-bold text-slate-900 mb-2">প্রতিষ্ঠান ও ওয়েব অ্যাপ সেটিংস</h3>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">প্রতিষ্ঠানের নাম</label>
+              <input type="text" id="cfgInstName" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ওয়েব অ্যাপ্লিকেশনের নাম</label>
+              <input type="text" id="cfgAppName" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">বিবরণ (Description)</label>
+              <textarea id="cfgDesc" rows="3" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900"></textarea>
+            </div>
+            <button onclick="saveSystemSettingsClient()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow transition">
+              সেটিংস আপডেট করুন
+            </button>
+          </div>
+
+          <!-- SubTab: Welcome & Notices -->
+          <div id="subSet-welcome" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4 max-w-2xl">
+            <h3 class="text-base font-bold text-slate-900 mb-2">ওয়েলকাম মেসেজ ও নোটিশ/বিজ্ঞপ্তি কনফিগারেশন</h3>
+            <p class="text-xs text-slate-500 mb-4">ড্যাশবোর্ডের মূল হিরো ব্যানার এবং হেডারের ঘূর্ণায়মান নোটিশ/বিজ্ঞপ্তি বার্তা কাস্টমাইজ করুন। <i>(Note: This view is read-only in GAS preview. Please use React App to modify).</i></p>
+            <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+               <p class="text-xs text-amber-800 font-semibold">The detailed dynamic forms for Welcome Messages and Notices are best edited from the main React Application where the complex array and JSON-based form states are fully supported. They will sync securely back to the Apps Script database.</p>
+            </div>
+          </div>
+
+          <!-- SubTab: Offices -->
+          <div id="subSet-offices" class="hidden space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-slate-900">অফিস তালিকা</h3>
+              <button onclick="openOfficeModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+                <i data-lucide="plus" class="w-4 h-4"></i> নতুন অফিস যোগ করুন
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">অফিসের নাম</th>
+                    <th class="p-3">কোড</th>
+                    <th class="p-3">ধরন</th>
+                    <th class="p-3">ঠিকানা</th>
+                    <th class="p-3">স্ট্যাটাস</th>
+                    <th class="p-3">সম্পাদনা</th>
+                  </tr>
+                </thead>
+                <tbody id="officesTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SubTab: Categories -->
+          <div id="subSet-categories" class="hidden space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-slate-900">ব্যয় খাতসমূহ</h3>
+              <button onclick="openCategoryModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+                <i data-lucide="plus" class="w-4 h-4"></i> নতুন খাত যোগ করুন
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">খাত কোড</th>
+                    <th class="p-3">খাতের নাম</th>
+                    <th class="p-3">বাজেট হেড</th>
+                    <th class="p-3">বিবরণ</th>
+                    <th class="p-3">স্ট্যাটাস</th>
+                    <th class="p-3">সম্পাদনা</th>
+                  </tr>
+                </thead>
+                <tbody id="categoriesTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SubTab: Financial Years -->
+          <div id="subSet-fys" class="hidden space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-slate-900">অর্থবছর তালিকা</h3>
+              <button onclick="openFYModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+                <i data-lucide="plus" class="w-4 h-4"></i> নতুন অর্থবছর
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">অর্থবছর</th>
+                    <th class="p-3">শুরুর তারিখ</th>
+                    <th class="p-3">শেষের তারিখ</th>
+                    <th class="p-3">প্রারম্ভিক স্থিতি</th>
+                    <th class="p-3">স্ট্যাটাস</th>
+                    <th class="p-3">সম্পাদনা</th>
+                  </tr>
+                </thead>
+                <tbody id="fysTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- SubTab: Users -->
+          <div id="subSet-users" class="hidden space-y-4">
+            <div class="flex justify-between items-center">
+              <h3 class="text-base font-bold text-slate-900">ইউজার অ্যাকাউন্টেস ও রোলস</h3>
+              <button onclick="openUserModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+                <i data-lucide="user-plus" class="w-4 h-4"></i> নতুন ইউজার যোগ করুন
+              </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">ইউজার নাম</th>
+                    <th class="p-3">ইউজার আইডি</th>
+                    <th class="p-3">ইমেইল</th>
+                    <th class="p-3">রোল</th>
+                    <th class="p-3">অফিস</th>
+                    <th class="p-3">পদবী</th>
+                    <th class="p-3">অ্যাকশন</th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUDIT LOG VIEW -->
+        <div id="view-audit" class="space-y-6 hidden">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">সিস্টেম সিকিউরিটি ও অডিট লগ</h2>
+              <p class="text-xs text-slate-500 mt-0.5">ব্যবহারকারীদের সকল কার্যক্রম ও পরিবর্তনের সময়কাল</p>
+            </div>
+            <input type="text" id="auditSearchInput" onkeyup="filterAuditLogs()" placeholder="অনুসন্ধান করুন..." class="bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-medium w-64 focus:outline-none focus:border-emerald-500" />
+          </div>
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="p-3">সময়কাল</th>
+                  <th class="p-3">ইউজার আইডি</th>
+                  <th class="p-3">অ্যাকশন</th>
+                  <th class="p-3">টেবিল</th>
+                  <th class="p-3">রেকর্ড আইডি</th>
+                  <th class="p-3">বিস্তারিত তথ্য</th>
+                </tr>
+              </thead>
+              <tbody id="auditTableBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- APPS SCRIPT DEPLOY VIEW -->
+        <div id="view-apps-script" class="space-y-6 hidden">
+          <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center">
+            <div class="inline-flex p-4 rounded-full bg-emerald-100 text-emerald-600 mb-4">
+              <i data-lucide="file-code-2" class="w-10 h-10"></i>
+            </div>
+            <h2 class="text-xl font-bold text-slate-900 mb-2">Google Apps Script Deploy Center</h2>
+            <p class="text-sm text-slate-600 max-w-2xl mx-auto mb-6">
+              To deploy or update your backend code on Google Apps Script, you need to copy the latest code from the main React application. This preview interface is running inside GAS itself and does not provide code export.
+            </p>
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-left max-w-2xl mx-auto space-y-3">
+              <h3 class="font-bold text-slate-800 text-sm">How to update GAS Backend:</h3>
+              <ol class="list-decimal pl-5 text-sm text-slate-600 space-y-2">
+                <li>Open the <strong>Main React Application</strong> in your local environment or preview link.</li>
+                <li>Go to <strong>System Settings</strong> > <strong>Apps Script Deploy</strong>.</li>
+                <li>Copy the code for <code>Code.gs</code>, <code>SetupDatabase.gs</code>, and <code>Index.html</code>.</li>
+                <li>Open your Google Apps Script project (Extensions > Apps Script in your Google Sheet).</li>
+                <li>Paste and save the copied code into the respective files.</li>
+                <li>Click <strong>Deploy > New deployment</strong> to publish changes.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Note Sheet Modal with Print Layout & Page Size Controls (Zero Branding) -->
+  <div id="noteModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-slate-900 text-slate-100 rounded-2xl max-w-5xl w-full h-[90vh] shadow-2xl flex flex-col overflow-hidden border border-slate-700">
+      
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center px-5 py-3 border-b border-slate-800 bg-slate-900 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="p-1.5 bg-emerald-500/20 text-emerald-400 rounded-lg">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-white" id="modalNsTitle">নোট শিট প্রিন্ট লেআউট</h3>
+            <p class="text-xs text-slate-400">পেজ সাইজ, মার্জিন ও অবস্থান কাস্টমাইজেশন (ব্র্যান্ডিং মুক্ত)</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="printNoteSheetGas()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition">
+            <i data-lucide="printer" class="w-4 h-4"></i> প্রিন্ট / PDF
+          </button>
+          <button onclick="closeNoteModal()" class="text-slate-400 hover:text-white p-1.5 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <!-- Modal Body (Controls + Live Preview) -->
+      <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+        
+        <!-- Controls Panel -->
+        <div class="w-full md:w-72 bg-slate-900 p-4 border-r border-slate-800 overflow-y-auto space-y-4 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">নোট শিটের অবস্থান (Position)</label>
+            <select id="gasNsPosition" onchange="updateGasPrintPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-medium">
+              <option value="TOP">শীর্ষে (Top)</option>
+              <option value="UPPER_MIDDLE">উচ্চ-মধ্যম (Upper Middle)</option>
+              <option value="CENTER">মাঝামাঝি (Center)</option>
+              <option value="LOWER_MIDDLE">নিম্ন-মধ্যম (Lower Middle)</option>
+              <option value="BOTTOM">নিচে (Bottom)</option>
+              <option value="CUSTOM">কাস্টম পজিশন (Custom)</option>
+            </select>
+          </div>
+
+          <div id="gasNsCustomOffsetGroup" class="hidden p-2.5 bg-slate-950 rounded-lg border border-slate-800 space-y-2">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">উপরের অফসেট (Top mm)</label>
+              <input type="number" id="gasNsCustomTop" value="20" onchange="updateGasPrintPreview()" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white font-mono" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">বামের অফসেট (Left mm)</label>
+              <input type="number" id="gasNsCustomLeft" value="20" onchange="updateGasPrintPreview()" class="w-full bg-slate-900 border border-slate-700 rounded p-1 text-white font-mono" />
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">পেজের আকার (Page Size)</label>
+            <select id="gasNsPageSize" onchange="updateGasPrintPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-medium">
+              <option value="A4">A4 (210 × 297 mm)</option>
+              <option value="Legal">Legal (216 × 356 mm)</option>
+              <option value="Letter">Letter (216 × 279 mm)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">পেজের অভিমুখ (Orientation)</label>
+            <select id="gasNsOrientation" onchange="updateGasPrintPreview()" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white font-medium">
+              <option value="portrait">উল্লম্ব (Portrait)</option>
+              <option value="landscape">অনুভূমিক (Landscape)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1.5">মার্জিন (Top / Bottom mm)</label>
+            <div class="grid grid-cols-2 gap-2">
+              <input type="number" id="gasNsMarginTop" value="20" onchange="updateGasPrintPreview()" class="bg-slate-800 border border-slate-700 rounded p-1.5 text-white font-mono" placeholder="Top mm" />
+              <input type="number" id="gasNsMarginBottom" value="20" onchange="updateGasPrintPreview()" class="bg-slate-800 border border-slate-700 rounded p-1.5 text-white font-mono" placeholder="Bottom mm" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview Stage -->
+        <div class="flex-1 bg-slate-950 p-6 overflow-auto flex justify-center items-start">
+          <div id="gasNsPaperPreview" class="bg-white text-slate-900 p-8 shadow-2xl rounded-sm w-[480px] min-h-[640px] flex flex-col font-serif text-xs transition-all">
+            <div id="gasNsSpacerTop" style="display: none; flex: 1;"></div>
+            <div id="gasNsInnerContainer" class="w-full">
+              <div class="text-center pb-2 mb-3 border-b-2 border-slate-900">
+                <h4 class="font-bold text-xs">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h4>
+                <h5 class="text-xs text-slate-700">অফিস বরাদ্দ ও ব্যয় মঞ্জুরি নোট শিট</h5>
+              </div>
+              <div id="modalNsContent" class="leading-relaxed text-justify whitespace-pre-wrap"></div>
+              <div class="mt-8 pt-3 flex justify-between items-end border-t border-slate-200 text-xs">
+                <div>প্রস্তুতকারী কর্মকর্তা</div>
+                <div>অনুমোদনকারী</div>
+              </div>
+            </div>
+            <div id="gasNsSpacerBottom" style="display: none; flex: 1;"></div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ABOUT / DEVELOPER INFO MODAL -->
+  <div id="aboutModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-slate-900 text-slate-100 rounded-3xl max-w-md w-full shadow-2xl p-6 border border-slate-700 relative">
+      <button onclick="closeAboutModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 bg-sky-500/20 text-sky-400 rounded-2xl flex items-center justify-center mx-auto mb-3 border border-sky-500/30">
+          <i data-lucide="code" class="w-7 h-7"></i>
+        </div>
+        <h3 class="text-lg font-bold text-white">সিস্টেম কারিগরি তথ্য</h3>
+        <p class="text-xs text-slate-400 mt-1">System & Developer Information</p>
+      </div>
+
+      <div class="space-y-3 bg-slate-950 p-4 rounded-2xl border border-slate-800 text-xs">
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-400">Developer</span>
+          <span class="font-bold text-emerald-400">PJC Automation</span>
+        </div>
+        <div class="flex justify-between items-center py-1 border-b border-slate-800">
+          <span class="text-slate-400">Contact / WhatsApp</span>
+          <span class="font-mono text-sky-400">+8801820302571</span>
+        </div>
+        <div class="flex justify-between items-center py-1">
+          <span class="text-slate-400">Location</span>
+          <span class="text-slate-200">Rangamati, Chattogram, Bangladesh</span>
+        </div>
+      </div>
+
+      <div class="mt-6 text-center text-xs text-slate-500">
+        Note: This developer information is for system reference only and is strictly excluded from printable Note Sheets and official PDFs.
+      </div>
+    </div>
+  </div>
+
+  <!-- GENERIC DYNAMIC MODAL CONTAINER FOR ALL FORMS -->
+  <div id="dynamicModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white text-slate-900 rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200 relative">
+      <div class="flex justify-between items-center px-6 py-4 bg-slate-900 text-white shrink-0">
+        <h3 id="dynModalTitle" class="font-bold text-sm">ফাংশনাল ফর্ম</h3>
+        <button onclick="closeDynamicModal()" class="text-slate-400 hover:text-white p-1 rounded-lg">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div id="dynModalBody" class="p-6 overflow-y-auto max-h-[80vh] space-y-4 text-xs"></div>
+    </div>
+  </div>
+
+  <script>
+    // State Store
+    var currentUser = null;
+    var currentLang = "bn";
+    var currentTab = "dashboard";
+    var currentTheme = "light";
+    var state = {
+      settings: [], financialYears: [], offices: [], categories: [],
+      users: [], allocations: [], expenses: [], noteSheets: [], noteTemplates: [], auditLogs: []
+    };
+
+    // Dictionary for Client Bilingual Toggle
+    var i18n = {
+      bn: {
+        dashboard: "ড্যাশবোর্ড", allocations: "বাজেট বরাদ্দ", additional: "অতিরিক্ত বরাদ্দ",
+        adjustments: "বাজেট সমন্বয়", expenses: "ব্যয় এন্ট্রি", notesheets: "নোট শিট",
+        templates: "নোট টেমপ্লেট", reports: "প্রতিবেদন ও লেজার", csvimport: "সিএসভি ইম্পোর্ট",
+        settings: "সিস্টেম সেটিংস", audit: "অডিট লগ"
+      },
+      en: {
+        dashboard: "Dashboard", allocations: "Allocations", additional: "Additional",
+        adjustments: "Adjustments", expenses: "Expenses", notesheets: "Note Sheets",
+        templates: "Templates", reports: "Reports", csvimport: "CSV Import",
+        settings: "Settings", audit: "Audit Log"
+      }
+    };
+
+    function setTheme(themeName) {
+      currentTheme = themeName;
+      var body = document.getElementById("appBody");
+      body.classList.remove("theme-light", "theme-dark", "theme-ocean-blue");
+      body.classList.add("theme-" + themeName);
+    }
+
+    function openAboutModal() {
+      document.getElementById("aboutModal").classList.remove("hidden");
+    }
+
+    function closeAboutModal() {
+      document.getElementById("aboutModal").classList.add("hidden");
+    }
+
+    function fillDemoCredentials(uId, pass) {
+      document.getElementById("loginUserId").value = uId;
+      document.getElementById("loginPassword").value = pass;
+      document.getElementById("loginError").classList.add("hidden");
+    }
+
+    function handleGasLogin(e) {
+      if (e) e.preventDefault();
+      var uId = document.getElementById("loginUserId").value.trim();
+      var pass = document.getElementById("loginPassword").value;
+
+      if (!uId || !pass) return;
+
+      var btn = document.getElementById("loginSubmitBtn");
+      btn.disabled = true;
+      btn.innerText = "যাচাই করা হচ্ছে...";
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(res) {
+          btn.disabled = false;
+          btn.innerText = "লগইন করুন";
+          if (res && res.status === "success" && res.user) {
+            onLoginSuccess(res.user);
+          } else {
+            document.getElementById("loginErrorMsg").innerText = (res && res.message) || "ইউজার আইডি বা পাসওয়ার্ড সঠিক নয়।";
+            document.getElementById("loginError").classList.remove("hidden");
+          }
+        }).loginUser(uId, pass);
+      } else {
+        // Fallback demo auth for local preview
+        btn.disabled = false;
+        btn.innerText = "লগইন করুন";
+        var mockUser = { id: "usr-1", userId: uId, name: uId === "admin" ? "জনাব অ্যাডমিন (HO)" : uId, role: uId === "admin" ? "Head Office Admin" : "Sub-office User" };
+        onLoginSuccess(mockUser);
+      }
+    }
+
+    function onLoginSuccess(user) {
+      currentUser = user;
+      try {
+        localStorage.setItem("govt_app_user", JSON.stringify(user));
+      } catch (e) {}
+
+      document.getElementById("loginViewContainer").classList.add("hidden");
+      document.getElementById("appMainContainer").classList.remove("hidden");
+
+      document.getElementById("userName").innerText = user.name || user.userId;
+      document.getElementById("userRole").innerText = user.role || "User";
+      document.getElementById("userAvatar").innerText = (user.name || user.userId).charAt(0).toUpperCase();
+
+      var savedTab = "dashboard";
+      try {
+        savedTab = localStorage.getItem("govt_app_tab") || "dashboard";
+      } catch (e) {}
+      switchTab(savedTab);
+
+      loadData();
+    }
+
+    function handleGasLogout() {
+      currentUser = null;
+      try {
+        localStorage.removeItem("govt_app_user");
+        localStorage.removeItem("govt_app_tab");
+      } catch (e) {}
+      document.getElementById("appMainContainer").classList.add("hidden");
+      document.getElementById("loginViewContainer").classList.remove("hidden");
+      document.getElementById("loginPassword").value = "";
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === "bn" ? "en" : "bn";
+      document.getElementById("langLabel").innerText = currentLang === "bn" ? "English" : "বাংলা";
+      document.querySelectorAll("[data-i18n]").forEach(function(el) {
+        var key = el.getAttribute("data-i18n");
+        if (i18n[currentLang][key]) el.innerText = i18n[currentLang][key];
+      });
+      renderAll();
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      try {
+        localStorage.setItem("govt_app_tab", tabId);
+      } catch (e) {}
+      document.querySelectorAll("[id^='view-']").forEach(function(v) { v.classList.add("hidden"); });
+      var target = document.getElementById("view-" + tabId);
+      if (target) target.classList.remove("hidden");
+
+      document.querySelectorAll("nav button").forEach(function(btn) {
+        btn.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition text-slate-400 hover:bg-slate-800 hover:text-white";
+      });
+      var activeNav = document.getElementById("nav-" + tabId);
+      if (activeNav) activeNav.className = "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition bg-emerald-600 text-white";
+      lucide.createIcons();
+    }
+
+    function loadData() {
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(response) {
+          if (response && response.status === "success") {
+            state = response;
+            if (state.settings && state.settings.length > 0) {
+              var sys = state.settings[0];
+              if (sys.institutionName) document.getElementById("loginInstName").innerText = sys.institutionName;
+              if (sys.webAppName) document.getElementById("loginAppName").innerText = sys.webAppName;
+            }
+            renderAll();
+          }
+        }).getAllData();
+      } else {
+        renderAll();
+      }
+    }
+
+    function applyDynamicSettings() {
+      if (state.settings && state.settings.length > 0) {
+        var sys = state.settings[0];
+        
+        // Custom Theme Color
+        if (sys.customThemeColor) {
+          document.documentElement.style.setProperty('--emerald-600', sys.customThemeColor);
+          // Simple implementation for theme coloring in GAS if needed
+        }
+
+        // Welcome Message (Time based)
+        var welcomeMessages = sys.welcomeMessages || {};
+        var hour = new Date().getHours();
+        var slotKey = "morning";
+        if (hour >= 12 && hour < 17) slotKey = "afternoon";
+        else if (hour >= 17 && hour < 20) slotKey = "evening";
+        else if (hour >= 20 || hour < 6) slotKey = "night";
+        
+        var defaultMessages = {
+          morning: { line1: "Good Morning", line2: "Welcome for today's work." },
+          afternoon: { line1: "Good Afternoon", line2: "Welcome back." },
+          evening: { line1: "Good Evening", line2: "Welcome back." },
+          night: { line1: "Good Night", line2: "Welcome back." }
+        };
+
+        var slotData = welcomeMessages[slotKey] || defaultMessages[slotKey];
+        var instName = sys.institutionName || "সিস্টেম";
+        
+        // Only replace {system} or similar placeholders dynamically if needed.
+        var line1 = (slotData.line1 || "").replace("{system}", instName);
+        var line2 = (slotData.line2 || "").replace("{system}", instName);
+        
+        var wLine1 = document.getElementById("welcomeLine1");
+        var wLine2 = document.getElementById("welcomeLine2");
+        if (wLine1) wLine1.innerText = line1 || "স্বাগতম, অর্থ ও হিসাব শাখা";
+        if (wLine2) wLine2.innerText = line2 || "হিসাব সূত্র: প্রারম্ভিক স্থিতি + বরাদ্দ + অতিরিক্ত বরাদ্দ ± সমন্বয় - ব্যয় = অবশিষ্ট স্থিতি";
+
+        // Notices
+        var notices = sys.notices || [];
+        var noticeTickerContainer = document.getElementById("noticeTickerContainer");
+        var noticeTickerText = document.getElementById("noticeTickerText");
+        
+        if (notices.length > 0 && noticeTickerContainer && noticeTickerText) {
+          noticeTickerContainer.classList.remove("hidden");
+          window.currentNoticeIndex = 0;
+          noticeTickerText.innerText = notices[window.currentNoticeIndex];
+          
+          if (notices.length > 1) {
+            if (window.noticeInterval) clearInterval(window.noticeInterval);
+            window.noticeInterval = setInterval(function() {
+              window.currentNoticeIndex = (window.currentNoticeIndex + 1) % notices.length;
+              noticeTickerText.style.opacity = 0;
+              setTimeout(function() {
+                noticeTickerText.innerText = notices[window.currentNoticeIndex];
+                noticeTickerText.style.opacity = 1;
+              }, 500);
+            }, 6000);
+          }
+        } else if (noticeTickerContainer) {
+          noticeTickerContainer.classList.add("hidden");
+          if (window.noticeInterval) clearInterval(window.noticeInterval);
+        }
+      }
+    }
+
+    function renderAll() {
+      applyDynamicSettings();
+      populateFyDropdown();
+      renderDashboard();
+      renderAllocations();
+      renderAdditional();
+      renderAdjustments();
+      renderExpenses();
+      renderNoteSheets();
+      renderTemplates();
+      renderReports();
+      renderSettings();
+      renderAuditLogs();
+      lucide.createIcons();
+    }
+
+    function populateFyDropdown() {
+      var fySelect = document.getElementById("fySelect");
+      if (!fySelect || !state.financialYears || state.financialYears.length === 0) return;
+      var curVal = fySelect.value;
+      fySelect.innerHTML = "";
+      state.financialYears.forEach(function(f) {
+        var opt = document.createElement("option");
+        opt.value = f.id;
+        opt.innerText = f.name + (f.isActive ? " (Active)" : "");
+        if (f.id === curVal) opt.selected = true;
+        fySelect.appendChild(opt);
+      });
+      if (!fySelect.value && state.financialYears.length > 0) {
+        fySelect.value = state.financialYears[0].id;
+      }
+    }
+
+    function changeFY(val) {
+      renderAll();
+    }
+
+    function getOfficeName(id) {
+      var o = (state.offices || []).find(function(x){ return x.id === id; });
+      return o ? o.name : id || "-";
+    }
+
+    function getCategoryName(id) {
+      var c = (state.categories || []).find(function(x){ return x.id === id; });
+      return c ? c.name : id || "-";
+    }
+
+    function getFYName(id) {
+      var f = (state.financialYears || []).find(function(x){ return x.id === id; });
+      return f ? f.name : id || "-";
+    }
+
+    function closeDynamicModal() {
+      document.getElementById("dynamicModal").classList.add("hidden");
+    }
+
+    // 1. DASHBOARD RENDERER
+    function renderDashboard() {
+      var fySelect = document.getElementById("fySelect");
+      var fy = fySelect ? fySelect.value : (state.financialYears[0] ? state.financialYears[0].id : "fy-2");
+      var allocs = (state.allocations || []).filter(function(a){ return a.financialYearId === fy; });
+      var exps = (state.expenses || []).filter(function(e){ return e.financialYearId === fy && e.status !== "Void"; });
+
+      var initial = allocs.filter(function(a){ return a.type === "Initial"; }).reduce(function(s,a){ return s + Number(a.allocatedAmount||0); }, 0);
+      var additional = allocs.filter(function(a){ return a.type === "Additional"; }).reduce(function(s,a){ return s + Number(a.allocatedAmount||0); }, 0);
+      var adjustments = allocs.filter(function(a){ return a.type === "Adjustment"; }).reduce(function(s,a){ return s + Number(a.allocatedAmount||0); }, 0);
+      var totalAlloc = initial + additional + adjustments;
+      var totalExp = exps.reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+      var balance = totalAlloc - totalExp;
+      var utilRate = totalAlloc > 0 ? Math.round((totalExp / totalAlloc) * 100) : 0;
+
+      document.getElementById("stat-initial").innerText = "৳ " + initial.toLocaleString();
+      document.getElementById("stat-additional").innerText = "৳ " + additional.toLocaleString();
+      document.getElementById("stat-adjustment").innerText = "৳ " + adjustments.toLocaleString();
+      document.getElementById("stat-expense").innerText = "৳ " + totalExp.toLocaleString();
+      document.getElementById("stat-balance").innerText = "৳ " + balance.toLocaleString();
+      document.getElementById("stat-utilization").innerText = utilRate + "%";
+
+      if (balance < 0) {
+        document.getElementById("stat-balance").className = "text-lg font-bold text-red-600";
+      } else {
+        document.getElementById("stat-balance").className = "text-lg font-bold text-emerald-700";
+      }
+
+      // Breakdown by Category
+      var tbody = document.getElementById("categoryBreakdownBody");
+      if (tbody) {
+        tbody.innerHTML = "";
+        if (!state.categories || state.categories.length === 0) {
+          tbody.innerHTML = "<tr><td colspan='5' class='p-4 text-center text-slate-400'>কোনো খাত পাওয়া যায়নি</td></tr>";
+          return;
+        }
+        state.categories.forEach(function(cat) {
+          var catAllocs = allocs.filter(function(a){ return a.categoryId === cat.id; }).reduce(function(s,a){ return s + Number(a.allocatedAmount||0); }, 0);
+          var catExps = exps.filter(function(e){ return e.categoryId === cat.id; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+          var catBal = catAllocs - catExps;
+          var catRate = catAllocs > 0 ? Math.round((catExps / catAllocs) * 100) : 0;
+
+          var tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = "<td class='p-3 font-semibold text-slate-800'>" + cat.name + " (" + cat.code + ")</td>" +
+            "<td class='p-3 font-mono text-slate-700'>৳ " + catAllocs.toLocaleString() + "</td>" +
+            "<td class='p-3 font-mono text-slate-700'>৳ " + catExps.toLocaleString() + "</td>" +
+            "<td class='p-3 font-mono font-bold " + (catBal < 0 ? "text-red-600" : "text-emerald-700") + "'>৳ " + catBal.toLocaleString() + "</td>" +
+            "<td class='p-3'><span class='px-2 py-0.5 rounded-full text-xs font-bold " + (catRate > 90 ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700") + "'>" + catRate + "%</span></td>";
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    // 2. ALLOCATIONS RENDERER
+    function renderAllocations() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var allocs = (state.allocations || []).filter(function(a){ return a.financialYearId === fy; });
+      var tbody = document.getElementById("allocationsTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (allocs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='7' class='p-4 text-center text-slate-400'>কোনো বরাদ্দ পাওয়া যায়নি</td></tr>";
+        return;
+      }
+      allocs.forEach(function(a) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        var typeBadge = a.type === "Additional" ? "bg-blue-100 text-blue-800" : (a.type === "Adjustment" ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800");
+        tr.innerHTML = "<td class='p-3 font-mono text-slate-600'>" + (a.date || "-") + "</td>" +
+          "<td class='p-3 font-semibold text-slate-800'>" + getOfficeName(a.officeId) + "</td>" +
+          "<td class='p-3 text-slate-700'>" + getCategoryName(a.categoryId) + "</td>" +
+          "<td class='p-3'><span class='px-2 py-0.5 rounded-full text-xs font-bold " + typeBadge + "'>" + (a.type || "Initial") + "</span></td>" +
+          "<td class='p-3 font-mono font-bold text-slate-900'>৳ " + Number(a.allocatedAmount||0).toLocaleString() + "</td>" +
+          "<td class='p-3 font-mono text-slate-600'>" + (a.referenceNo || "-") + "</td>" +
+          "<td class='p-3 text-slate-500 max-w-xs truncate'>" + (a.remarks || "-") + "</td>";
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 3. ADDITIONAL ALLOCATIONS RENDERER
+    function renderAdditional() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var allocs = (state.allocations || []).filter(function(a){ return a.financialYearId === fy && a.type === "Additional"; });
+      var tbody = document.getElementById("additionalTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (allocs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'>কোনো অতিরিক্ত বরাদ্দ পাওয়া যায়নি</td></tr>";
+        return;
+      }
+      allocs.forEach(function(a) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = "<td class='p-3 font-mono text-slate-600'>" + (a.date || "-") + "</td>" +
+          "<td class='p-3 font-semibold text-slate-800'>" + getOfficeName(a.officeId) + "</td>" +
+          "<td class='p-3 text-slate-700'>" + getCategoryName(a.categoryId) + "</td>" +
+          "<td class='p-3 font-mono font-bold text-blue-700'>৳ " + Number(a.allocatedAmount||0).toLocaleString() + "</td>" +
+          "<td class='p-3 font-mono text-slate-600'>" + (a.referenceNo || "-") + "</td>" +
+          "<td class='p-3 text-slate-500 max-w-xs truncate'>" + (a.remarks || "-") + "</td>";
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 4. BUDGET ADJUSTMENTS RENDERER
+    function renderAdjustments() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var allocs = (state.allocations || []).filter(function(a){ return a.financialYearId === fy && a.type === "Adjustment"; });
+      var tbody = document.getElementById("adjustmentsTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (allocs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'>কোনো বাজেট সমন্বয় পাওয়া যায়নি</td></tr>";
+        return;
+      }
+      allocs.forEach(function(a) {
+        var amt = Number(a.allocatedAmount||0);
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = "<td class='p-3 font-mono text-slate-600'>" + (a.date || "-") + "</td>" +
+          "<td class='p-3 font-semibold text-slate-800'>" + getOfficeName(a.officeId) + "</td>" +
+          "<td class='p-3 text-slate-700'>" + getCategoryName(a.categoryId) + "</td>" +
+          "<td class='p-3 font-mono font-bold " + (amt >= 0 ? "text-emerald-700" : "text-rose-600") + "'>" + (amt >= 0 ? "+" : "") + "৳ " + amt.toLocaleString() + "</td>" +
+          "<td class='p-3 font-mono text-slate-600'>" + (a.referenceNo || "-") + "</td>" +
+          "<td class='p-3 text-slate-500 max-w-xs truncate'>" + (a.remarks || "-") + "</td>";
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 5. EXPENSES RENDERER
+    function renderExpenses() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var exps = (state.expenses || []).filter(function(e){ return e.financialYearId === fy; });
+      var tbody = document.getElementById("expensesTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      if (exps.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='8' class='p-4 text-center text-slate-400'>কোনো ব্যয় পাওয়া যায়নি</td></tr>";
+        return;
+      }
+      exps.forEach(function(e) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition " + (e.status === "Void" ? "opacity-50 line-through bg-rose-50/30" : "");
+        var nsBadge = e.noteSheetId ? "<span class='px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800'>Generated</span>" : "<span class='px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800'>Pending</span>";
+        
+        var actionBtns = "";
+        if (e.status !== "Void") {
+          if (e.noteSheetId) {
+            actionBtns += "<button onclick=\"openNoteModal('" + e.noteSheetId + "')\" class='text-blue-600 hover:text-blue-800 font-bold mr-2'>নোট শিট</button>";
+          }
+          actionBtns += "<button onclick=\"voidExpenseClient('" + e.id + "')\" class='text-rose-600 hover:text-rose-800 font-bold'>বাতিল</button>";
+        } else {
+          actionBtns = "<span class='text-rose-500 font-bold'>বাতিলকৃত</span>";
+        }
+
+        tr.innerHTML = "<td class='p-3 font-mono font-bold text-slate-800'>" + (e.voucherNo || "-") + "</td>" +
+          "<td class='p-3 font-mono text-slate-600'>" + (e.expenseDate || "-") + "</td>" +
+          "<td class='p-3 font-semibold text-slate-800'>" + getOfficeName(e.officeId) + "</td>" +
+          "<td class='p-3 text-slate-700'>" + getCategoryName(e.categoryId) + "</td>" +
+          "<td class='p-3 font-mono font-bold text-rose-600'>৳ " + Number(e.amount||0).toLocaleString() + "</td>" +
+          "<td class='p-3 text-slate-600 max-w-xs truncate'>" + (e.description || "-") + "</td>" +
+          "<td class='p-3'>" + nsBadge + "</td>" +
+          "<td class='p-3'>" + actionBtns + "</td>";
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 6. NOTE SHEETS RENDERER
+    function renderNoteSheets() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var noteSheets = (state.noteSheets || []).filter(function(n){ return n.financialYearId === fy; });
+      var grid = document.getElementById("noteSheetsGrid");
+      if (!grid) return;
+      grid.innerHTML = "";
+      if (noteSheets.length === 0) {
+        grid.innerHTML = "<div class='col-span-2 bg-white p-8 rounded-2xl text-center text-slate-400 border border-slate-200'>কোনো নোট শিট তৈরি হয়নি। ব্যয় এন্ট্রি থেকে স্বয়ংক্রিয় প্রস্তুত করুন।</div>";
+        return;
+      }
+      noteSheets.forEach(function(ns) {
+        var card = document.createElement("div");
+        card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3 flex flex-col justify-between";
+        card.innerHTML = "<div>" +
+          "<div class='flex justify-between items-start mb-2'>" +
+            "<span class='text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200'>" + getOfficeName(ns.officeId) + "</span>" +
+            "<span class='text-xs font-mono text-slate-400'>" + (ns.createdAt || "") + "</span>" +
+          "</div>" +
+          "<h4 class='font-bold text-sm text-slate-900 mb-1.5'>" + (ns.title || "Note Sheet") + "</h4>" +
+          "<p class='text-xs text-slate-600 line-clamp-3 whitespace-pre-wrap leading-relaxed'>" + ns.content + "</p>" +
+        "</div>" +
+        "<div class='pt-3 border-t border-slate-100 flex justify-end gap-2'>" +
+          "<button onclick=\"openNoteModal('" + ns.id + "')\" class='bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow transition'>" +
+            "<i data-lucide='printer' class='w-3.5 h-3.5'></i> প্রিন্ট ও প্রিভিউ" +
+          "</button>" +
+        "</div>";
+        grid.appendChild(card);
+      });
+    }
+
+    // 7. NOTE TEMPLATES RENDERER
+    function renderTemplates() {
+      var templates = state.noteTemplates || [];
+      var grid = document.getElementById("templatesGrid");
+      if (!grid) return;
+      grid.innerHTML = "";
+      if (templates.length === 0) {
+        grid.innerHTML = "<div class='col-span-2 bg-white p-8 rounded-2xl text-center text-slate-400 border border-slate-200'>কোনো নোট টেমপ্লেট পাওয়া যায়নি</div>";
+        return;
+      }
+      templates.forEach(function(t) {
+        var card = document.createElement("div");
+        card.className = "bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3";
+        card.innerHTML = "<div class='flex justify-between items-center border-b border-slate-100 pb-2'>" +
+          "<span class='font-bold text-xs text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full'>" + getCategoryName(t.categoryId) + "</span>" +
+          "<button onclick=\"openTemplateModal('" + t.id + "')\" class='text-slate-500 hover:text-emerald-600 text-xs font-bold'>সম্পাদনা</button>" +
+        "</div>" +
+        "<h4 class='font-bold text-sm text-slate-900'>" + t.title + "</h4>" +
+        "<p class='text-xs text-slate-600 font-mono bg-slate-50 p-3 rounded-xl border border-slate-200 whitespace-pre-wrap max-h-40 overflow-y-auto'>" + t.bodyTemplate + "</p>";
+        grid.appendChild(card);
+      });
+    }
+
+    // 8. REPORTS & LEDGER RENDERER
+    function renderReports() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var allocs = (state.allocations || []).filter(function(a){ return a.financialYearId === fy; });
+      var exps = (state.expenses || []).filter(function(e){ return e.financialYearId === fy && e.status !== "Void"; });
+      var container = document.getElementById("reportsContent");
+      if (!container) return;
+
+      var totalAlloc = allocs.reduce(function(s,a){ return s + Number(a.allocatedAmount||0); }, 0);
+      var totalExp = exps.reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+      var bal = totalAlloc - totalExp;
+
+      var html = "<div class='space-y-6'>" +
+        "<div class='border-b pb-4 flex justify-between items-center'>" +
+          "<div>" +
+            "<h3 class='text-lg font-bold text-slate-900'>অর্থবছর " + getFYName(fy) + " - পূর্ণাঙ্গ বার্ষিক হিসাব বিবরণী</h3>" +
+            "<p class='text-xs text-slate-500 mt-1'>প্রিন্ট উপযোগী অফিশিয়াল লেজার রিপোর্ট</p>" +
+          "</div>" +
+          "<div class='text-right font-mono text-xs'>" +
+            "<div>মোট বরাদ্দ: <strong>৳ " + totalAlloc.toLocaleString() + "</strong></div>" +
+            "<div>মোট ব্যয়: <strong>৳ " + totalExp.toLocaleString() + "</strong></div>" +
+            "<div class='text-emerald-700 font-bold'>অবশিষ্ট স্থিতি: ৳ " + bal.toLocaleString() + "</div>" +
+          "</div>" +
+        "</div>" +
+        "<div>" +
+          "<h4 class='font-bold text-sm text-slate-800 mb-3'>খাতভিত্তিক বরাদ্দ ও ব্যয় লেজার</h4>" +
+          "<table class='w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden'>" +
+            "<thead class='bg-slate-100 text-slate-700 font-bold uppercase'><tr><th class='p-3'>খাতের নাম</th><th class='p-3'>বরাদ্দ (টাকা)</th><th class='p-3'>ব্যয় (টাকা)</th><th class='p-3'>অবশিষ্ট স্থিতি</th></tr></thead>" +
+            "<tbody class='divide-y divide-slate-100'>";
+      
+      (state.categories || []).forEach(function(cat) {
+        var cAlloc = allocs.filter(function(a){ return a.categoryId === cat.id; }).reduce(function(s,a){ return s + Number(a.allocatedAmount||0); }, 0);
+        var cExp = exps.filter(function(e){ return e.categoryId === cat.id; }).reduce(function(s,e){ return s + Number(e.amount||0); }, 0);
+        var cBal = cAlloc - cExp;
+        html += "<tr><td class='p-3 font-semibold text-slate-800'>" + cat.name + " (" + cat.code + ")</td>" +
+          "<td class='p-3 font-mono'>৳ " + cAlloc.toLocaleString() + "</td>" +
+          "<td class='p-3 font-mono'>৳ " + cExp.toLocaleString() + "</td>" +
+          "<td class='p-3 font-mono font-bold " + (cBal < 0 ? "text-rose-600" : "text-emerald-700") + "'>৳ " + cBal.toLocaleString() + "</td></tr>";
+      });
+
+      html += "</tbody></table></div></div>";
+      container.innerHTML = html;
+    }
+
+    // 9. SETTINGS RENDERER
+    function switchSettingsSubTab(sub) {
+      ["sys", "welcome", "offices", "categories", "fys", "users"].forEach(function(s) {
+        var el = document.getElementById("subSet-" + s);
+        var tab = document.getElementById("setTab-" + s);
+        if (el) el.classList.add("hidden");
+        if (tab) tab.className = "px-4 py-2.5 border-b-2 border-transparent text-slate-500 hover:text-slate-800";
+      });
+      var activeEl = document.getElementById("subSet-" + sub);
+      var activeTab = document.getElementById("setTab-" + sub);
+      if (activeEl) activeEl.classList.remove("hidden");
+      if (activeTab) activeTab.className = "px-4 py-2.5 border-b-2 border-emerald-600 text-emerald-600 font-bold";
+      lucide.createIcons();
+    }
+
+    function renderSettings() {
+      // Config values
+      if (state.settings && state.settings.length > 0) {
+        var sys = state.settings[0];
+        if (document.getElementById("cfgInstName")) document.getElementById("cfgInstName").value = sys.institutionName || "";
+        if (document.getElementById("cfgAppName")) document.getElementById("cfgAppName").value = sys.webAppName || "";
+        if (document.getElementById("cfgDesc")) document.getElementById("cfgDesc").value = sys.description || "";
+      }
+
+      // Offices table
+      var offTbody = document.getElementById("officesTableBody");
+      if (offTbody) {
+        offTbody.innerHTML = "";
+        (state.offices || []).forEach(function(o) {
+          var tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = "<td class='p-3 font-bold text-slate-800'>" + o.name + "</td>" +
+            "<td class='p-3 font-mono text-slate-600'>" + (o.code || "-") + "</td>" +
+            "<td class='p-3 text-slate-600'>" + (o.type || "-") + "</td>" +
+            "<td class='p-3 text-slate-500'>" + (o.address || "-") + "</td>" +
+            "<td class='p-3'><span class='px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800'>" + (o.status || "Active") + "</span></td>" +
+            "<td class='p-3'><button onclick=\"openOfficeModal('" + o.id + "')\" class='text-emerald-600 hover:text-emerald-800 font-bold'>সম্পাদনা</button></td>";
+          offTbody.appendChild(tr);
+        });
+      }
+
+      // Categories table
+      var catTbody = document.getElementById("categoriesTableBody");
+      if (catTbody) {
+        catTbody.innerHTML = "";
+        (state.categories || []).forEach(function(c) {
+          var tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = "<td class='p-3 font-mono font-bold text-slate-800'>" + c.code + "</td>" +
+            "<td class='p-3 font-semibold text-slate-800'>" + c.name + "</td>" +
+            "<td class='p-3 text-slate-600'>" + (c.budgetHead || "-") + "</td>" +
+            "<td class='p-3 text-slate-500 max-w-xs truncate'>" + (c.description || "-") + "</td>" +
+            "<td class='p-3'><span class='px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800'>" + (c.status || "Active") + "</span></td>" +
+            "<td class='p-3'><button onclick=\"openCategoryModal('" + c.id + "')\" class='text-emerald-600 hover:text-emerald-800 font-bold'>সম্পাদনা</button></td>";
+          catTbody.appendChild(tr);
+        });
+      }
+
+      // FYs table
+      var fyTbody = document.getElementById("fysTableBody");
+      if (fyTbody) {
+        fyTbody.innerHTML = "";
+        (state.financialYears || []).forEach(function(f) {
+          var tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = "<td class='p-3 font-bold text-slate-800'>" + f.name + "</td>" +
+            "<td class='p-3 font-mono text-slate-600'>" + (f.startDate || "-") + "</td>" +
+            "<td class='p-3 font-mono text-slate-600'>" + (f.endDate || "-") + "</td>" +
+            "<td class='p-3 font-mono font-bold text-slate-800'>৳ " + Number(f.openingBalance||0).toLocaleString() + "</td>" +
+            "<td class='p-3'><span class='px-2 py-0.5 rounded-full text-xs font-bold " + (f.isActive ? "bg-emerald-100 text-emerald-800" : "bg-slate-100 text-slate-600") + "'>" + (f.isActive ? "Active" : (f.status || "Closed")) + "</span></td>" +
+            "<td class='p-3'><button onclick=\"openFYModal('" + f.id + "')\" class='text-emerald-600 hover:text-emerald-800 font-bold'>সম্পাদনা</button></td>";
+          fyTbody.appendChild(tr);
+        });
+      }
+
+      // Users table
+      var userTbody = document.getElementById("usersTableBody");
+      if (userTbody) {
+        userTbody.innerHTML = "";
+        (state.users || []).forEach(function(u) {
+          var tr = document.createElement("tr");
+          tr.className = "hover:bg-slate-50 transition";
+          tr.innerHTML = "<td class='p-3 font-bold text-slate-800'>" + u.name + "</td>" +
+            "<td class='p-3 font-mono text-slate-700'>" + u.userId + "</td>" +
+            "<td class='p-3 text-slate-600'>" + (u.email || "-") + "</td>" +
+            "<td class='p-3 font-semibold text-emerald-700'>" + (u.role || "-") + "</td>" +
+            "<td class='p-3 text-slate-600'>" + getOfficeName(u.officeId) + "</td>" +
+            "<td class='p-3 text-slate-500'>" + (u.designation || "-") + "</td>" +
+            "<td class='p-3'><button onclick=\"openUserModal('" + u.id + "')\" class='text-emerald-600 hover:text-emerald-800 font-bold mr-2'>সম্পাদনা</button></td>";
+          userTbody.appendChild(tr);
+        });
+      }
+    }
+
+    // 10. AUDIT LOGS RENDERER
+    function renderAuditLogs() {
+      var tbody = document.getElementById("auditTableBody");
+      if (!tbody) return;
+      tbody.innerHTML = "";
+      var logs = state.auditLogs || [];
+      if (logs.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' class='p-4 text-center text-slate-400'>কোনো অডিট লগ পাওয়া যায়নি</td></tr>";
+        return;
+      }
+      logs.slice().reverse().forEach(function(al) {
+        var tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = "<td class='p-3 font-mono text-slate-500'>" + (al.timestamp || "-") + "</td>" +
+          "<td class='p-3 font-mono font-bold text-slate-800'>" + (al.userId || "-") + "</td>" +
+          "<td class='p-3 font-semibold text-blue-700'>" + (al.action || "-") + "</td>" +
+          "<td class='p-3 text-slate-600'>" + (al.tableName || "-") + "</td>" +
+          "<td class='p-3 font-mono text-slate-500'>" + (al.recordId || "-") + "</td>" +
+          "<td class='p-3 text-slate-700 max-w-sm truncate'>" + (al.details || "-") + "</td>";
+        tbody.appendChild(tr);
+      });
+    }
+
+    // MODAL FORM OPENERS
+    function openAllocationModal(preType) {
+      preType = preType || "Initial";
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      var title = preType === "Additional" ? "নতুন অতিরিক্ত বরাদ্দ এন্ট্রি" : (preType === "Adjustment" ? "নতুন বাজেট সমন্বয় এন্ট্রি" : "নতুন বাজেট বরাদ্দ এন্ট্রি");
+      
+      document.getElementById("dynModalTitle").innerText = title;
+      var body = document.getElementById("dynModalBody");
+      
+      var offOpts = (state.offices || []).map(function(o){ return "<option value='" + o.id + "'>" + o.name + "</option>"; }).join("");
+      var catOpts = (state.categories || []).map(function(c){ return "<option value='" + c.id + "'>" + c.name + "</option>"; }).join("");
+
+      body.innerHTML = "<form onsubmit='submitAllocationForm(event)' class='space-y-4'>" +
+        "<input type='hidden' id='formFyId' value='" + fy + "' />" +
+        "<input type='hidden' id='formType' value='" + preType + "' />" +
+        "<div><label class='block font-semibold mb-1'>অফিস নির্বাচন</label><select id='formOfficeId' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + offOpts + "</select></div>" +
+        "<div><label class='block font-semibold mb-1'>ব্যয় খাত</label><select id='formCategoryId' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + catOpts + "</select></div>" +
+        "<div><label class='block font-semibold mb-1'>পরিমাণ (টাকা)</label><input type='number' id='formAmount' required placeholder='0' class='w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono' /></div>" +
+        "<div><label class='block font-semibold mb-1'>স্মারক / রেফারেন্স নং</label><input type='text' id='formRef' placeholder='HO-ALC-2025' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>তারিখ</label><input type='date' id='formDate' value='" + new Date().toISOString().split('T')[0] + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>মন্তব্য</label><textarea id='formRemarks' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'></textarea></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>সংরক্ষণ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitAllocationForm(e) {
+      e.preventDefault();
+      var data = {
+        financialYearId: document.getElementById("formFyId").value,
+        officeId: document.getElementById("formOfficeId").value,
+        categoryId: document.getElementById("formCategoryId").value,
+        type: document.getElementById("formType").value,
+        allocatedAmount: Number(document.getElementById("formAmount").value) || 0,
+        referenceNo: document.getElementById("formRef").value,
+        date: document.getElementById("formDate").value,
+        remarks: document.getElementById("formRemarks").value
+      };
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(res) {
+          closeDynamicModal();
+          loadData();
+        }).saveAllocation(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        data.id = "alc-demo-" + new Date().getTime();
+        state.allocations.push(data);
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function openExpenseModal() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      document.getElementById("dynModalTitle").innerText = "নতুন দৈনন্দিন ব্যয় এন্ট্রি";
+      var body = document.getElementById("dynModalBody");
+
+      var offOpts = (state.offices || []).map(function(o){ return "<option value='" + o.id + "'>" + o.name + "</option>"; }).join("");
+      var catOpts = (state.categories || []).map(function(c){ return "<option value='" + c.id + "'>" + c.name + "</option>"; }).join("");
+
+      body.innerHTML = "<form onsubmit='submitExpenseForm(event)' class='space-y-3'>" +
+        "<input type='hidden' id='expFyId' value='" + fy + "' />" +
+        "<div><label class='block font-semibold mb-1'>অফিস</label><select id='expOfficeId' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + offOpts + "</select></div>" +
+        "<div><label class='block font-semibold mb-1'>ব্যয় খাত</label><select id='expCategoryId' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + catOpts + "</select></div>" +
+        "<div class='grid grid-cols-2 gap-2'>" +
+          "<div><label class='block font-semibold mb-1'>ভাউচার নং</label><input type='text' id='expVoucherNo' required placeholder='V-101' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+          "<div><label class='block font-semibold mb-1'>পরিমাণ (টাকা)</label><input type='number' id='expAmount' required placeholder='0' class='w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono' /></div>" +
+        "</div>" +
+        "<div class='grid grid-cols-2 gap-2'>" +
+          "<div><label class='block font-semibold mb-1'>ব্যয়ের তারিখ</label><input type='date' id='expDate' value='" + new Date().toISOString().split('T')[0] + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+          "<div><label class='block font-semibold mb-1'>ভাউচারের তারিখ</label><input type='date' id='expVoucherDate' value='" + new Date().toISOString().split('T')[0] + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "</div>" +
+        "<div><label class='block font-semibold mb-1'>উদ্দেশ্য / বিবরণ</label><textarea id='expDesc' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs'></textarea></div>" +
+        "<div><label class='block font-semibold mb-1'>আবেদনকারী নাম ও পদবী</label><input type='text' id='expApplicant' placeholder='জনাব রহমান (আঞ্চলিক ব্যবস্থাপক)' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>ব্যয় সংরক্ষণ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitExpenseForm(e) {
+      e.preventDefault();
+      var data = {
+        financialYearId: document.getElementById("expFyId").value,
+        officeId: document.getElementById("expOfficeId").value,
+        categoryId: document.getElementById("expCategoryId").value,
+        voucherNo: document.getElementById("expVoucherNo").value,
+        amount: Number(document.getElementById("expAmount").value) || 0,
+        expenseDate: document.getElementById("expDate").value,
+        voucherDate: document.getElementById("expVoucherDate").value,
+        description: document.getElementById("expDesc").value,
+        applicant: { name: document.getElementById("expApplicant").value }
+      };
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(res) {
+          closeDynamicModal();
+          loadData();
+        }).saveExpense(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        data.id = "exp-demo-" + new Date().getTime();
+        state.expenses.push(data);
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function voidExpenseClient(id) {
+      if (!confirm("আপনি কি নিশ্চিতভাবে এই ব্যয় রেকর্ডটি বাতিল (Void) করতে চান?")) return;
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(){ loadData(); }).voidExpense(id, currentUser ? currentUser.id : "Admin", "User requested cancellation");
+      } else {
+        var exp = state.expenses.find(function(e){ return e.id === id; });
+        if (exp) exp.status = "Void";
+        renderAll();
+      }
+    }
+
+    function openTemplateModal(id) {
+      var template = (state.noteTemplates || []).find(function(t){ return t.id === id; }) || {};
+      document.getElementById("dynModalTitle").innerText = id ? "টেমপ্লেট সম্পাদন" : "নতুন নোট টেমপ্লেট";
+      var body = document.getElementById("dynModalBody");
+
+      var catOpts = (state.categories || []).map(function(c){ 
+        return "<option value='" + c.id + "' " + (c.id === template.categoryId ? "selected" : "") + ">" + c.name + "</option>"; 
+      }).join("");
+
+      body.innerHTML = "<form onsubmit='submitTemplateForm(event)' class='space-y-3'>" +
+        "<input type='hidden' id='tplId' value='" + (template.id || "") + "' />" +
+        "<div><label class='block font-semibold mb-1'>ব্যয় খাত</label><select id='tplCategoryId' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + catOpts + "</select></div>" +
+        "<div><label class='block font-semibold mb-1'>টেমপ্লেট শিরোনাম</label><input type='text' id='tplTitle' value='" + (template.title || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>নোট শিট বডি টেমপ্লেট</label><textarea id='tplBody' rows='6' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono'>" + (template.bodyTemplate || "") + "</textarea></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>টেমপ্লেট সেভ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitTemplateForm(e) {
+      e.preventDefault();
+      var data = {
+        id: document.getElementById("tplId").value,
+        categoryId: document.getElementById("tplCategoryId").value,
+        title: document.getElementById("tplTitle").value,
+        bodyTemplate: document.getElementById("tplBody").value
+      };
+
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(){ closeDynamicModal(); loadData(); }).saveTemplate(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        if (!data.id) { data.id = "nt-" + new Date().getTime(); state.noteTemplates.push(data); }
+        else { var t = state.noteTemplates.find(function(x){ return x.id === data.id; }); if (t) Object.assign(t, data); }
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function openOfficeModal(id) {
+      var off = (state.offices || []).find(function(o){ return o.id === id; }) || {};
+      document.getElementById("dynModalTitle").innerText = id ? "অফিস সম্পাদন" : "নতুন অফিস যোগ করুন";
+      var body = document.getElementById("dynModalBody");
+
+      body.innerHTML = "<form onsubmit='submitOfficeForm(event)' class='space-y-3'>" +
+        "<input type='hidden' id='offId' value='" + (off.id || "") + "' />" +
+        "<div><label class='block font-semibold mb-1'>অফিসের নাম</label><input type='text' id='offName' value='" + (off.name || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>অফিস কোড</label><input type='text' id='offCode' value='" + (off.code || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>ধরন (Type)</label><select id='offType' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'><option value='HeadOffice'>HeadOffice</option><option value='SubOffice'>SubOffice</option></select></div>" +
+        "<div><label class='block font-semibold mb-1'>ঠিকানা</label><textarea id='offAddress' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + (off.address || "") + "</textarea></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>অফিস সেভ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitOfficeForm(e) {
+      e.preventDefault();
+      var data = {
+        id: document.getElementById("offId").value,
+        name: document.getElementById("offName").value,
+        code: document.getElementById("offCode").value,
+        type: document.getElementById("offType").value,
+        address: document.getElementById("offAddress").value
+      };
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(){ closeDynamicModal(); loadData(); }).saveOffice(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        if (!data.id) { data.id = "off-" + new Date().getTime(); state.offices.push(data); }
+        else { var o = state.offices.find(function(x){ return x.id === data.id; }); if (o) Object.assign(o, data); }
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function openCategoryModal(id) {
+      var cat = (state.categories || []).find(function(c){ return c.id === id; }) || {};
+      document.getElementById("dynModalTitle").innerText = id ? "খাত সম্পাদন" : "নতুন ব্যয় খাত যোগ করুন";
+      var body = document.getElementById("dynModalBody");
+
+      body.innerHTML = "<form onsubmit='submitCategoryForm(event)' class='space-y-3'>" +
+        "<input type='hidden' id='catId' value='" + (cat.id || "") + "' />" +
+        "<div><label class='block font-semibold mb-1'>খাত কোড</label><input type='text' id='catCode' value='" + (cat.code || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>খাতের নাম</label><input type='text' id='catName' value='" + (cat.name || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>বাজেট হেড</label><input type='text' id='catBudgetHead' value='" + (cat.budgetHead || "") + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>বিবরণ</label><textarea id='catDesc' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + (cat.description || "") + "</textarea></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>খাত সেভ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitCategoryForm(e) {
+      e.preventDefault();
+      var data = {
+        id: document.getElementById("catId").value,
+        code: document.getElementById("catCode").value,
+        name: document.getElementById("catName").value,
+        budgetHead: document.getElementById("catBudgetHead").value,
+        description: document.getElementById("catDesc").value
+      };
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(){ closeDynamicModal(); loadData(); }).saveCategory(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        if (!data.id) { data.id = "cat-" + new Date().getTime(); state.categories.push(data); }
+        else { var c = state.categories.find(function(x){ return x.id === data.id; }); if (c) Object.assign(c, data); }
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function openFYModal(id) {
+      var fy = (state.financialYears || []).find(function(f){ return f.id === id; }) || {};
+      document.getElementById("dynModalTitle").innerText = id ? "অর্থবছর সম্পাদন" : "নতুন অর্থবছর যোগ করুন";
+      var body = document.getElementById("dynModalBody");
+
+      body.innerHTML = "<form onsubmit='submitFYForm(event)' class='space-y-3'>" +
+        "<input type='hidden' id='fyId' value='" + (fy.id || "") + "' />" +
+        "<div><label class='block font-semibold mb-1'>অর্থবছর (e.g. 2026-2027)</label><input type='text' id='fyName' value='" + (fy.name || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div class='grid grid-cols-2 gap-2'>" +
+          "<div><label class='block font-semibold mb-1'>শুরুর তারিখ</label><input type='date' id='fyStart' value='" + (fy.startDate || "") + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+          "<div><label class='block font-semibold mb-1'>শেষের তারিখ</label><input type='date' id='fyEnd' value='" + (fy.endDate || "") + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "</div>" +
+        "<div><label class='block font-semibold mb-1'>প্রারম্ভিক স্থিতি</label><input type='number' id='fyOpening' value='" + (fy.openingBalance || 0) + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono' /></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>অর্থবছর সেভ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitFYForm(e) {
+      e.preventDefault();
+      var data = {
+        id: document.getElementById("fyId").value,
+        name: document.getElementById("fyName").value,
+        startDate: document.getElementById("fyStart").value,
+        endDate: document.getElementById("fyEnd").value,
+        openingBalance: Number(document.getElementById("fyOpening").value) || 0
+      };
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(){ closeDynamicModal(); loadData(); }).saveFinancialYear(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        if (!data.id) { data.id = "fy-" + new Date().getTime(); state.financialYears.push(data); }
+        else { var f = state.financialYears.find(function(x){ return x.id === data.id; }); if (f) Object.assign(f, data); }
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function openUserModal(id) {
+      var usr = (state.users || []).find(function(u){ return u.id === id; }) || {};
+      document.getElementById("dynModalTitle").innerText = id ? "ইউজার প্রোফাইল সম্পাদন" : "নতুন ইউজার যোগ করুন";
+      var body = document.getElementById("dynModalBody");
+
+      var offOpts = (state.offices || []).map(function(o){ 
+        return "<option value='" + o.id + "' " + (o.id === usr.officeId ? "selected" : "") + ">" + o.name + "</option>"; 
+      }).join("");
+
+      body.innerHTML = "<form onsubmit='submitUserForm(event)' class='space-y-3'>" +
+        "<input type='hidden' id='usrId' value='" + (usr.id || "") + "' />" +
+        "<div><label class='block font-semibold mb-1'>ইউজার আইডি</label><input type='text' id='usrUserId' value='" + (usr.userId || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono' /></div>" +
+        "<div><label class='block font-semibold mb-1'>পূর্ণ নাম</label><input type='text' id='usrName' value='" + (usr.name || "") + "' required class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>ইমেইল</label><input type='email' id='usrEmail' value='" + (usr.email || "") + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>রোল (Role)</label><select id='usrRole' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'><option value='Head Office Admin'>Head Office Admin</option><option value='Sub-office User'>Sub-office User</option><option value='Report Viewer'>Report Viewer</option></select></div>" +
+        "<div><label class='block font-semibold mb-1'>অফিস</label><select id='usrOfficeId' class='w-full bg-slate-50 border p-2 rounded-xl text-xs'>" + offOpts + "</select></div>" +
+        "<div><label class='block font-semibold mb-1'>পদবী</label><input type='text' id='usrDesignation' value='" + (usr.designation || "") + "' class='w-full bg-slate-50 border p-2 rounded-xl text-xs' /></div>" +
+        "<div><label class='block font-semibold mb-1'>পাসওয়ার্ড " + (id ? "(অপরিবর্তিত রাখতে ফাঁকা রাখুন)" : "") + "</label><input type='password' id='usrPassword' class='w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono' /></div>" +
+        "<button type='submit' class='w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl shadow'>ইউজার সেভ করুন</button>" +
+      "</form>";
+
+      document.getElementById("dynamicModal").classList.remove("hidden");
+    }
+
+    function submitUserForm(e) {
+      e.preventDefault();
+      var data = {
+        id: document.getElementById("usrId").value,
+        userId: document.getElementById("usrUserId").value,
+        name: document.getElementById("usrName").value,
+        email: document.getElementById("usrEmail").value,
+        role: document.getElementById("usrRole").value,
+        officeId: document.getElementById("usrOfficeId").value,
+        designation: document.getElementById("usrDesignation").value,
+        password: document.getElementById("usrPassword").value
+      };
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(){ closeDynamicModal(); loadData(); }).saveUser(data, currentUser ? currentUser.id : "Admin");
+      } else {
+        if (!data.id) { data.id = "usr-" + new Date().getTime(); state.users.push(data); }
+        else { var u = state.users.find(function(x){ return x.id === data.id; }); if (u) Object.assign(u, data); }
+        closeDynamicModal();
+        renderAll();
+      }
+    }
+
+    function bulkGenerateNoteSheetsClient() {
+      var fy = document.getElementById("fySelect") ? document.getElementById("fySelect").value : "fy-2";
+      if (typeof google !== "undefined" && google.script && google.script.run) {
+        google.script.run.withSuccessHandler(function(res){
+          alert((res && res.message) || "নোট শিট বাল্ক জেনারেট সম্পন্ন!");
+          loadData();
+        }).bulkGenerateNoteSheets(fy, "", currentUser ? currentUser.id : "Admin");
+      } else {
+        alert("ডেমো মোডে বাল্ক জেনারেট টেস্ট সম্পূর্ণ!");
+      }
+    }
+
+    function closeNoteModal() {
+      document.getElementById("noteModal").classList.add("hidden");
+    }
+
+    var currentActiveNs = null;
+
+    function openNoteModal(nsId) {
+      var ns = state.noteSheets.find(function(n){ return n.id === nsId; });
+      if (!ns) return;
+      currentActiveNs = ns;
+      document.getElementById("modalNsTitle").innerText = ns.title || "Note Sheet";
+      document.getElementById("modalNsContent").innerText = ns.content;
+      document.getElementById("noteModal").classList.remove("hidden");
+      updateGasPrintPreview();
+    }
+
+    function updateGasPrintPreview() {
+      var pos = document.getElementById("gasNsPosition").value;
+      var orientation = document.getElementById("gasNsOrientation").value;
+      var topMargin = Number(document.getElementById("gasNsMarginTop").value) || 20;
+      var bottomMargin = Number(document.getElementById("gasNsMarginBottom").value) || 20;
+      
+      var customGroup = document.getElementById("gasNsCustomOffsetGroup");
+      if (pos === "CUSTOM") {
+        customGroup.classList.remove("hidden");
+        topMargin = Number(document.getElementById("gasNsCustomTop").value) || 20;
+      } else {
+        customGroup.classList.add("hidden");
+      }
+
+      var paper = document.getElementById("gasNsPaperPreview");
+      var spacerTop = document.getElementById("gasNsSpacerTop");
+      var spacerBottom = document.getElementById("gasNsSpacerBottom");
+
+      if (orientation === "landscape") {
+        paper.style.width = "640px";
+        paper.style.minHeight = "480px";
+      } else {
+        paper.style.width = "480px";
+        paper.style.minHeight = "640px";
+      }
+
+      paper.style.paddingTop = (topMargin * 1.5) + "px";
+      paper.style.paddingBottom = (bottomMargin * 1.5) + "px";
+
+      if (pos === "TOP" || pos === "CUSTOM") {
+        spacerTop.style.display = "none";
+        spacerBottom.style.display = "none";
+      } else if (pos === "UPPER_MIDDLE") {
+        spacerTop.style.display = "block";
+        spacerTop.style.flex = "1";
+        spacerBottom.style.display = "block";
+        spacerBottom.style.flex = "3";
+      } else if (pos === "CENTER") {
+        spacerTop.style.display = "block";
+        spacerTop.style.flex = "1";
+        spacerBottom.style.display = "block";
+        spacerBottom.style.flex = "1";
+      } else if (pos === "LOWER_MIDDLE") {
+        spacerTop.style.display = "block";
+        spacerTop.style.flex = "3";
+        spacerBottom.style.display = "block";
+        spacerBottom.style.flex = "1";
+      } else if (pos === "BOTTOM") {
+        spacerTop.style.display = "block";
+        spacerTop.style.flex = "1";
+        spacerBottom.style.display = "none";
+      }
+    }
+
+    function printNoteSheetGas() {
+      if (!currentActiveNs) return;
+      var pos = document.getElementById("gasNsPosition").value;
+      var pageSize = document.getElementById("gasNsPageSize").value;
+      var orientation = document.getElementById("gasNsOrientation").value;
+      var topMargin = Number(document.getElementById("gasNsMarginTop").value) || 20;
+      var bottomMargin = Number(document.getElementById("gasNsMarginBottom").value) || 20;
+      if (pos === "CUSTOM") {
+        topMargin = Number(document.getElementById("gasNsCustomTop").value) || 20;
+      }
+
+      var printWin = window.open("", "_blank");
+      if (!printWin) return;
+      var contentHtml = currentActiveNs.content.replace(/\n/g, "<br/>");
+      printWin.document.write("<!DOCTYPE html><html><head><title>" + (currentActiveNs.title || "Note Sheet") + "</title><style>@page{size:" + pageSize + " " + orientation + ";margin:0;}body{margin:0;padding:" + topMargin + "mm 20mm " + bottomMargin + "mm 20mm;font-family:serif;color:#0f172a;line-height:1.8;}.header{text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px;}.content{text-align:justify;}.sig{margin-top:50px;display:flex;justify-content:space-between;}</style></head><body><div class=\"header\"><h3>গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h3><h4>অফিস বরাদ্দ ও ব্যয় মঞ্জুরি নোট শিট</h4></div><div class=\"content\">" + contentHtml + "</div><div class=\"sig\"><div>প্রস্তুতকারী কর্মকর্তা</div><div>অনুমোদনকারী</div></div><script>window.onload=function(){window.print();};<\/script></body></html>");
+      printWin.document.close();
+    }
+
+    window.onload = function() {
+      lucide.createIcons();
+      try {
+        var savedUserStr = localStorage.getItem("govt_app_user");
+        if (savedUserStr) {
+          var savedUser = JSON.parse(savedUserStr);
+          if (savedUser && (savedUser.id || savedUser.userId)) {
+            onLoginSuccess(savedUser);
+          }
+        }
+      } catch (e) {
+        localStorage.removeItem("govt_app_user");
+      }
+    };
+  </script>
+</body>
+</html>

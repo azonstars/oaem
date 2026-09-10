@@ -1,0 +1,50 @@
+[
+  {
+    "id": "usr-1",
+    "userId": "admin",
+    "name": "Mr. Admin (HO)",
+    "email": "admin@headoffice.gov",
+    "role": "Head Office Admin",
+    "officeId": "off-ho",
+    "designation": "Director",
+    "passwordHash": "28a5052a7a6fc48230bece66e4a15b0201ccb0ab9029916a191ed2351e1c0221c317929b2ed1ff7a2f10c2d094e93731c7e3e2b6bd77c63aa30c2298613596a9",
+    "status": "Active",
+    "passwordSalt": "d2168aa1d134274da18135270fee3e9c"
+  },
+  {
+    "id": "usr-2",
+    "userId": "ctg_manager",
+    "name": "Mr. Rahman (CTG)",
+    "email": "ctg.manager@office.gov",
+    "role": "Sub-office User",
+    "officeId": "off-sub1",
+    "designation": "Regional Manager",
+    "passwordHash": "c32c981b9960f02fb7db8351d24714e09dd53299624e8e0efb5110653f699eb188e147076c46f6adc6ea9f7849247210b733f99bb2626469c5a7688507c23ac3",
+    "status": "Active",
+    "passwordSalt": "a2c92cefffaeb8488c084922293551e7"
+  },
+  {
+    "id": "usr-3",
+    "userId": "syl_manager",
+    "name": "Ms. Farhana (SYL)",
+    "email": "sylhet.manager@office.gov",
+    "role": "Sub-office User",
+    "officeId": "off-sub2",
+    "designation": "Branch Head",
+    "passwordHash": "0ceecf6753bae96dcd38e6a53b379ccba34e74d4c721bb63e35df41eed946bf8d83650e2aa743cf13e0165dd3be450818c6cf37ce4c576d9654fde6f9ae7a26a",
+    "status": "Active",
+    "passwordSalt": "841b8f0bdbbf8f1d01f92c8b4d6815a7"
+  },
+  {
+    "id": "usr-4",
+    "userId": "auditor",
+    "name": "Mr. Auditor",
+    "email": "audit@headoffice.gov",
+    "role": "Report Viewer",
+    "officeId": "off-ho",
+    "designation": "Senior Auditor",
+    "passwordHash": "531fcd5ea0655acca8df879b66b0368426c97be7f2b337575f128a8c532336f8263ad88dd057be8db3a5b949646b0e532786cc1960a3cae10ee77210497b4114",
+    "status": "Active",
+    "passwordSalt": "c89909b71e8247fda82a779b82baa649"
+  }
+]

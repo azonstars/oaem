@@ -1,0 +1,334 @@
+[
+  {
+    "id": "exp-1788448426169",
+    "financialYearId": "fy-3",
+    "officeId": "off-ho",
+    "categoryId": "cat-43",
+    "expenseType": "Quotation",
+    "quotationFormType": "Form1",
+    "expenseDate": "2026-09-04",
+    "amount": 129720,
+    "baseAmount": 129720,
+    "vatRate": 10,
+    "vatAmount": 12972,
+    "taxRate": 5,
+    "taxAmount": 6486,
+    "netPayable": 110262,
+    "grossAmount": 129720,
+    "voucherNo": "কম্পিউ-6/26-27/",
+    "voucherDate": "2026-09-04",
+    "description": "৫ টি লেজার প্রিন্টার ও ৬ টি ইউপিএস ক্রয়",
+    "status": "Approved",
+    "noteSheetId": "ns-1788858027598",
+    "hasStockChalan": "না",
+    "memoForwardingNo": "কম্পিউ-6/26-27/285",
+    "memoSupplyOrderNo": "সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/",
+    "quotationDate": "2026-09-04",
+    "supplierOrg1": "কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি",
+    "supplierOrg2": "কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি",
+    "supplierOrg3": "ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি",
+    "supplyRecipientName": "জনাব সুমন বিকাশ চাকমা",
+    "supplyRecipientDesignation": "সিইও",
+    "supplyRecipientOrgName": "কম্পিউটার ভিলেজ",
+    "supplyRecipientAddress1": "বনরূপা",
+    "supplyRecipientAddress2": "রাঙ্গামাটি।",
+    "quotationItems": [
+      {
+        "itemDescription": "৫ টি লেজার প্রিন্টার",
+        "specification": "Laser Printer (Network Enabled)",
+        "qty": 5,
+        "unit": "টি",
+        "unitPrice": 18000,
+        "totalPrice": 90000,
+        "vatRate": 10,
+        "taxRate": 5,
+        "remarks": "সর্বনিম্ন দরদাতা",
+        "suppliers": [
+          {
+            "nameAndAddress": "কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি",
+            "unitPrice": 18000,
+            "qty": 5,
+            "totalPrice": 90000,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "সর্বনিম্ন"
+          },
+          {
+            "nameAndAddress": "কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি",
+            "unitPrice": 19500,
+            "qty": 5,
+            "totalPrice": 97500,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "২য় সর্বোচ্চ"
+          },
+          {
+            "nameAndAddress": "ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি",
+            "unitPrice": 20000,
+            "qty": 5,
+            "totalPrice": 100000,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "সর্বোচ্চ"
+          }
+        ]
+      },
+      {
+        "itemDescription": "ইউপিএস (1200ভিএ)",
+        "specification": "1200VA Offline UPS",
+        "qty": 6,
+        "unit": "টি",
+        "unitPrice": 3800,
+        "totalPrice": 22800,
+        "vatRate": 10,
+        "taxRate": 5,
+        "remarks": "সর্বনিম্ন দরদাতা",
+        "suppliers": [
+          {
+            "nameAndAddress": "কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি",
+            "unitPrice": 3800,
+            "qty": 6,
+            "totalPrice": 22800,
+            "vatRate": 0,
+            "taxRate": 0,
+            "remarks": "সর্বনিম্ন"
+          },
+          {
+            "nameAndAddress": "কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি",
+            "unitPrice": 3900,
+            "qty": 6,
+            "totalPrice": 23400,
+            "vatRate": 0,
+            "taxRate": 0,
+            "remarks": "২য় সর্বোচ্চ"
+          },
+          {
+            "nameAndAddress": "ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি",
+            "unitPrice": 4050,
+            "qty": 6,
+            "totalPrice": 24300,
+            "vatRate": 0,
+            "taxRate": 0,
+            "remarks": "সর্বোচ্চ"
+          }
+        ]
+      }
+    ],
+    "supportingDocument": "",
+    "applicant": {
+      "type": "OwnOffice",
+      "name": "মোহাম্মদ কামরুল হাসান",
+      "designation": "আঞ্চলিক ব্যবস্থাপক",
+      "officeId": "off-ho"
+    },
+    "entryOfficer": {
+      "name": "মোহাম্মদ কামরুল হাসান",
+      "designation": "আঞ্চলিক ব্যবস্থাপক",
+      "officeId": "off-ho",
+      "userId": "usr-1",
+      "dateTime": "2026-09-04 11:28:02"
+    },
+    "debitAccount": "১৩৪/০৫",
+    "paymentType": "একক সরবরাহকারী",
+    "branchEntries": [
+      {
+        "branchOfficeId": "off-bo-1",
+        "branchName": "কাপ্তাই শাখা (3301)",
+        "itemIndex": 0,
+        "itemDescription": "০৫ (পাঁচ) টি লেজার প্রিন্টার",
+        "model": "Laser Printer (Network Enabled)",
+        "qty": 5,
+        "unit": "টি",
+        "amount": 90000
+      },
+      {
+        "branchOfficeId": "off-bo-4",
+        "branchName": "রাজস্থলী শাখা (3304)",
+        "itemIndex": 1,
+        "itemDescription": "০৬ (ছয়) টি ইউপিএস (1200ভিএ)",
+        "model": "1200VA Offline UPS",
+        "qty": 6,
+        "unit": "টি",
+        "amount": 22800
+      }
+    ]
+  },
+  {
+    "id": "exp-1788848960121",
+    "financialYearId": "fy-3",
+    "officeId": "off-ho",
+    "categoryId": "cat-38",
+    "expenseType": "General",
+    "quotationFormType": "Form1",
+    "expenseDate": "2026-09-07",
+    "amount": 260,
+    "baseAmount": 260,
+    "vatRate": 0,
+    "vatAmount": 0,
+    "taxRate": 0,
+    "taxAmount": 0,
+    "netPayable": 260,
+    "grossAmount": 260,
+    "voucherNo": "বিবিধ/26-27/386",
+    "voucherDate": "2026-09-07",
+    "description": "ফেরি পাড়াপাড় খরচ",
+    "status": "Approved",
+    "noteSheetId": "ns-1788854133656",
+    "hasStockChalan": "না",
+    "memoForwardingNo": "",
+    "memoSupplyOrderNo": "",
+    "applicant": {
+      "type": "OwnOffice",
+      "name": "জনাব মো: এনামুল হক",
+      "designation": "গাড়ী চালক",
+      "officeId": "off-ho"
+    },
+    "entryOfficer": {
+      "name": "Mr. Admin (HO)",
+      "designation": "Director",
+      "officeId": "off-ho",
+      "userId": "usr-1",
+      "dateTime": "2026-09-09 16:05:07"
+    },
+    "debitAccount": "১৩৩/৩৬ (সি)",
+    "paymentType": "একক সরবরাহকারী",
+    "supportingDocument": "",
+    "branchEntries": []
+  },
+  {
+    "id": "exp-1788968856863",
+    "financialYearId": "fy-3",
+    "officeId": "off-ho",
+    "categoryId": "cat-2",
+    "expenseType": "Quotation",
+    "quotationFormType": "Form2",
+    "expenseDate": "2026-09-09",
+    "amount": 16537,
+    "baseAmount": 16537,
+    "vatRate": 10,
+    "vatAmount": 1653.7,
+    "taxRate": 5,
+    "taxAmount": 826.85,
+    "voucherNo": "প্রশা-1(14)/2026-2027/",
+    "voucherDate": "2026-09-09",
+    "description": "সঞ্চয়ী হিসাব জমা বই (1000 টি), আমানত লিফলেট (3000 টি)",
+    "remarks": "",
+    "supportingDocument": "",
+    "applicant": {
+      "type": "OwnOffice",
+      "name": "Mr. Admin (HO)",
+      "designation": "Director",
+      "officeId": "off-ho"
+    },
+    "entryOfficer": {
+      "name": "Mr. Admin (HO)",
+      "designation": "Director",
+      "officeId": "off-ho",
+      "userId": "usr-1",
+      "dateTime": "2026-09-09 15:47:34"
+    },
+    "hasStockChalan": "না",
+    "vatChalanNo": "",
+    "vatChalanDate": "",
+    "quotationItems": [
+      {
+        "itemDescription": "সঞ্চয়ী হিসাব জমা বই",
+        "specification": "",
+        "qty": 1000,
+        "unit": "টি",
+        "unitPrice": 8.15,
+        "totalPrice": 8150,
+        "vatRate": 10,
+        "taxRate": 5,
+        "remarks": "২য় সর্বোচ্চ দরদাতা",
+        "suppliers": [
+          {
+            "nameAndAddress": "সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।",
+            "unitPrice": 8.15,
+            "qty": 1000,
+            "totalPrice": 8150,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "২য় সর্বোচ্চ দরদাতা"
+          },
+          {
+            "nameAndAddress": "রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।",
+            "unitPrice": 8.08,
+            "qty": 1000,
+            "totalPrice": 8080,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "সর্বনিম্ন দরদাতা"
+          },
+          {
+            "nameAndAddress": "জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।",
+            "unitPrice": 8.2,
+            "qty": 1000,
+            "totalPrice": 8200,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "সর্বোচ্চ দরদাতা"
+          }
+        ]
+      },
+      {
+        "itemDescription": "আমানত লিফলেট",
+        "specification": "",
+        "qty": 3000,
+        "unit": "টি",
+        "unitPrice": 2.15,
+        "totalPrice": 6450,
+        "vatRate": 10,
+        "taxRate": 5,
+        "remarks": "২য় সর্বোচ্চ দরদাতা",
+        "suppliers": [
+          {
+            "nameAndAddress": "সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।",
+            "unitPrice": 2.15,
+            "qty": 3000,
+            "totalPrice": 6450,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "২য় সর্বোচ্চ দরদাতা"
+          },
+          {
+            "nameAndAddress": "রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।",
+            "unitPrice": 2.1,
+            "qty": 3000,
+            "totalPrice": 6300,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "সর্বনিম্ন দরদাতা"
+          },
+          {
+            "nameAndAddress": "জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।",
+            "unitPrice": 2.2,
+            "qty": 3000,
+            "totalPrice": 6600,
+            "vatRate": 10,
+            "taxRate": 5,
+            "remarks": "সর্বোচ্চ দরদাতা"
+          }
+        ]
+      }
+    ],
+    "branchEntries": [],
+    "debitAccount": "৪১/৮৬",
+    "paymentType": "একক সরবরাহকারী",
+    "memoSupplyOrderNo": "সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/",
+    "memoForwardingNo": "সূত্র নং-কশি-০৬ (অংশ-০৩)/২০২৬-২০২৭/",
+    "quotationDate": "2026-09-09",
+    "supplyRecipientName": "জনাব মোজাম্মেল হক",
+    "supplyRecipientDesignation": "প্রোপ্রাইটর",
+    "supplyRecipientOrgName": "রঙতুলি প্রেস",
+    "supplyRecipientAddress1": "বনরূপা",
+    "supplyRecipientAddress2": "রাঙ্গামাটি।",
+    "supplierOrg1": "সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।",
+    "supplierOrg2": "রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।",
+    "supplierOrg3": "জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।",
+    "status": "Pending",
+    "netPayable": 14056.45,
+    "grossAmount": 16537,
+    "noteSheetId": "ns-1788968856938"
+  }
+]

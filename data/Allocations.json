@@ -1,0 +1,28 @@
+[
+  {
+    "id": "alc-1788542243860",
+    "financialYearId": "fy-3",
+    "officeId": "off-ho",
+    "categoryId": "cat-43",
+    "type": "Initial",
+    "allocatedAmount": 200000,
+    "date": "2026-09-04",
+    "referenceNo": "কম্পিউ-6/26-27/285",
+    "allocatedBy": "usr-1",
+    "remarks": "কম্পিউটার ও কম্পিউটার সামগ্রী ক্রয় বাবদ বাজেট বরাদ্দ",
+    "userId": "usr-1"
+  },
+  {
+    "id": "alc-1788854100000",
+    "financialYearId": "fy-3",
+    "officeId": "off-ho",
+    "categoryId": "cat-38",
+    "type": "Initial",
+    "allocatedAmount": 40000,
+    "date": "2026-09-07",
+    "referenceNo": "বিবিধ/26-27/386",
+    "allocatedBy": "usr-1",
+    "remarks": "বিবিধ (সাধারণ) খাতে বাজেট বরাদ্দ",
+    "userId": "usr-1"
+  }
+]

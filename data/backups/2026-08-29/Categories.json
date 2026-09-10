@@ -1,0 +1,50 @@
+[
+  {
+    "id": "cat-1",
+    "code": "CAT-101",
+    "name": "Salary & Allowances",
+    "description": "Staff salaries, festival bonuses, allowances",
+    "budgetHead": "Revenue-101",
+    "status": "Active"
+  },
+  {
+    "id": "cat-2",
+    "code": "CAT-102",
+    "name": "Office Rent & Utilities",
+    "description": "Building rent, electricity, water, gas, internet",
+    "budgetHead": "Revenue-102",
+    "status": "Active"
+  },
+  {
+    "id": "cat-3",
+    "code": "CAT-201",
+    "name": "Stationery & Printing",
+    "description": "Paper, toner, office supplies, printing press",
+    "budgetHead": "Supplies-201",
+    "status": "Active"
+  },
+  {
+    "id": "cat-4",
+    "code": "CAT-301",
+    "name": "Repair & Maintenance",
+    "description": "Computer repair, AC maintenance, vehicle repair",
+    "budgetHead": "Maintenance-301",
+    "status": "Active"
+  },
+  {
+    "id": "cat-5",
+    "code": "CAT-401",
+    "name": "Travel & Conveyance",
+    "description": "Official tours, fuel, vehicle rent, TA/DA",
+    "budgetHead": "Travel-401",
+    "status": "Active"
+  },
+  {
+    "id": "cat-6",
+    "code": "CAT-501",
+    "name": "Training & Seminar",
+    "description": "Staff capacity building, workshop expenses",
+    "budgetHead": "Development-501",
+    "status": "Active"
+  }
+]

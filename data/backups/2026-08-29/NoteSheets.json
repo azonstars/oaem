@@ -1,0 +1,35 @@
+[
+  {
+    "id": "ns-1",
+    "financialYearId": "fy-2",
+    "officeId": "off-sub1",
+    "title": "Approval for July 2025 Staff Salary Disbursement",
+    "content": "Subject: Sanction of fund for July 2025 staff salaries amounting to BDT 125,000 against approved allocation under Salary & Allowances.",
+    "status": "Approved",
+    "createdBy": "usr-2",
+    "createdAt": "2025-08-04",
+    "pdfPath": "/docs/notesheet-1.pdf"
+  },
+  {
+    "id": "ns-2",
+    "financialYearId": "fy-2",
+    "officeId": "off-sub1",
+    "title": "Payment of Monthly Electricity Bill",
+    "content": "Subject: Sanction of BDT 25,000 for office electricity bill for July 2025.",
+    "status": "Approved",
+    "createdBy": "usr-2",
+    "createdAt": "2025-08-09",
+    "pdfPath": "/docs/notesheet-2.pdf"
+  },
+  {
+    "id": "ns-3",
+    "financialYearId": "fy-2",
+    "officeId": "off-sub2",
+    "title": "Procurement of Office Stationery Items",
+    "content": "Subject: Purchase of emergency printing supplies and A4 papers for Sylhet Branch.",
+    "status": "Pending",
+    "createdBy": "usr-3",
+    "createdAt": "2025-08-11",
+    "pdfPath": "/docs/notesheet-3.pdf"
+  }
+]

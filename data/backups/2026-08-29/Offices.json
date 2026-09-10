@@ -1,0 +1,37 @@
+[
+  {
+    "id": "off-ho",
+    "name": "Head Office (Dhaka)",
+    "type": "HeadOffice",
+    "code": "HO-01",
+    "address": "Motijheel, Dhaka",
+    "status": "Active"
+  },
+  {
+    "id": "off-sub1",
+    "name": "Chittagong Regional Office",
+    "type": "SubOffice",
+    "code": "SUB-CTG",
+    "address": "Agrabad, Chittagong",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-sub2",
+    "name": "Sylhet Branch Office",
+    "type": "SubOffice",
+    "code": "SUB-SYL",
+    "address": "Zindabazar, Sylhet",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  },
+  {
+    "id": "off-sub3",
+    "name": "Rajshahi Division Office",
+    "type": "SubOffice",
+    "code": "SUB-RAJ",
+    "address": "Boalia, Rajshahi",
+    "parentOfficeId": "off-ho",
+    "status": "Active"
+  }
+]

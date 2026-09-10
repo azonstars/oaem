@@ -1,0 +1,434 @@
+[
+  {
+    "id": "al-1789015334952",
+    "timestamp": "2026-09-10 04:42:14",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "722e54ed681ceaaa2348e451a3b85fd0a6e353f54f07eb3693eca23905f4aec9"
+  },
+  {
+    "id": "al-1789014639565",
+    "timestamp": "2026-09-10 04:30:39",
+    "userId": "mgrrangamati",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "f72b63c37e57ef74af36742c8ff01a548ed28bd181d8a9ae535c36050c5b1d1d"
+  },
+  {
+    "id": "al-1789014626928",
+    "timestamp": "2026-09-10 04:30:26",
+    "userId": "rmo_modarator",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "2768beb7aa2941e0f58ffbb697b8e72ae88e0d79349a7d827d2863751e11687e"
+  },
+  {
+    "id": "al-1789014614342",
+    "timestamp": "2026-09-10 04:30:14",
+    "userId": "rmo_moderator",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "ac0957ad3768612325a910142c70ce830babdbf437c661b00c7968882b2d454a"
+  },
+  {
+    "id": "al-1788950531796",
+    "timestamp": "2026-09-09 10:42:11",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "256a09afde361a8ac77be3505c8de92ecdc22d2454d1fcd78bb557f809e38418"
+  },
+  {
+    "id": "al-1788949374318",
+    "timestamp": "2026-09-09 10:22:54",
+    "userId": "usr-1",
+    "action": "UPDATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-43",
+    "details": "Updated record cat-43 in Categories",
+    "prevHash": "2f70f40671d7c44ce947ab7fce0b0de3bec82716890fd56aba5162c82125a9a2"
+  },
+  {
+    "id": "al-1788949374304",
+    "timestamp": "2026-09-09 10:22:54",
+    "userId": "usr-1",
+    "action": "UPDATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-43",
+    "details": "Updated record cat-43 in Categories",
+    "prevHash": "ed7c0633c1245dcce437ec337ac9fb284a420200e40ebf33ed4aaab3108108bf"
+  },
+  {
+    "id": "al-1788948402649",
+    "timestamp": "2026-09-09 10:06:42",
+    "userId": "usr-1",
+    "action": "UPDATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-21",
+    "details": "Updated record cat-21 in Categories",
+    "prevHash": "f2b25c746be54cc3dd8aa21a696a254b4161fc38f4f14bb2730fa165beec8a6c"
+  },
+  {
+    "id": "al-1788948373012",
+    "timestamp": "2026-09-09 10:06:13",
+    "userId": "usr-1",
+    "action": "UPDATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-16",
+    "details": "Updated record cat-16 in Categories",
+    "prevHash": "36f4a40b1cf8459491830c49a49385c9a8c7c123d4901be0688399f03ea752d1"
+  },
+  {
+    "id": "al-1788948367712",
+    "timestamp": "2026-09-09 10:06:07",
+    "userId": "usr-1",
+    "action": "UPDATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-16",
+    "details": "Updated record cat-16 in Categories",
+    "prevHash": "5128c1e242516d6dc3889b525316f811767f5b58a69f2ddc5b829dcc45633fbc"
+  },
+  {
+    "id": "al-1787937419362",
+    "timestamp": "2026-08-28 17:16:59",
+    "userId": "usr-1",
+    "action": "RESET_PASSWORD",
+    "tableName": "Users",
+    "recordId": "usr-3",
+    "details": "Admin usr-1 reset password for user syl_manager",
+    "prevHash": "da75fe46421cc6e8edd38751aa4b8cd9e1bfe1a5d8c53c415f32fc76e900c1a2"
+  },
+  {
+    "id": "al-1787768852307",
+    "timestamp": "2026-08-26 18:27:32",
+    "userId": "usr-1",
+    "action": "DELETE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "1",
+    "details": "Deleted record 1 from Allocations"
+  },
+  {
+    "id": "al-1787768047137",
+    "timestamp": "2026-08-26 18:14:07",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787768047137",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787768046932",
+    "timestamp": "2026-08-26 18:14:06",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787768046931",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767978958",
+    "timestamp": "2026-08-26 18:12:58",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767978958",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767978718",
+    "timestamp": "2026-08-26 18:12:58",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767978717",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767517140",
+    "timestamp": "2026-08-26 18:05:17",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767517140",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767516843",
+    "timestamp": "2026-08-26 18:05:16",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767516843",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767516711",
+    "timestamp": "2026-08-26 18:05:16",
+    "userId": "usr-1",
+    "action": "CREATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-1787767516710",
+    "details": "Created record in Categories"
+  },
+  {
+    "id": "al-1787767454103",
+    "timestamp": "2026-08-26 18:04:14",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767454102",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767305906",
+    "timestamp": "2026-08-26 18:01:45",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767305905",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767305600",
+    "timestamp": "2026-08-26 18:01:45",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787767305599",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787767305474",
+    "timestamp": "2026-08-26 18:01:45",
+    "userId": "usr-1",
+    "action": "CREATE_CATEGORIES",
+    "tableName": "Categories",
+    "recordId": "cat-1787767305474",
+    "details": "Created record in Categories"
+  },
+  {
+    "id": "al-1787765407552",
+    "timestamp": "2026-08-26 17:30:07",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787765407552",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787765344808",
+    "timestamp": "2026-08-26 17:29:04",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787765344808",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1787764263639",
+    "timestamp": "2026-08-26 17:11:03",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1787764263639",
+    "details": "Created record in Allocations"
+  },
+  {
+    "id": "al-1",
+    "timestamp": "2025-07-10 10:30:00",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATION",
+    "tableName": "Allocations",
+    "recordId": "alc-1",
+    "details": "Allocated 1,500,000 BDT to Chittagong for Salary"
+  },
+  {
+    "id": "al-2",
+    "timestamp": "2025-08-04 14:15:00",
+    "userId": "usr-2",
+    "action": "CREATE_EXPENSE",
+    "tableName": "Expenses",
+    "recordId": "exp-1",
+    "details": "Submitted expense 125,000 BDT for Chittagong"
+  },
+  {
+    "id": "al-3",
+    "timestamp": "2025-08-05 11:00:00",
+    "userId": "usr-1",
+    "action": "APPROVE_EXPENSE",
+    "tableName": "Expenses",
+    "recordId": "exp-1",
+    "details": "Approved expense exp-1 and NoteSheet ns-1"
+  },
+  {
+    "id": "al-1788544490687",
+    "timestamp": "2026-09-04 17:54:50",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "79be813f9621a39de4d8ef65d08a3c1d0b30b363246cf6a76f71cc63ac149a63"
+  },
+  {
+    "id": "al-1788543972182",
+    "timestamp": "2026-09-04 17:46:12",
+    "userId": "usr-1",
+    "action": "UPDATE_EXPENSES",
+    "tableName": "Expenses",
+    "recordId": "exp-1788448426169",
+    "details": "Updated expense exp-1788448426169. Old: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":130870,\"baseAmount\":130870,\"vatRate\":10,\"vatAmount\":13087,\"taxRate\":5,\"taxAmount\":6543.5,\"netPayable\":111239.5,\"grossAmount\":130870,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18200,\"totalPrice\":91000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18200,\"qty\":5,\"totalPrice\":91000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":6,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":22800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:43:05\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}, New: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":129720,\"baseAmount\":129720,\"vatRate\":10,\"vatAmount\":12972,\"taxRate\":5,\"taxAmount\":6486,\"netPayable\":110262,\"grossAmount\":129720,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18000,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18000,\"qty\":5,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":6,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":22800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:46:10\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}",
+    "prevHash": "abbe9d7f0a0d82fbbe79ef820e75330d5324006652da7694afb9ce1461edb1ad"
+  },
+  {
+    "id": "al-1788543786486",
+    "timestamp": "2026-09-04 17:43:06",
+    "userId": "usr-1",
+    "action": "UPDATE_EXPENSES",
+    "tableName": "Expenses",
+    "recordId": "exp-1788448426169",
+    "details": "Updated expense exp-1788448426169. Old: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":129720,\"baseAmount\":129720,\"vatRate\":10,\"vatAmount\":12972,\"taxRate\":5,\"taxAmount\":6486,\"netPayable\":110262,\"grossAmount\":129720,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18000,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18000,\"qty\":5,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":6,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":22800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:39:32\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}, New: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":130870,\"baseAmount\":130870,\"vatRate\":10,\"vatAmount\":13087,\"taxRate\":5,\"taxAmount\":6543.5,\"netPayable\":111239.5,\"grossAmount\":130870,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18200,\"totalPrice\":91000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18200,\"qty\":5,\"totalPrice\":91000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":6,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":22800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:43:05\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}",
+    "prevHash": "3cda84ff0536c61a908e4e6bf62dfea07eb7bba6667963f4a586dc17c087d0bb"
+  },
+  {
+    "id": "al-1788543574587",
+    "timestamp": "2026-09-04 17:39:34",
+    "userId": "usr-1",
+    "action": "UPDATE_EXPENSES",
+    "tableName": "Expenses",
+    "recordId": "exp-1788448426169",
+    "details": "Updated expense exp-1788448426169. Old: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":107870,\"baseAmount\":107870,\"vatRate\":10,\"vatAmount\":10787,\"taxRate\":5,\"taxAmount\":5393.5,\"netPayable\":91689.5,\"grossAmount\":107870,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18000,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18000,\"qty\":5,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":1,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":3800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:33:33\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}, New: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":129720,\"baseAmount\":129720,\"vatRate\":10,\"vatAmount\":12972,\"taxRate\":5,\"taxAmount\":6486,\"netPayable\":110262,\"grossAmount\":129720,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18000,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18000,\"qty\":5,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":6,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":22800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:39:32\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}",
+    "prevHash": "5d21e881195ae21d57e6397b6d069e1bb17a116f3e53135a9a8a0a2810054066"
+  },
+  {
+    "id": "al-1788543216307",
+    "timestamp": "2026-09-04 17:33:36",
+    "userId": "usr-1",
+    "action": "UPDATE_EXPENSES",
+    "tableName": "Expenses",
+    "recordId": "exp-1788448426169",
+    "details": "Updated expense exp-1788448426169. Old: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":103500,\"baseAmount\":103500,\"vatRate\":10,\"vatAmount\":9000,\"taxRate\":5,\"taxAmount\":4500,\"netPayable\":103500,\"grossAmount\":103500,\"voucherNo\":\"1\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"হ্যাঁ\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"প্রোপাইটার\",\"supplyRecipientDesignation\":\"স্বত্বাধিকারী\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":20700,\"totalPrice\":103500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20700,\"qty\":5,\"totalPrice\":103500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":22425,\"qty\":5,\"totalPrice\":112125,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":23000,\"qty\":5,\"totalPrice\":115000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]}]}, New: {\"id\":\"exp-1788448426169\",\"financialYearId\":\"fy-2\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-19\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form1\",\"expenseDate\":\"2026-09-03\",\"amount\":107870,\"baseAmount\":107870,\"vatRate\":10,\"vatAmount\":10787,\"taxRate\":5,\"taxAmount\":5393.5,\"netPayable\":91689.5,\"grossAmount\":107870,\"voucherNo\":\"কম্পিউ-6/26-27/\",\"voucherDate\":\"2026-09-03\",\"description\":\"৫ টি লেজার প্রিন্টার\",\"status\":\"Pending\",\"noteSheetId\":\"ns-1788448426183\",\"hasStockChalan\":\"না\",\"memoForwardingNo\":\"কম্পিউ-6/26-27/285\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-03\",\"supplierOrg1\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"supplierOrg2\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"supplierOrg3\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"supplyRecipientName\":\"জনাব সুমন বিকাশ চাকমা\",\"supplyRecipientDesignation\":\"সিইও\",\"supplyRecipientOrgName\":\"কম্পিউটার ভিলেজ\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"quotationItems\":[{\"itemDescription\":\"৫ টি লেজার প্রিন্টার\",\"specification\":\"Laser Printer (Network Enabled)\",\"qty\":5,\"unit\":\"টি\",\"unitPrice\":18000,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":18000,\"qty\":5,\"totalPrice\":90000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":19500,\"qty\":5,\"totalPrice\":97500,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":20000,\"qty\":5,\"totalPrice\":100000,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ\"}]},{\"itemDescription\":\"ইউপিএস (1200ভিএ)\",\"specification\":\"\",\"qty\":1,\"unit\":\"টি\",\"unitPrice\":3800,\"totalPrice\":3800,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"\",\"suppliers\":[{\"nameAndAddress\":\"কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3800,\"qty\":1,\"totalPrice\":3800,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বনিম্ন\"},{\"nameAndAddress\":\"কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":3900,\"qty\":1,\"totalPrice\":3900,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"২য় সর্বোচ্চ\"},{\"nameAndAddress\":\"ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি\",\"unitPrice\":4050,\"qty\":1,\"totalPrice\":4050,\"vatRate\":0,\"taxRate\":0,\"remarks\":\"সর্বোচ্চ\"}]}],\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-04 17:33:33\"},\"debitAccount\":\"CAT-1\",\"paymentType\":\"একক সরবরাহকারী\"}",
+    "prevHash": "7317fc80ee20f1f1219e62ed1a1798345f7744ee12bdcf55483ab3864f3862e4"
+  },
+  {
+    "id": "al-1788539377765",
+    "timestamp": "2026-09-04 16:29:37",
+    "userId": "usr-1",
+    "action": "UPDATE_NOTESHEETS",
+    "tableName": "NoteSheets",
+    "recordId": "ns-1788448426183",
+    "details": "Updated record ns-1788448426183 in NoteSheets",
+    "prevHash": "87f04a350724e7ae7fbe1ac803fb8e436bc1502ea0cfb1752afc14a8d29be68f"
+  },
+  {
+    "id": "al-1788539264638",
+    "timestamp": "2026-09-04 16:27:44",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "55ee7dff37561e9cadc1040f391a66a50f225ef43c638510d52dc99f1cfa186d"
+  },
+  {
+    "id": "al-1788427374792",
+    "timestamp": "2026-09-03 09:22:54",
+    "userId": "usr-1",
+    "action": "DELETE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1788427374776",
+    "details": "Deleted record all-1788427374776 from Allocations",
+    "prevHash": "20bab7f8eb9b4ae53d70812ef9aff7bc8c793b652cc73cb39604e34af4467b93"
+  },
+  {
+    "id": "al-1788427374777",
+    "timestamp": "2026-09-03 09:22:54",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1788427374776",
+    "details": "Created record in Allocations",
+    "prevHash": "a32d3876a88905af130f2b49e3ecb0d24afa0fe73d5c3b0af04421401c8d59b6"
+  },
+  {
+    "id": "al-1788427270682",
+    "timestamp": "2026-09-03 09:21:10",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "c52e36b5bdf1d1900bd7a5e5b3bb766b873a8f78b76abf9673dc66fc81dd558d"
+  },
+  {
+    "id": "al-1788427184637",
+    "timestamp": "2026-09-03 09:19:44",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "5a804d6981d56b98aeb3670cd9e462c929d76334de901f3ffc3ae12e87239087"
+  },
+  {
+    "id": "al-1788424291187",
+    "timestamp": "2026-09-03 08:31:31",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "3930be565a1f859e5ead27a6e358ddc7ed2c1bc29d3535f42748c5332f6d01f6"
+  },
+  {
+    "id": "al-1788424264331",
+    "timestamp": "2026-09-03 08:31:04",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "1bec05abab489c5dee8c66575767be2ff0a4e3289cf46a6438c7c57614487a27"
+  },
+  {
+    "id": "al-1788424225657",
+    "timestamp": "2026-09-03 08:30:25",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "ec342cef9b842464fd3f925437bcc83a6ab72505494585774eb3e0c436a44aa0"
+  },
+  {
+    "id": "al-1788424217839",
+    "timestamp": "2026-09-03 08:30:17",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  {
+    "id": "al-1788930943766",
+    "timestamp": "2026-09-09 05:15:43",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "b81248dbd7a0424b2484a89e8ae2ccdf7da0fc0a4932f5376e9261a06456e75b"
+  }
+]
