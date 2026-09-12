@@ -22,7 +22,6 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
       setError(language === "bn" ? "অনুগ্রহ করে ইউজার আইডি এবং পাসওয়ার্ড প্রদান করুন।" : "Please enter User ID and Password.");
       return;
     }
-
     setLoading(true);
     setError("");
 
@@ -33,6 +32,7 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
         body: JSON.stringify({ userId: userId.trim(), password })
       });
       const data = await res.json();
+      
       if (res.ok && data.success) {
         if (data.token) localStorage.setItem("govt_app_token", data.token);
         onLoginSuccess(data.user);
@@ -135,7 +135,6 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
           </button>
         </form>
       </div>
-
       <div className="mt-6 text-center text-xs text-slate-500">
         © 2026 Government Allocation & Expense System • Secure Access Control
       </div>
