@@ -1301,29 +1301,6 @@ export function ExpensesView({
                             </a>
                           </div>
                         )}
-                        <div className="mt-2">
-                          {exp.noteSheetId ? (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${
-                              isCustom
-                                ? "bg-emerald-950/40 text-emerald-300 border-emerald-800/50"
-                                : isDark
-                                ? "bg-emerald-900/30 text-emerald-400 border-emerald-800/40"
-                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            }`}>
-                              <FileText className="w-3 h-3" /> {t.noteSheetsTitle} ({t.generatedDirectly})
-                            </span>
-                          ) : (
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${
-                              isCustom
-                                ? "bg-amber-950/40 text-amber-300 border-amber-800/50"
-                                : isDark
-                                ? "bg-amber-900/30 text-amber-400 border-amber-800/40"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            }`}>
-                              <AlertTriangle className="w-3 h-3" /> {t.statPendingNoteSheets}
-                            </span>
-                          )}
-                        </div>
                       </td>
                       <td className="p-3.5 text-center">
                         {exp.status === "Pending" && (

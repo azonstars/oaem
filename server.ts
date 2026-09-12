@@ -1961,6 +1961,26 @@ app.post("/api/users/propose", requireAuth, async (req, res) => {
   }
 });
 
+
+app.get("/api/public/settings", (req, res) => {
+  try {
+    const settingsList = getSheetData("Settings");
+    const appSettings = (settingsList && settingsList.length > 0) ? settingsList[0] : null;
+    if (appSettings) {
+      res.json({
+        institutionName: appSettings.institutionName || "",
+        webAppName: appSettings.webAppName || "",
+        logoUrl: appSettings.logoUrl || "",
+        customThemeColor: appSettings.customThemeColor || ""
+      });
+    } else {
+      res.json({});
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { userId, password } = req.body;

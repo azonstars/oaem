@@ -1,5 +1,5 @@
 import { apiFetch } from "../api";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { User, SystemSettings } from "../types";
 import { ShieldCheck, Lock, User as UserIcon, LogIn, AlertCircle } from "lucide-react";
 import { useLanguage } from "../i18n";
@@ -15,6 +15,21 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const [publicSettings, setPublicSettings] = useState<Partial<SystemSettings>>({});
+  
+  useEffect(() => {
+    // Fetch public settings on mount
+    apiFetch("/api/public/settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setPublicSettings(data);
+        }
+      })
+      .catch(err => console.error("Failed to load public settings", err));
+  }, []);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +61,10 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
     }
   };
 
+  const effectiveLogo = publicSettings?.logoUrl || systemSettings?.logoUrl;
+  const effectiveInstitution = publicSettings?.institutionName || systemSettings?.institutionName || (language === "bn" ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার" : "Government of Bangladesh");
+  const effectiveAppName = publicSettings?.webAppName || systemSettings?.webAppName || (language === "bn" ? "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম" : "Office Allocation & Expense Management System");
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-sky-950 flex flex-col items-center justify-center p-4 text-slate-100">
       
@@ -66,17 +85,17 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
 
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg border border-emerald-400/30">
-            {systemSettings?.logoUrl ? (
-              <img src={systemSettings.logoUrl} alt="Logo" className="w-12 h-12 object-contain rounded-xl" />
+            {effectiveLogo ? (
+              <img src={effectiveLogo} alt="Logo" className="w-12 h-12 object-contain rounded-xl" />
             ) : (
               <ShieldCheck className="w-8 h-8" />
             )}
           </div>
           <h1 className="text-xl font-bold tracking-tight text-white">
-            {systemSettings?.institutionName || (language === "bn" ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার" : "Government of Bangladesh")}
+            {effectiveInstitution}
           </h1>
           <p className="text-xs text-sky-400 font-medium mt-1">
-            {systemSettings?.webAppName || (language === "bn" ? "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম" : "Office Allocation & Expense Management System")}
+            {effectiveAppName}
           </p>
           <div className="mt-3 inline-block bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded-full border border-slate-700 font-mono">
             🔐 {language === "bn" ? "নিরাপদ অভ্যন্তরীণ লগইন পোর্টাল" : "Secure Internal Login Portal"}

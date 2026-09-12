@@ -467,7 +467,35 @@ export function SettingsView({
     }
   };
 
+  
+  const handleDeleteUser = async (user: User) => {
+    if (user.id === currentUser?.id) {
+      alert(language === "bn" ? "আপনি নিজের আইডি ডিলিট করতে পারবেন না।" : "You cannot delete your own ID.");
+      return;
+    }
+    const confirmDelete = window.confirm(
+      language === "bn" 
+        ? `আপনি কি সত্যিই "${user.name || user.userId}" ডিলিট করতে চান?` 
+        : `Are you sure you want to delete "${user.name || user.userId}"?`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const res = await apiFetch(`/api/users/${user.id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        refreshData();
+      } else {
+        alert(language === "bn" ? "ডিলিট করতে সমস্যা হয়েছে।" : "Failed to delete user.");
+      }
+    } catch (err) {
+      alert("Error deleting user.");
+    }
+  };
+
   const handleToggleUserStatus = async (user: User) => {
+
     try {
       const res = await apiFetch(`/api/users/${user.id}`, {
         method: "PUT",
@@ -837,7 +865,7 @@ export function SettingsView({
                 </p>
               </div>
               <button 
-                onClick={() => { setEditingFy(null); setShowAddFyModal(true); }}
+                onClick={() => setShowAddFyModal(true)}
                 className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
                   isOcean ? "bg-sky-600 hover:bg-sky-500" : "bg-emerald-600 hover:bg-emerald-500"
                 }`}
@@ -1290,6 +1318,7 @@ export function SettingsView({
                                 >
                                   <KeyRound className="w-3 h-3" /> Reset
                                 </button>
+                                
                                 <button 
                                   onClick={() => handleToggleUserStatus(u)}
                                   className="px-2 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition"
@@ -1297,6 +1326,14 @@ export function SettingsView({
                                 >
                                   {u.status === 'Inactive' ? 'Activate' : 'Deactivate'}
                                 </button>
+                                <button
+                                  onClick={() => handleDeleteUser(u)}
+                                  className="p-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/20 transition"
+                                  title={language === "bn" ? "ডিলিট করুন" : "Delete"}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+
                               </>
                             )}
                           </div>
