@@ -87,7 +87,7 @@ export function ChangePasswordModal({
               : "Failed to change password."),
         );
       }
-    } catch (err) {
+    } catch {
       setError(
         language === "bn"
           ? "সার্ভার সংযোগে ত্রুটি হয়েছে।"

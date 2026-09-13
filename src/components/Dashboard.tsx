@@ -13,15 +13,11 @@ import {
 import {
   DollarSign,
   Receipt,
-  FileText,
   TrendingUp,
   AlertCircle,
   ArrowRightLeft,
   Clock,
   ShieldAlert,
-  Code,
-  Phone,
-  MapPin,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -34,7 +30,7 @@ interface DashboardProps {
   financialYears: FinancialYear[];
   selectedFY: string;
   currentUser: User;
-  noteSheets: NoteSheet[];
+  noteSheets?: NoteSheet[];
   systemSettings?: SystemSettings | null;
   setCurrentTab: (tab: string) => void;
   onNavigateExpenses?: (
@@ -51,11 +47,11 @@ export function Dashboard({
   financialYears,
   selectedFY,
   currentUser,
-  noteSheets,
+  noteSheets: _noteSheets,
   systemSettings,
   setCurrentTab,
   onNavigateExpenses,
-  onOpenAbout,
+  onOpenAbout: _onOpenAbout,
 }: DashboardProps) {
   const { t, language, formatCurrency, formatNumber } = useLanguage();
   const { theme, isCustom } = useTheme();
@@ -79,14 +75,6 @@ export function Dashboard({
     const matchOffice = isHeadOffice
       ? true
       : e.officeId === currentUser.officeId;
-    return matchFY && matchOffice;
-  });
-
-  const filteredNoteSheets = noteSheets.filter((n) => {
-    const matchFY = n.financialYearId === selectedFY;
-    const matchOffice = isHeadOffice
-      ? true
-      : n.officeId === currentUser.officeId;
     return matchFY && matchOffice;
   });
 
@@ -127,9 +115,6 @@ export function Dashboard({
     totalAllocated > 0
       ? Math.min(100, Math.round((totalSpent / totalAllocated) * 100))
       : 0;
-  const pendingNoteSheetsCount = filteredExpenses.filter(
-    (e) => !e.noteSheetId,
-  ).length;
 
   // Category breakdown
   const categorySummary = categories

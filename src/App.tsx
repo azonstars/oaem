@@ -68,7 +68,7 @@ export default function App() {
     try {
       const saved = localStorage.getItem("govt_app_user");
       return saved ? JSON.parse(saved) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   });
@@ -331,20 +331,6 @@ export default function App() {
     refreshLogs();
   };
 
-  const handleUpdateNoteSheetStatus = async (
-    id: string,
-    status: "Approved" | "Rejected",
-  ) => {
-    const res = await apiFetch(`/api/notesheets/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, userId: currentUser.id }),
-    });
-    const updated = await res.json();
-    setNoteSheets((prev) => prev.map((n) => (n.id === id ? updated : n)));
-    refreshLogs();
-  };
-
   const handleDeleteNoteSheet = async (id: string) => {
     await apiFetch(`/api/notesheets/${id}`, { method: "DELETE" });
     setNoteSheets((prev) => prev.filter((n) => n.id !== id));
@@ -412,7 +398,7 @@ export default function App() {
 
   return (
     <div
-      className={`h-screen w-full overflow-hidden flex font-sans ${isCustom ? "bg-[#0d091a]" : isDark ? "bg-slate-950" : "bg-slate-50"}`}
+      className={`h-screen w-full overflow-hidden flex font-sans print:h-auto print:w-full print:overflow-visible print:block print:bg-white ${isCustom ? "bg-[#0d091a]" : isDark ? "bg-slate-950" : "bg-slate-50"}`}
     >
       {systemSettings?.customThemeColor && isCustom && (
         <style>{`
@@ -439,31 +425,35 @@ export default function App() {
           }
         `}</style>
       )}
-      <Sidebar
-        currentTab={currentTab}
-        setCurrentTab={setCurrentTab}
-        currentUser={currentUser}
-        systemSettings={systemSettings}
-        isMobileMenuOpen={isMobileMenuOpen}
-        setIsMobileMenuOpen={setIsMobileMenuOpen}
-      />
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
-        <Header
-          financialYears={financialYears}
-          selectedFY={selectedFY}
-          setSelectedFY={setSelectedFY}
+      <div className="print:hidden">
+        <Sidebar
+          currentTab={currentTab}
+          setCurrentTab={setCurrentTab}
           currentUser={currentUser}
-          offices={offices}
           systemSettings={systemSettings}
-          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          onOpenAbout={() => setIsAboutOpen(true)}
-          onLogout={() => setCurrentUser(null)}
-          onChangePassword={() => setIsChangePasswordOpen(true)}
-          onOpenProposeUser={() => setIsProposeUserOpen(true)}
+          isMobileMenuOpen={isMobileMenuOpen}
+          setIsMobileMenuOpen={setIsMobileMenuOpen}
         />
+      </div>
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden print:h-auto print:w-full print:overflow-visible print:block">
+        <div className="print:hidden">
+          <Header
+            financialYears={financialYears}
+            selectedFY={selectedFY}
+            setSelectedFY={setSelectedFY}
+            currentUser={currentUser}
+            offices={offices}
+            systemSettings={systemSettings}
+            onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onOpenAbout={() => setIsAboutOpen(true)}
+            onLogout={() => setCurrentUser(null)}
+            onChangePassword={() => setIsChangePasswordOpen(true)}
+            onOpenProposeUser={() => setIsProposeUserOpen(true)}
+          />
+        </div>
 
         <main
-          className={`flex-1 w-full overflow-y-auto flex flex-col ${
+          className={`flex-1 w-full overflow-y-auto flex flex-col print:h-auto print:w-full print:overflow-visible print:block print:bg-white ${
             isCustom
               ? "bg-[#0d091a] text-purple-100"
               : isDark
@@ -471,7 +461,7 @@ export default function App() {
                 : "bg-slate-50 text-slate-900"
           }`}
         >
-          <div className="flex-1 w-full max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex flex-col">
+          <div className="flex-1 w-full max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex flex-col print:p-0 print:m-0 print:max-w-none print:w-full print:block">
             {currentTab === "dashboard" && (
               <Dashboard
                 allocations={allocations}

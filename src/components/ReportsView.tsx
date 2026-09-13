@@ -347,9 +347,9 @@ export function ReportsView({
     }
 
     return (
-      <table className="w-full text-left border-collapse text-[11px]">
+      <table className="w-full text-left border-collapse text-[11px] sm:text-xs">
         <thead>
-          <tr className="bg-white border-b-2 border-slate-300 text-slate-800 uppercase tracking-wider font-bold">
+          <tr className="bg-white border-b-2 border-slate-400 text-slate-800 uppercase tracking-wider font-bold">
             {reportType !== "CATEGORY_WISE" && (
               <th className="p-3 align-bottom">অফিস</th>
             )}
@@ -361,13 +361,16 @@ export function ReportsView({
               <br />
               ব্যালেন্স
             </th>
-            <th className="p-3 text-center text-slate-600 align-bottom leading-tight">
+            <th className="p-3 text-center text-slate-700 align-bottom leading-tight">
               মূল বরাদ্দ
               <br />
               (INITIAL)
             </th>
-            <th className="p-3 text-center text-slate-600 align-bottom leading-tight">
-              অতিরিক্ত বরাদ্দ (ADDL.) /<br />
+            <th className="p-3 text-center text-slate-700 align-bottom leading-tight">
+              অতিরিক্ত বরাদ্দ (ADDL.)
+              <br />
+              /
+              <br />
               সমন্বয় (ADJUSTMENT)
             </th>
             <th className="p-3 text-center text-emerald-700 align-bottom leading-tight">
@@ -381,13 +384,15 @@ export function ReportsView({
               (EXPENSE)
             </th>
             <th className="p-3 text-center text-blue-700 align-bottom leading-tight">
-              অবশিষ্ট স্থিতি
+              অবশিষ্ট
+              <br />
+              স্থিতি
               <br />
               (BALANCE)
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 font-mono">
+        <tbody className="divide-y divide-slate-200 font-mono">
           {displayData.map((row, idx) => {
             const off =
               offices.find((o) => o.id === row.officeId)?.name ||
@@ -396,22 +401,22 @@ export function ReportsView({
               categories.find((c) => c.id === row.categoryId)?.name ||
               (row.categoryId === "ALL" ? t.allCategories : "");
             return (
-              <tr key={idx} className="hover:bg-slate-50 transition bg-white">
+              <tr key={idx} className="hover:bg-slate-50 transition bg-white border-b border-slate-200">
                 {reportType !== "CATEGORY_WISE" && (
                   <td className="p-3 font-sans font-medium text-slate-800">
                     {off}
                   </td>
                 )}
                 {reportType !== "OFFICE_WISE" && (
-                  <td className="p-3 font-sans text-slate-600">{cat}</td>
+                  <td className="p-3 font-sans text-slate-700">{cat}</td>
                 )}
                 <td className="p-3 text-center text-blue-700 font-semibold">
                   {formatCurrency(row.opening || 0)}
                 </td>
-                <td className="p-3 text-center text-slate-600">
+                <td className="p-3 text-center text-slate-700">
                   {formatCurrency(row.initial)}
                 </td>
-                <td className="p-3 text-center text-slate-600">
+                <td className="p-3 text-center text-slate-700">
                   {row.additional + row.adjustment > 0 ? "+" : ""}
                   {formatCurrency(row.additional + row.adjustment)}
                 </td>
@@ -432,7 +437,7 @@ export function ReportsView({
           {displayData.length === 0 && (
             <tr>
               <td
-                colSpan={7}
+                colSpan={8}
                 className="p-8 text-center text-slate-400 font-sans"
               >
                 No data found for selected filters.
@@ -656,64 +661,100 @@ export function ReportsView({
     );
   };
 
-  const renderPrintHeader = () => (
-    <div className="hidden print:flex flex-col items-center justify-center mb-6 w-full text-center">
-      <div className="flex items-center justify-center gap-4 mb-3">
-        {systemSettings?.logoUrl ? (
-          <img
-            src={systemSettings.logoUrl}
-            alt="Logo"
-            className="w-16 h-16 object-contain"
-            referrerPolicy="no-referrer"
-          />
-        ) : (
-          <div className="w-14 h-14 rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold border-2 border-emerald-900">
-            BD
+  const renderPrintHeader = () => {
+    const selectedOfficeName = filterOffice
+      ? offices.find((o) => o.id === filterOffice)?.name
+      : "All Offices";
+
+    return (
+      <div
+        className="hidden print:flex flex-col items-center justify-center mb-6 w-full text-center report-print-header"
+        data-print-header="true"
+      >
+        <div className="flex items-center justify-center gap-4 mb-3">
+          {systemSettings?.logoUrl ? (
+            <img
+              src={systemSettings.logoUrl}
+              alt="Logo"
+              className="w-16 h-16 object-contain"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <svg
+              width="56"
+              height="56"
+              viewBox="0 0 100 100"
+              className="shrink-0"
+            >
+              <circle
+                cx="50"
+                cy="50"
+                r="46"
+                fill="none"
+                stroke="#006a4e"
+                strokeWidth="6"
+              />
+              <circle
+                cx="50"
+                cy="50"
+                r="38"
+                fill="none"
+                stroke="#006a4e"
+                strokeWidth="1.5"
+                strokeDasharray="3,2"
+              />
+              <path
+                d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82"
+                fill="none"
+                stroke="#006a4e"
+                strokeWidth="3"
+                strokeLinecap="round"
+              />
+              <circle cx="50" cy="22" r="3" fill="#f42a41" />
+            </svg>
+          )}
+          <div className="text-left">
+            <h1 className="text-xl font-bold text-slate-900 mb-0.5 tracking-tight">
+              {systemSettings?.institutionName ||
+                "বাংলাদেশ কৃষি ব্যাংক / BANGLADESH KRISHI BANK"}
+            </h1>
+            <p className="text-[13px] text-slate-700">
+              {systemSettings?.webAppName ||
+                "Office Allocation & Expense Management System"}
+            </p>
           </div>
-        )}
-        <div className="text-left">
-          <h1 className="text-xl font-bold text-slate-900 mb-0.5">
-            {systemSettings?.institutionName ||
-              "বাংলাদেশ কৃষি ব্যাংক / BANGLADESH KRISHI BANK"}
-          </h1>
-          <p className="text-[13px] text-slate-700">
-            {systemSettings?.webAppName ||
-              "Office Allocation & Expense Management System"}
-          </p>
         </div>
-      </div>
 
-      <div className="text-center w-full mt-2">
-        <h2 className="text-base font-bold text-slate-800 mb-1">
-          আর্থিক প্রতিবেদন ও হিসাব বিবরণী: CONSOLIDATED
-        </h2>
-        <div className="text-[12px] font-medium text-slate-600 flex justify-center items-center gap-2 mb-1">
-          <span>FY: {currentFYObj?.name || "All"}</span>
-          <span className="text-slate-400">|</span>
-          <span>
-            Office:{" "}
-            {filterOffice
-              ? offices.find((o) => o.id === filterOffice)?.name
-              : "All Offices"}
-          </span>
+        <div className="text-center w-full mt-1">
+          <h2 className="text-base font-bold text-slate-800 mb-1">
+            আর্থিক প্রতিবেদন ও হিসাব বিবরণী: {reportType.replace(/_/g, " ")}
+          </h2>
+          <div className="text-[12px] font-medium text-slate-700 flex justify-center items-center gap-2 mb-1">
+            <span>FY: {currentFYObj?.name || "2026-2027"}</span>
+            <span className="text-slate-400">|</span>
+            <span>Office: {selectedOfficeName}</span>
+          </div>
+          <div className="text-[12px] text-slate-600 flex justify-center items-center gap-2">
+            <span>
+              Generated by: {currentUser.name} ({currentUser.role})
+            </span>
+            <span className="text-slate-400">|</span>
+            <span>Date: {new Date().toLocaleDateString("en-US")}</span>
+          </div>
         </div>
-        <div className="text-[12px] text-slate-500 flex justify-center items-center gap-2">
-          <span>
-            Generated by: {currentUser.name} ({currentUser.role})
-          </span>
-          <span className="text-slate-300">|</span>
-          <span>Date: {new Date().toLocaleDateString()}</span>
-        </div>
-      </div>
 
-      <div className="w-full border-b-[3px] border-slate-900 mt-4 mb-2"></div>
-    </div>
-  );
+        <div className="w-full border-b-[3px] border-slate-900 mt-4 mb-4"></div>
+      </div>
+    );
+  };
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-140px)] print:h-auto print:block">
+    <div className="flex flex-col gap-4 h-[calc(100vh-140px)] print:h-auto print:block print:w-full print:m-0 print:p-0">
       {/* Top Filters */}
-      <div className="w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-4 print:hidden shrink-0 flex flex-col gap-3">
+      <div
+        data-no-print="true"
+        className="w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-4 print:hidden shrink-0 flex flex-col gap-3"
+      >
         <div className="flex items-center gap-1.5 mb-1">
           <Filter className="w-4 h-4 text-emerald-600" />
           <h3 className="font-bold text-slate-900 text-sm">
@@ -859,9 +900,12 @@ export function ReportsView({
       </div>
 
       {/* Main Report Area */}
-      <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden print:border-none print:shadow-none print:w-full">
+      <div className="flex-1 bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col overflow-hidden print:border-none print:shadow-none print:w-full print:overflow-visible print:rounded-none print:p-0 print:m-0">
         {/* Toolbar */}
-        <div className="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0 print:hidden">
+        <div
+          data-no-print="true"
+          className="p-3.5 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0 print:hidden"
+        >
           <div className="flex items-center gap-2">
             <div className="bg-emerald-600 p-1.5 rounded-lg text-white">
               <FileBarChart className="w-4 h-4" />
@@ -887,7 +931,7 @@ export function ReportsView({
         </div>
 
         {/* Report Content */}
-        <div className="flex-1 overflow-y-auto p-6 print:p-0 print:overflow-visible">
+        <div className="flex-1 overflow-y-auto p-6 print:p-0 print:m-0 print:overflow-visible print:w-full">
           {renderPrintHeader()}
 
           {reportType === "COMBINED_PDF" ? (

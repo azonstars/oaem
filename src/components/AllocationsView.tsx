@@ -10,7 +10,6 @@ import {
   SystemSettings,
 } from "../types";
 import {
-  DollarSign,
   Plus,
   Building2,
   Trash2,
@@ -21,11 +20,7 @@ import {
   FileDown,
   Edit2,
   Layers,
-  CheckCircle2,
-  Wallet,
-  TrendingDown,
   Printer,
-  ChevronDown,
   ChevronRight,
   Eye,
 } from "lucide-react";
@@ -64,8 +59,8 @@ export function AllocationsView({
   systemSettings,
   refreshData,
 }: AllocationsViewProps) {
-  const { t, formatCurrency, formatNumber, language } = useLanguage();
-  const { theme, isCustom, isDark } = useTheme();
+  const { t, formatCurrency, language } = useLanguage();
+  const { isCustom, isDark } = useTheme();
   const [showModal, setShowModal] = useState(false);
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<Allocation | null>(

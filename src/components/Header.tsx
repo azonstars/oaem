@@ -196,12 +196,13 @@ export function Header({
     n.toString().replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[parseInt(d)]);
 
   return (
-    <div className="sticky top-0 z-30 shrink-0 w-full">
+    <div className="sticky top-0 z-30 shrink-0 w-full print:hidden" data-no-print="true">
       {/* ========================================================================= */}
       {/* 1. MAIN PROFESSIONAL GOVERNMENT HEADER                                    */}
       {/* ========================================================================= */}
       <header
-        className={`min-h-[4.25rem] py-2 px-3 sm:px-5 shrink-0 transition-colors border-b flex items-center justify-between gap-2 sm:gap-3.5 ${
+        data-no-print="true"
+        className={`min-h-[4.25rem] py-2 px-3 sm:px-5 shrink-0 transition-colors border-b flex items-center justify-between gap-2 sm:gap-3.5 print:hidden ${
           isCustom
             ? "bg-[#161226] border-[#2e244d] text-purple-100 shadow-sm"
             : isDark

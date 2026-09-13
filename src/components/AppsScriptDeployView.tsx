@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 import {
   Copy,
   Check,
-  X,
   FileSpreadsheet,
   FileCode,
   Database,

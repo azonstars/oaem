@@ -27,7 +27,6 @@ import {
   Underline,
   Plus,
   Minus,
-  ChevronDown,
   Download,
   Copy,
   FileDown,

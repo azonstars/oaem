@@ -1,6 +1,6 @@
 import React from "react";
 import { AuditLog, User } from "../types";
-import { History, Shield, UserCheck } from "lucide-react";
+import { UserCheck } from "lucide-react";
 
 interface AuditLogsViewProps {
   auditLogs: AuditLog[];

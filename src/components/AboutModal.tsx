@@ -5,8 +5,6 @@ import {
   Phone,
   MapPin,
   ShieldCheck,
-  FileSpreadsheet,
-  Server,
   Layers,
 } from "lucide-react";
 import { SystemSettings } from "../types";

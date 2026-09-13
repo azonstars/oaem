@@ -156,7 +156,6 @@ export function ExpensesView({
   const [debitAccount, setDebitAccount] = useState(
     categories[0]?.code || "১৩৪/০৫",
   );
-  const [paymentType, setPaymentType] = useState("একক সরবরাহকারী");
   const [noteSheetId, setNoteSheetId] = useState("");
 
   // Form-2 Specific Recipient & Bidders State
@@ -403,7 +402,6 @@ export function ExpensesView({
     ]);
     setHasStockChalan("হ্যাঁ");
     setDebitAccount(categories[0]?.code || "১১৬/০১");
-    setPaymentType("একক সরবরাহকারী");
     setQuotationItems([
       {
         itemDescription: "",
@@ -482,7 +480,6 @@ export function ExpensesView({
     setExpenseType(exp.expenseType || "General");
     setQuotationFormType(exp.quotationFormType || "Form1");
     setDebitAccount(exp.debitAccount || categories[0]?.code || "১১৬/০১");
-    setPaymentType("একক সরবরাহকারী");
     if (exp.memoForwardingNo) setMemoForwardingNo(exp.memoForwardingNo);
     if (exp.memoSupplyOrderNo) setMemoSupplyOrderNo(exp.memoSupplyOrderNo);
     if (exp.quotationDate) setQuotationDate(exp.quotationDate);

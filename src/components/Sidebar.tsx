@@ -168,12 +168,13 @@ export function Sidebar({
     <>
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/50 z-40 md:hidden backdrop-blur-sm print:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
       <aside
-        className={`flex flex-col transition-all duration-300 ${
+        data-no-print="true"
+        className={`flex flex-col transition-all duration-300 print:hidden ${
           isCollapsed ? "w-20" : "w-64"
         } shrink-0 h-screen sticky top-0 z-50 md:z-20 border-r ${
           isMobileMenuOpen
