@@ -20,7 +20,40 @@ export interface Office {
   status: "Active" | "Inactive";
 }
 
-export type UserRole = "Super Admin" | "Head Office Admin" | "Head Office User" | "Sub-office User" | "Report Viewer";
+export type UserRole =
+  | "Super Admin"
+  | "Admin"
+  | "Moderator"
+  | "User"
+  | "Head Office Admin"
+  | "Head Office User"
+  | "Sub-office User"
+  | "Report Viewer";
+
+export function isSuperAdmin(role?: string): boolean {
+  return role === "Super Admin";
+}
+
+export function isAdmin(role?: string): boolean {
+  return (
+    role === "Super Admin" ||
+    role === "Admin" ||
+    role === "Head Office Admin" ||
+    role === "HeadOfficeAdmin"
+  );
+}
+
+export function isModerator(role?: string): boolean {
+  return role === "Moderator";
+}
+
+export function isStaffOrAdmin(role?: string): boolean {
+  return isAdmin(role) || isModerator(role);
+}
+
+export function isGeneralUser(role?: string): boolean {
+  return !isStaffOrAdmin(role);
+}
 
 export interface User {
   id: string;
@@ -212,7 +245,8 @@ export interface NoteTemplate {
   bodyTemplate: string;
 }
 
-export type ContentPosition = "TOP" | "UPPER_MIDDLE" | "CENTER" | "LOWER_MIDDLE" | "BOTTOM" | "CUSTOM";
+export type ContentPosition =
+  "TOP" | "UPPER_MIDDLE" | "CENTER" | "LOWER_MIDDLE" | "BOTTOM" | "CUSTOM";
 export type PageSize = "A4" | "Legal" | "Letter" | "Custom";
 export type PageOrientation = "portrait" | "landscape";
 export type TextAlign = "left" | "center" | "right" | "justify";

@@ -1,7 +1,36 @@
 import { apiFetch } from "../api";
 import React, { useState, useRef } from "react";
-import { SystemSettings, FinancialYear, Office, Category, User, UserRole } from "../types";
-import { Settings, Calendar, Folder, Users, Plus, Check, X, Building2, Save, Upload, Image as ImageIcon, Trash2, RefreshCw, KeyRound, Lock, AlertTriangle, Edit2, UserPlus, Mail, Briefcase, ShieldCheck } from "lucide-react";
+import {
+  SystemSettings,
+  FinancialYear,
+  Office,
+  Category,
+  User,
+  UserRole,
+} from "../types";
+import {
+  Settings,
+  Calendar,
+  Folder,
+  Users,
+  Plus,
+  Check,
+  X,
+  Building2,
+  Save,
+  Upload,
+  Image as ImageIcon,
+  Trash2,
+  RefreshCw,
+  KeyRound,
+  Lock,
+  AlertTriangle,
+  Edit2,
+  UserPlus,
+  Mail,
+  Briefcase,
+  ShieldCheck,
+} from "lucide-react";
 
 import { useTheme } from "../context/ThemeContext";
 import { useLanguage } from "../i18n";
@@ -23,17 +52,17 @@ interface SettingsViewProps {
   refreshData: () => void;
 }
 
-export function SettingsView({ 
-  activeTab = "general", 
-  systemSettings, 
-  financialYears, 
-  offices, 
-  categories, 
-  users, 
-  currentUser, 
+export function SettingsView({
+  activeTab = "general",
+  systemSettings,
+  financialYears,
+  offices,
+  categories,
+  users,
+  currentUser,
   allocations = [],
   expenses = [],
-  refreshData 
+  refreshData,
 }: SettingsViewProps) {
   const { theme } = useTheme();
   const { t, language } = useLanguage();
@@ -62,11 +91,15 @@ export function SettingsView({
   const [proposalEmail, setProposalEmail] = useState("");
   const [proposalDesignation, setProposalDesignation] = useState("");
   const [proposalLoading, setProposalLoading] = useState(false);
-  
+
   const submitProposal = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!proposalName.trim() || !proposalUserId.trim()) {
-      alert(language === "bn" ? "নাম এবং ইউজার আইডি আবশ্যক।" : "Name and User ID are required.");
+      alert(
+        language === "bn"
+          ? "নাম এবং ইউজার আইডি আবশ্যক।"
+          : "Name and User ID are required.",
+      );
       return;
     }
     setProposalLoading(true);
@@ -78,14 +111,21 @@ export function SettingsView({
           name: proposalName,
           userId: proposalUserId,
           email: proposalEmail,
-          designation: proposalDesignation
-        })
+          designation: proposalDesignation,
+        }),
       });
       const data = await res.json();
       if (res.ok) {
-        alert(language === "bn" ? "আপনার সহকর্মীর আইডি প্রস্তাব সফলভাবে পাঠানো হয়েছে। এডমিন অনুমোদন দিলে লগইন করা যাবে।" : "Colleague user ID proposal submitted. Waiting for admin approval.");
+        alert(
+          language === "bn"
+            ? "আপনার সহকর্মীর আইডি প্রস্তাব সফলভাবে পাঠানো হয়েছে। এডমিন অনুমোদন দিলে লগইন করা যাবে।"
+            : "Colleague user ID proposal submitted. Waiting for admin approval.",
+        );
         setShowProposalModal(false);
-        setProposalName(""); setProposalUserId(""); setProposalEmail(""); setProposalDesignation("");
+        setProposalName("");
+        setProposalUserId("");
+        setProposalEmail("");
+        setProposalDesignation("");
         refreshData();
       } else {
         alert(data.error || "Error");
@@ -105,7 +145,9 @@ export function SettingsView({
   const [newFyName, setNewFyName] = useState("");
   const [newFyStartDate, setNewFyStartDate] = useState("");
   const [newFyEndDate, setNewFyEndDate] = useState("");
-  const [newFyStatus, setNewFyStatus] = useState<"Active" | "Inactive">("Active");
+  const [newFyStatus, setNewFyStatus] = useState<"Active" | "Inactive">(
+    "Active",
+  );
 
   const handleAddFY = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,8 +161,8 @@ export function SettingsView({
           startDate: newFyStartDate || `${new Date().getFullYear()}-07-01`,
           endDate: newFyEndDate || `${new Date().getFullYear() + 1}-06-30`,
           status: newFyStatus,
-          isActive: newFyStatus === "Active"
-        })
+          isActive: newFyStatus === "Active",
+        }),
       });
       if (res.ok) {
         setShowAddFyModal(false);
@@ -149,18 +191,36 @@ export function SettingsView({
   const handleOpenCloseModal = (fy: FinancialYear) => {
     setClosingFy(fy);
     setCloseErrorMsg("");
-    const otherFYs = financialYears.filter(f => f.id !== fy.id);
-    const defaultTarget = otherFYs.find(f => f.status === "Active") || otherFYs[0];
+    const otherFYs = financialYears.filter((f) => f.id !== fy.id);
+    const defaultTarget =
+      otherFYs.find((f) => f.status === "Active") || otherFYs[0];
     setTargetFyId(defaultTarget?.id || "");
 
     const initialMap: Record<string, number> = {};
-    offices.forEach(off => {
-      categories.forEach(cat => {
+    offices.forEach((off) => {
+      categories.forEach((cat) => {
         const key = `${off.id}_${cat.id}`;
-        const fyAllocations = allocations.filter(a => a.financialYearId === fy.id && a.officeId === off.id && a.categoryId === cat.id);
-        const fyExpenses = expenses.filter(e => e.financialYearId === fy.id && e.officeId === off.id && e.categoryId === cat.id && e.status !== "Rejected");
-        const totalAlloc = fyAllocations.reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
-        const totalSpent = fyExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+        const fyAllocations = allocations.filter(
+          (a) =>
+            a.financialYearId === fy.id &&
+            a.officeId === off.id &&
+            a.categoryId === cat.id,
+        );
+        const fyExpenses = expenses.filter(
+          (e) =>
+            e.financialYearId === fy.id &&
+            e.officeId === off.id &&
+            e.categoryId === cat.id &&
+            e.status !== "Rejected",
+        );
+        const totalAlloc = fyAllocations.reduce(
+          (sum, a) => sum + Number(a.allocatedAmount || 0),
+          0,
+        );
+        const totalSpent = fyExpenses.reduce(
+          (sum, e) => sum + Number(e.amount || 0),
+          0,
+        );
         const avail = Math.max(0, totalAlloc - totalSpent);
         initialMap[key] = avail;
       });
@@ -180,15 +240,19 @@ export function SettingsView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           targetFinancialYearId: targetFyId,
-          carryForwardMap: carryMap
-        })
+          carryForwardMap: carryMap,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
         setCloseErrorMsg(data.error || "অর্থবছর ক্লোজ করতে ব্যর্থ হয়েছে।");
       } else {
         setShowCloseModal(false);
-        alert(language === "bn" ? `অর্থবছর ${closingFy?.name || ""} সফলভাবে ক্লোজ করা হয়েছে!` : `Financial Year ${closingFy?.name || ""} closed successfully!`);
+        alert(
+          language === "bn"
+            ? `অর্থবছর ${closingFy?.name || ""} সফলভাবে ক্লোজ করা হয়েছে!`
+            : `Financial Year ${closingFy?.name || ""} closed successfully!`,
+        );
         refreshData();
       }
     } catch (err: any) {
@@ -208,7 +272,9 @@ export function SettingsView({
 
   const [offCode, setOffCode] = useState("");
   const [offName, setOffName] = useState("");
-  const [offType, setOffType] = useState<"HeadOffice" | "SubOffice">("SubOffice");
+  const [offType, setOffType] = useState<"HeadOffice" | "SubOffice">(
+    "SubOffice",
+  );
   const [offAddress, setOffAddress] = useState("");
   const [offSearch, setOffSearch] = useState("");
   const [isRestoring, setIsRestoring] = useState(false);
@@ -221,6 +287,7 @@ export function SettingsView({
   const [userOffice, setUserOffice] = useState("");
   const [userPassword, setUserPassword] = useState("password123");
   const [userStatus, setUserStatus] = useState<"Active" | "Inactive">("Active");
+  const [editingUser, setEditingUser] = useState<any | null>(null);
 
   // Handle Logo Upload via File
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -228,19 +295,27 @@ export function SettingsView({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert(language === "bn" ? "অনুগ্রহ করে একটি ছবি ফাইল নির্বাচন করুন।" : "Please select a valid image file.");
+      alert(
+        language === "bn"
+          ? "অনুগ্রহ করে একটি ছবি ফাইল নির্বাচন করুন।"
+          : "Please select a valid image file.",
+      );
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert(language === "bn" ? "ছবির সাইজ সর্বোচ্চ ২ মেগাবাইট হতে পারবে।" : "Image size must be less than 2MB.");
+      alert(
+        language === "bn"
+          ? "ছবির সাইজ সর্বোচ্চ ২ মেগাবাইট হতে পারবে।"
+          : "Image size must be less than 2MB.",
+      );
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
-      setSettingsForm(prev => ({ ...prev, logoUrl: base64 }));
+      setSettingsForm((prev) => ({ ...prev, logoUrl: base64 }));
     };
     reader.readAsDataURL(file);
   };
@@ -252,10 +327,14 @@ export function SettingsView({
       const res = await apiFetch(`/api/settings/${settingsForm.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsForm)
+        body: JSON.stringify(settingsForm),
       });
       if (res.ok) {
-        setSaveSuccessMsg(language === "bn" ? "সেটিংস এবং লোগো সফলভাবে সংরক্ষণ করা হয়েছে!" : "Settings & logo updated successfully!");
+        setSaveSuccessMsg(
+          language === "bn"
+            ? "সেটিংস এবং লোগো সফলভাবে সংরক্ষণ করা হয়েছে!"
+            : "Settings & logo updated successfully!",
+        );
         refreshData();
         setTimeout(() => setSaveSuccessMsg(""), 3000);
       }
@@ -266,25 +345,38 @@ export function SettingsView({
     }
   };
 
-  const handleToggleStatus = async (type: "office" | "category" | "fy", item: any) => {
+  const handleToggleStatus = async (
+    type: "office" | "category" | "fy",
+    item: any,
+  ) => {
     let endpoint = "";
     let updatedPayload = {};
     if (type === "office") {
       endpoint = `/api/offices/${item.id}`;
-      updatedPayload = { ...item, status: item.status === "Active" ? "Inactive" : "Active" };
+      updatedPayload = {
+        ...item,
+        status: item.status === "Active" ? "Inactive" : "Active",
+      };
     } else if (type === "category") {
       endpoint = `/api/categories/${item.id}`;
-      updatedPayload = { ...item, status: item.status === "Active" ? "Inactive" : "Active" };
+      updatedPayload = {
+        ...item,
+        status: item.status === "Active" ? "Inactive" : "Active",
+      };
     } else if (type === "fy") {
       endpoint = `/api/financialyears/${item.id}`;
-      updatedPayload = { ...item, status: item.status === "Active" ? "Inactive" : "Active", isActive: item.status !== "Active" };
+      updatedPayload = {
+        ...item,
+        status: item.status === "Active" ? "Inactive" : "Active",
+        isActive: item.status !== "Active",
+      };
     }
 
     try {
       const res = await apiFetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPayload)
+        body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
     } catch (err) {
@@ -293,12 +385,15 @@ export function SettingsView({
   };
 
   const handleToggleQuotation = async (category: any) => {
-    const updatedPayload = { ...category, allowInQuotation: category.allowInQuotation === false ? true : false };
+    const updatedPayload = {
+      ...category,
+      allowInQuotation: category.allowInQuotation === false ? true : false,
+    };
     try {
       const res = await apiFetch(`/api/categories/${category.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPayload)
+        body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
     } catch (err) {
@@ -312,7 +407,7 @@ export function SettingsView({
       const res = await apiFetch(`/api/categories/${category.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPayload)
+        body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
     } catch (err) {
@@ -321,12 +416,15 @@ export function SettingsView({
   };
 
   const handleToggleRequireApproval = async (category: any) => {
-    const updatedPayload = { ...category, requireApproval: category.requireApproval === false ? true : false };
+    const updatedPayload = {
+      ...category,
+      requireApproval: category.requireApproval === false ? true : false,
+    };
     try {
       const res = await apiFetch(`/api/categories/${category.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPayload)
+        body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
     } catch (err) {
@@ -338,7 +436,9 @@ export function SettingsView({
     e.preventDefault();
     try {
       const isEditing = !!editingCategory;
-      const endpoint = isEditing ? `/api/categories/${editingCategory.id}` : "/api/categories";
+      const endpoint = isEditing
+        ? `/api/categories/${editingCategory.id}`
+        : "/api/categories";
       const method = isEditing ? "PUT" : "POST";
       const res = await apiFetch(endpoint, {
         method: method,
@@ -350,13 +450,17 @@ export function SettingsView({
           description: catDesc,
           status: editingCategory ? editingCategory.status : "Active",
           allowInQuotation: catAllowQuotation,
-          userId: currentUser.id
-        })
+          userId: currentUser.id,
+        }),
       });
       if (res.ok) {
         setShowCategoryModal(false);
         setEditingCategory(null);
-        setCatCode(""); setCatName(""); setCatHead(""); setCatDesc(""); setCatAllowQuotation(true);
+        setCatCode("");
+        setCatName("");
+        setCatHead("");
+        setCatDesc("");
+        setCatAllowQuotation(true);
         refreshData();
       }
     } catch (err) {}
@@ -366,7 +470,9 @@ export function SettingsView({
     e.preventDefault();
     try {
       const isEditing = !!editingOffice;
-      const endpoint = isEditing ? `/api/offices/${editingOffice.id}` : "/api/offices";
+      const endpoint = isEditing
+        ? `/api/offices/${editingOffice.id}`
+        : "/api/offices";
       const method = isEditing ? "PUT" : "POST";
       const res = await apiFetch(endpoint, {
         method: method,
@@ -377,26 +483,35 @@ export function SettingsView({
           type: offType,
           address: offAddress,
           status: editingOffice ? editingOffice.status : "Active",
-          userId: currentUser.id
-        })
+          userId: currentUser.id,
+        }),
       });
       if (res.ok) {
         setShowOfficeModal(false);
         setEditingOffice(null);
-        setOffCode(""); setOffName(""); setOffType("SubOffice"); setOffAddress("");
+        setOffCode("");
+        setOffName("");
+        setOffType("SubOffice");
+        setOffAddress("");
         refreshData();
       }
     } catch (err) {}
   };
 
   const handleRestoreDefaults = async (target: "categories" | "offices") => {
-    const targetLabel = target === "categories" 
-      ? (language === "bn" ? "বাংলাদেশ কৃষি ব্যাংকের সকল প্রমিত ব্যয়ের খাত ও কোড" : "BKB Standard Expense Categories & Codes")
-      : (language === "bn" ? "বাংলাদেশ কৃষি ব্যাংকের রাঙ্গামাটি অঞ্চলের সকল শাখা ও কার্যালয়" : "BKB Rangamati Region Offices & Branches");
+    const targetLabel =
+      target === "categories"
+        ? language === "bn"
+          ? "বাংলাদেশ কৃষি ব্যাংকের সকল প্রমিত ব্যয়ের খাত ও কোড"
+          : "BKB Standard Expense Categories & Codes"
+        : language === "bn"
+          ? "বাংলাদেশ কৃষি ব্যাংকের রাঙ্গামাটি অঞ্চলের সকল শাখা ও কার্যালয়"
+          : "BKB Rangamati Region Offices & Branches";
 
-    const confirmMsg = language === "bn" 
-      ? `আপনি কি নিশ্চিতভাবে ${targetLabel} রিকভার/রিসেট করতে চান?` 
-      : `Are you sure you want to restore/reset ${targetLabel}?`;
+    const confirmMsg =
+      language === "bn"
+        ? `আপনি কি নিশ্চিতভাবে ${targetLabel} রিকভার/রিসেট করতে চান?`
+        : `Are you sure you want to restore/reset ${targetLabel}?`;
 
     if (!window.confirm(confirmMsg)) return;
 
@@ -405,11 +520,16 @@ export function SettingsView({
       const res = await apiFetch("/api/settings/restore-defaults", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target })
+        body: JSON.stringify({ target }),
       });
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || (language === "bn" ? "সফলভাবে রিকভার করা হয়েছে!" : "Restored successfully!"));
+        alert(
+          data.message ||
+            (language === "bn"
+              ? "সফলভাবে রিকভার করা হয়েছে!"
+              : "Restored successfully!"),
+        );
         refreshData();
       } else {
         alert(data.error || "Failed to restore defaults");
@@ -421,29 +541,80 @@ export function SettingsView({
     }
   };
 
-  const handleAddUser = async (e: React.FormEvent) => {
+  const openAddUser = () => {
+    setEditingUser(null);
+    setUserIdVal("");
+    setUserName("");
+    setUserEmail("");
+    setUserDesignation("");
+    setUserRole("Sub-office User");
+    setUserOffice(offices[0]?.id || "");
+    setUserPassword("password123");
+    setUserStatus("Active");
+    setShowUserModal(true);
+  };
+
+  const openEditUser = (u: any) => {
+    setEditingUser(u);
+    setUserIdVal(u.userId || "");
+    setUserName(u.name || "");
+    setUserEmail(u.email || "");
+    setUserDesignation(u.designation || "");
+    setUserRole(u.role || "Sub-office User");
+    setUserOffice(u.officeId || offices[0]?.id || "");
+    setUserPassword("");
+    setUserStatus(u.status || "Active");
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await apiFetch("/api/users", {
-        method: "POST",
+      const isEditing = !!editingUser;
+      const endpoint = isEditing
+        ? `/api/users/${editingUser.id}`
+        : "/api/users";
+      const method = isEditing ? "PUT" : "POST";
+      const payload: any = {
+        userId: userIdVal,
+        name: userName,
+        email: userEmail,
+        designation: userDesignation,
+        role: userRole,
+        officeId: userOffice || offices[0]?.id || "",
+        status: userStatus,
+      };
+      if (userPassword && userPassword.trim()) {
+        payload.password = userPassword;
+      }
+      const res = await apiFetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userIdVal,
-          name: userName,
-          email: userEmail,
-          designation: userDesignation,
-          role: userRole,
-          officeId: userOffice || offices[0]?.id || "",
-          password: userPassword,
-          status: userStatus
-        })
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
         setShowUserModal(false);
-        setUserIdVal(""); setUserName(""); setUserEmail(""); setUserDesignation(""); setUserRole("Sub-office User"); setUserOffice(""); setUserPassword("password123");
+        setEditingUser(null);
+        setUserIdVal("");
+        setUserName("");
+        setUserEmail("");
+        setUserDesignation("");
+        setUserRole("Sub-office User");
+        setUserOffice("");
+        setUserPassword("password123");
         refreshData();
+      } else {
+        const data = await res.json();
+        alert(
+          data.error ||
+            (language === "bn"
+              ? "ব্যবহারকারী সংরক্ষণ করতে সমস্যা হয়েছে।"
+              : "Failed to save user."),
+        );
       }
-    } catch (err) {}
+    } catch (err: any) {
+      alert(err.message || "Error saving user");
+    }
   };
 
   const handleAdminResetPassword = async (targetUserId: string) => {
@@ -453,7 +624,7 @@ export function SettingsView({
       const res = await apiFetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUserId, newPassword: newPass })
+        body: JSON.stringify({ targetUserId, newPassword: newPass }),
       });
       const data = await res.json();
       if (data.success) {
@@ -467,27 +638,34 @@ export function SettingsView({
     }
   };
 
-  
   const handleDeleteUser = async (user: User) => {
     if (user.id === currentUser?.id) {
-      alert(language === "bn" ? "আপনি নিজের আইডি ডিলিট করতে পারবেন না।" : "You cannot delete your own ID.");
+      alert(
+        language === "bn"
+          ? "আপনি নিজের আইডি ডিলিট করতে পারবেন না।"
+          : "You cannot delete your own ID.",
+      );
       return;
     }
     const confirmDelete = window.confirm(
-      language === "bn" 
-        ? `আপনি কি সত্যিই "${user.name || user.userId}" ডিলিট করতে চান?` 
-        : `Are you sure you want to delete "${user.name || user.userId}"?`
+      language === "bn"
+        ? `আপনি কি সত্যিই "${user.name || user.userId}" ডিলিট করতে চান?`
+        : `Are you sure you want to delete "${user.name || user.userId}"?`,
     );
     if (!confirmDelete) return;
 
     try {
       const res = await apiFetch(`/api/users/${user.id}`, {
-        method: "DELETE"
+        method: "DELETE",
       });
       if (res.ok) {
         refreshData();
       } else {
-        alert(language === "bn" ? "ডিলিট করতে সমস্যা হয়েছে।" : "Failed to delete user.");
+        alert(
+          language === "bn"
+            ? "ডিলিট করতে সমস্যা হয়েছে।"
+            : "Failed to delete user.",
+        );
       }
     } catch (err) {
       alert("Error deleting user.");
@@ -495,15 +673,14 @@ export function SettingsView({
   };
 
   const handleToggleUserStatus = async (user: User) => {
-
     try {
       const res = await apiFetch(`/api/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...user,
-          status: user.status === "Active" ? "Inactive" : "Active"
-        })
+          status: user.status === "Active" ? "Inactive" : "Active",
+        }),
       });
       if (res.ok) refreshData();
     } catch (err) {
@@ -512,59 +689,90 @@ export function SettingsView({
   };
 
   const roleStr = currentUser?.role as string | undefined;
-  const isAdmin = roleStr === "Super Admin" || roleStr === "Head Office Admin" || roleStr === "HeadOfficeAdmin";
+  const isSuperAdmin = roleStr === "Super Admin";
+  const isAdmin =
+    roleStr === "Super Admin" ||
+    roleStr === "Admin" ||
+    roleStr === "Head Office Admin" ||
+    roleStr === "HeadOfficeAdmin";
+  const isModerator = roleStr === "Moderator";
 
   const settingsTabs = [
-    { id: "general", label: language === "bn" ? "সাধারণ কনফিগারেশন" : "General" },
-    ...(isAdmin ? [{ id: "welcome-msg", label: language === "bn" ? "ওয়েলকাম ও নোটিশ কনফিগারেশন" : "Welcome & Notices" }] : []),
-    { id: "financial-years", label: language === "bn" ? "অর্থবছর ও ক্লোজিং" : "Financial Years & Closing" },
+    {
+      id: "general",
+      label: language === "bn" ? "সাধারণ কনফিগারেশন" : "General",
+    },
+    ...(isSuperAdmin
+      ? [
+          {
+            id: "welcome-msg",
+            label:
+              language === "bn"
+                ? "ওয়েলকাম ও নোটিশ কনফিগারেশন"
+                : "Welcome & Notices",
+          },
+        ]
+      : []),
+    {
+      id: "financial-years",
+      label:
+        language === "bn" ? "অর্থবছর ও ক্লোজিং" : "Financial Years & Closing",
+    },
     { id: "offices", label: language === "bn" ? "অফিস তালিকা" : "Offices" },
-    { id: "categories", label: language === "bn" ? "খাতসমূহ" : "Categories" },
-    { id: "users", label: language === "bn" ? "ব্যবহারকারী" : "Users" },
-    ...(isAdmin ? [{ id: "database", label: language === "bn" ? "ডাটাবেজ ও ব্যাকআপ" : "Database & Backup" }] : []),
-    { id: "apps-script", label: language === "bn" ? "গুগল স্ক্রিপ্ট ডেপ্লয়" : "Apps Script Deploy" },
-    { id: "developer", label: language === "bn" ? "ডেভেলপার তথ্য" : "Developer Info" }
+    {
+      id: "categories",
+      label: language === "bn" ? "ব্যয়ের খাতসমূহ" : "Categories",
+    },
+    { id: "users", label: language === "bn" ? "ব্যবহারকারী তালিকা" : "Users" },
+    ...(isSuperAdmin
+      ? [
+          {
+            id: "database",
+            label:
+              language === "bn" ? "ডাটাবেজ ও ব্যাকআপ" : "Database & Backup",
+          },
+          {
+            id: "apps-script",
+            label:
+              language === "bn"
+                ? "গুগল স্ক্রিপ্ট ডেপ্লয়"
+                : "Apps Script Deploy",
+          },
+        ]
+      : []),
+    {
+      id: "developer",
+      label: language === "bn" ? "ডেভেলপার তথ্য" : "Developer Info",
+    },
   ];
 
   return (
-    <div className="flex flex-col gap-6 h-[calc(100vh-140px)]">
-      {/* Settings Navigation */}
-      <div className={`flex border-b overflow-x-auto shrink-0 ${isOcean ? "border-sky-900/60" : isDark ? "border-slate-800" : "border-slate-200"}`}>
-        {settingsTabs.map(tab => (
-          <button 
-            key={tab.id}
-            onClick={() => setCurrentTab(tab.id)}
-            className={`px-4 py-3 text-sm font-semibold border-b-2 whitespace-nowrap transition ${
-              currentTab === tab.id 
-                ? (isOcean ? "border-sky-400 text-sky-400" : "border-emerald-600 text-emerald-600") 
-                : "border-transparent opacity-60 hover:opacity-100"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
+    <div className="flex flex-col h-[calc(100vh-140px)]">
       {/* Main Content Area */}
-      <div className={`flex-1 border rounded-2xl shadow-sm flex flex-col overflow-hidden transition-colors ${
-        isOcean
-          ? "bg-[#0f172a]/95 border-sky-900/60 text-sky-50"
-          : isDark
-          ? "bg-slate-900 border-slate-800 text-slate-100"
-          : "bg-white border-slate-200 text-slate-900"
-      }`}>
-        
+      <div
+        className={`flex-1 border rounded-2xl shadow-sm flex flex-col overflow-hidden transition-colors ${
+          isOcean
+            ? "bg-[#0f172a]/95 border-sky-900/60 text-sky-50"
+            : isDark
+              ? "bg-slate-900 border-slate-800 text-slate-100"
+              : "bg-white border-slate-200 text-slate-900"
+        }`}
+      >
         {/* General Settings */}
         {currentTab === "general" && (
           <div className="p-6 overflow-y-auto flex-1 max-w-4xl">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-xl font-bold flex items-center gap-2">
-                  <Settings className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`} />
-                  {language === "bn" ? "সাধারণ কনফিগারেশন ও ব্র্যান্ডিং" : "General Configuration & Branding"}
+                  <Settings
+                    className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                  />
+                  {language === "bn"
+                    ? "সাধারণ কনফিগারেশন ও ব্র্যান্ডিং"
+                    : "General Configuration & Branding"}
                 </h2>
                 <p className="text-xs opacity-70 mt-1">
-                  {language === "bn" 
+                  {language === "bn"
                     ? "প্রতিষ্ঠান সংক্রান্ত তথ্য ও প্রাতিষ্ঠানিক লোগো পরিচালনা করুন।"
                     : "Manage institution details and institutional logo across the web app."}
                 </p>
@@ -579,19 +787,24 @@ export function SettingsView({
             </div>
 
             <form onSubmit={handleUpdateSettings} className="space-y-6">
-              
               {/* Institution Logo Card */}
-              <div className={`p-5 rounded-2xl border ${
-                isOcean
-                  ? "bg-sky-950/40 border-sky-800/60"
-                  : isDark
-                  ? "bg-slate-800/40 border-slate-700/60"
-                  : "bg-slate-50/80 border-slate-200"
-              }`}>
+              <div
+                className={`p-5 rounded-2xl border ${
+                  isOcean
+                    ? "bg-sky-950/40 border-sky-800/60"
+                    : isDark
+                      ? "bg-slate-800/40 border-slate-700/60"
+                      : "bg-slate-50/80 border-slate-200"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-sm font-bold flex items-center gap-2">
-                    <ImageIcon className={`w-4 h-4 ${isOcean ? "text-sky-400" : "text-emerald-500"}`} />
-                    {language === "bn" ? "প্রাতিষ্ঠানিক লোগো (Institution Logo)" : "Institution Logo"}
+                    <ImageIcon
+                      className={`w-4 h-4 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                    />
+                    {language === "bn"
+                      ? "প্রাতিষ্ঠানিক লোগো (Institution Logo)"
+                      : "Institution Logo"}
                   </label>
                   <span className="text-xs opacity-60 font-mono">
                     PNG, SVG, JPG (Max 2MB)
@@ -600,13 +813,15 @@ export function SettingsView({
 
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                   {/* Logo Preview box */}
-                  <div className={`w-24 h-24 rounded-2xl border-2 flex items-center justify-center p-2 shrink-0 relative overflow-hidden transition ${
-                    isOcean
-                      ? "bg-sky-900/30 border-sky-700/50"
-                      : isDark
-                      ? "bg-slate-850 border-slate-700"
-                      : "bg-white border-slate-300 shadow-sm"
-                  }`}>
+                  <div
+                    className={`w-24 h-24 rounded-2xl border-2 flex items-center justify-center p-2 shrink-0 relative overflow-hidden transition ${
+                      isOcean
+                        ? "bg-sky-900/30 border-sky-700/50"
+                        : isDark
+                          ? "bg-slate-850 border-slate-700"
+                          : "bg-white border-slate-300 shadow-sm"
+                    }`}
+                  >
                     {settingsForm.logoUrl ? (
                       <img
                         src={settingsForm.logoUrl}
@@ -642,13 +857,20 @@ export function SettingsView({
                         }`}
                       >
                         <Upload className="w-3.5 h-3.5" />
-                        {language === "bn" ? "নতুন লোগো আপলোড করুন" : "Upload New Logo"}
+                        {language === "bn"
+                          ? "নতুন লোগো আপলোড করুন"
+                          : "Upload New Logo"}
                       </button>
 
                       {settingsForm.logoUrl && (
                         <button
                           type="button"
-                          onClick={() => setSettingsForm(prev => ({ ...prev, logoUrl: "" }))}
+                          onClick={() =>
+                            setSettingsForm((prev) => ({
+                              ...prev,
+                              logoUrl: "",
+                            }))
+                          }
                           className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 flex items-center gap-1.5 transition"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -659,19 +881,26 @@ export function SettingsView({
 
                     <div>
                       <label className="block text-xs font-semibold opacity-70 mb-1">
-                        {language === "bn" ? "অথবা সরাসরি ইমেজ লিংক (URL) প্রদান করুন:" : "Or provide direct image URL:"}
+                        {language === "bn"
+                          ? "অথবা সরাসরি ইমেজ লিংক (URL) প্রদান করুন:"
+                          : "Or provide direct image URL:"}
                       </label>
                       <input
                         type="url"
                         value={settingsForm.logoUrl}
-                        onChange={e => setSettingsForm({ ...settingsForm, logoUrl: e.target.value })}
+                        onChange={(e) =>
+                          setSettingsForm({
+                            ...settingsForm,
+                            logoUrl: e.target.value,
+                          })
+                        }
                         placeholder="https://example.com/logo.png"
                         className={`w-full px-3.5 py-2 border rounded-xl text-xs font-mono focus:outline-none transition ${
                           isOcean
                             ? "bg-sky-950/70 border-sky-800 text-sky-100 focus:border-sky-400"
                             : isDark
-                            ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
-                            : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
+                              ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
+                              : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
                         }`}
                       />
                     </div>
@@ -690,18 +919,25 @@ export function SettingsView({
               {/* Institution Name */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider opacity-75 mb-1.5">
-                  {language === "bn" ? "প্রতিষ্ঠানের নাম (Institution Name)" : "Institution Name"}
+                  {language === "bn"
+                    ? "প্রতিষ্ঠানের নাম (Institution Name)"
+                    : "Institution Name"}
                 </label>
                 <input
                   type="text"
                   value={settingsForm.institutionName}
-                  onChange={e => setSettingsForm({ ...settingsForm, institutionName: e.target.value })}
+                  onChange={(e) =>
+                    setSettingsForm({
+                      ...settingsForm,
+                      institutionName: e.target.value,
+                    })
+                  }
                   className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
                     isOcean
                       ? "bg-sky-950/60 border-sky-800 text-sky-100 focus:border-sky-400"
                       : isDark
-                      ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
-                      : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
+                        ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
+                        : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
                   }`}
                   required
                 />
@@ -710,18 +946,25 @@ export function SettingsView({
               {/* Web App Name */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider opacity-75 mb-1.5">
-                  {language === "bn" ? "সফটওয়্যারের শিরোনাম (Web App Name)" : "Web App Name"}
+                  {language === "bn"
+                    ? "সফটওয়্যারের শিরোনাম (Web App Name)"
+                    : "Web App Name"}
                 </label>
                 <input
                   type="text"
                   value={settingsForm.webAppName}
-                  onChange={e => setSettingsForm({ ...settingsForm, webAppName: e.target.value })}
+                  onChange={(e) =>
+                    setSettingsForm({
+                      ...settingsForm,
+                      webAppName: e.target.value,
+                    })
+                  }
                   className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
                     isOcean
                       ? "bg-sky-950/60 border-sky-800 text-sky-100 focus:border-sky-400"
                       : isDark
-                      ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
-                      : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
+                        ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
+                        : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
                   }`}
                   required
                 />
@@ -730,56 +973,111 @@ export function SettingsView({
               {/* Description */}
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider opacity-75 mb-1.5">
-                  {language === "bn" ? "বিবরণ / ট্যাগলাইন (Description)" : "Description / Tagline"}
+                  {language === "bn"
+                    ? "বিবরণ / ট্যাগলাইন (Description)"
+                    : "Description / Tagline"}
                 </label>
                 <textarea
                   value={settingsForm.description}
-                  onChange={e => setSettingsForm({ ...settingsForm, description: e.target.value })}
+                  onChange={(e) =>
+                    setSettingsForm({
+                      ...settingsForm,
+                      description: e.target.value,
+                    })
+                  }
                   className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none h-20 transition ${
                     isOcean
                       ? "bg-sky-950/60 border-sky-800 text-sky-100 focus:border-sky-400"
                       : isDark
-                      ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
-                      : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
+                        ? "bg-slate-800 border-slate-700 text-slate-100 focus:border-emerald-500"
+                        : "bg-white border-slate-300 text-slate-900 focus:border-emerald-500"
                   }`}
                 />
               </div>
 
               {/* Financial Year Default Months */}
-              <div className={`p-5 rounded-2xl border ${
-                isOcean ? "bg-sky-950/40 border-sky-800/60" : isDark ? "bg-slate-800/40 border-slate-700/60" : "bg-slate-50 border-slate-200"
-              }`}>
-                <h3 className="text-sm font-bold mb-3">{language === "bn" ? "অর্থবছরের মাস নির্ধারণ (Financial Year Months)" : "Financial Year Months Configuration"}</h3>
+              <div
+                className={`p-5 rounded-2xl border ${
+                  isOcean
+                    ? "bg-sky-950/40 border-sky-800/60"
+                    : isDark
+                      ? "bg-slate-800/40 border-slate-700/60"
+                      : "bg-slate-50 border-slate-200"
+                }`}
+              >
+                <h3 className="text-sm font-bold mb-3">
+                  {language === "bn"
+                    ? "অর্থবছরের মাস নির্ধারণ (Financial Year Months)"
+                    : "Financial Year Months Configuration"}
+                </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold opacity-75 mb-1.5">
-                      {language === "bn" ? "শুরুর মাস (Start Month)" : "Start Month"}
+                      {language === "bn"
+                        ? "শুরুর মাস (Start Month)"
+                        : "Start Month"}
                     </label>
                     <select
                       value={settingsForm.financialYearStartMonth || 7}
-                      onChange={e => setSettingsForm({ ...settingsForm, financialYearStartMonth: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          financialYearStartMonth: Number(e.target.value),
+                        })
+                      }
                       className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
-                        isOcean ? "bg-sky-950/60 border-sky-800 text-sky-100" : isDark ? "bg-slate-800 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                        isOcean
+                          ? "bg-sky-950/60 border-sky-800 text-sky-100"
+                          : isDark
+                            ? "bg-slate-800 border-slate-700 text-slate-100"
+                            : "bg-white border-slate-300 text-slate-900"
                       }`}
                     >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                        <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('en', { month: 'long' })} / {new Date(0, m - 1).toLocaleString('bn', { month: 'long' })}</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                        <option key={m} value={m}>
+                          {new Date(0, m - 1).toLocaleString("en", {
+                            month: "long",
+                          })}{" "}
+                          /{" "}
+                          {new Date(0, m - 1).toLocaleString("bn", {
+                            month: "long",
+                          })}
+                        </option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <label className="block text-xs font-bold opacity-75 mb-1.5">
-                      {language === "bn" ? "শেষের মাস (End Month)" : "End Month"}
+                      {language === "bn"
+                        ? "শেষের মাস (End Month)"
+                        : "End Month"}
                     </label>
                     <select
                       value={settingsForm.financialYearEndMonth || 6}
-                      onChange={e => setSettingsForm({ ...settingsForm, financialYearEndMonth: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          financialYearEndMonth: Number(e.target.value),
+                        })
+                      }
                       className={`w-full px-4 py-2.5 border rounded-xl text-sm focus:outline-none transition ${
-                        isOcean ? "bg-sky-950/60 border-sky-800 text-sky-100" : isDark ? "bg-slate-800 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"
+                        isOcean
+                          ? "bg-sky-950/60 border-sky-800 text-sky-100"
+                          : isDark
+                            ? "bg-slate-800 border-slate-700 text-slate-100"
+                            : "bg-white border-slate-300 text-slate-900"
                       }`}
                     >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                        <option key={m} value={m}>{new Date(0, m - 1).toLocaleString('en', { month: 'long' })} / {new Date(0, m - 1).toLocaleString('bn', { month: 'long' })}</option>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                        <option key={m} value={m}>
+                          {new Date(0, m - 1).toLocaleString("en", {
+                            month: "long",
+                          })}{" "}
+                          /{" "}
+                          {new Date(0, m - 1).toLocaleString("bn", {
+                            month: "long",
+                          })}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -789,25 +1087,41 @@ export function SettingsView({
               {/* Custom Theme Color */}
               <div className="pt-2">
                 <label className="block text-xs font-bold uppercase tracking-wider opacity-75 mb-1.5">
-                  {language === "bn" ? "কাস্টম থিম কালার (Custom Theme Color)" : "Custom Theme Color"}
+                  {language === "bn"
+                    ? "কাস্টম থিম কালার (Custom Theme Color)"
+                    : "Custom Theme Color"}
                 </label>
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
                     value={settingsForm.customThemeColor || "#fbbf24"} // amber-400 default
-                    onChange={e => setSettingsForm({ ...settingsForm, customThemeColor: e.target.value })}
+                    onChange={(e) =>
+                      setSettingsForm({
+                        ...settingsForm,
+                        customThemeColor: e.target.value,
+                      })
+                    }
                     className="w-12 h-10 p-0 border-0 rounded overflow-hidden cursor-pointer bg-transparent"
-                    title={language === "bn" ? "রঙ নির্বাচন করুন" : "Select Color"}
+                    title={
+                      language === "bn" ? "রঙ নির্বাচন করুন" : "Select Color"
+                    }
                   />
-                  <div className={`text-xs opacity-70 ${isOcean ? "text-sky-200" : isDark ? "text-slate-300" : "text-slate-600"}`}>
-                    {language === "bn" 
-                      ? "কাস্টম থিমের প্রাইমারি কালার পরিবর্তন করতে এখানে ক্লিক করুন।" 
+                  <div
+                    className={`text-xs opacity-70 ${isOcean ? "text-sky-200" : isDark ? "text-slate-300" : "text-slate-600"}`}
+                  >
+                    {language === "bn"
+                      ? "কাস্টম থিমের প্রাইমারি কালার পরিবর্তন করতে এখানে ক্লিক করুন।"
                       : "Click to change the primary accent color of the custom theme."}
                   </div>
                   {settingsForm.customThemeColor && (
                     <button
                       type="button"
-                      onClick={() => setSettingsForm({ ...settingsForm, customThemeColor: "" })}
+                      onClick={() =>
+                        setSettingsForm({
+                          ...settingsForm,
+                          customThemeColor: "",
+                        })
+                      }
                       className="text-xs font-medium text-rose-500 hover:text-rose-600 underline ml-auto"
                     >
                       {language === "bn" ? "ডিফল্ট কালার" : "Reset Default"}
@@ -826,7 +1140,11 @@ export function SettingsView({
                       : "bg-emerald-600 hover:bg-emerald-500"
                   }`}
                 >
-                  {isSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  {isSaving ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
                   {language === "bn" ? "সেটিংস সংরক্ষণ করুন" : "Save Settings"}
                 </button>
               </div>
@@ -851,56 +1169,94 @@ export function SettingsView({
         {/* Financial Years & Closing */}
         {currentTab === "financial-years" && (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className={`p-4 border-b flex justify-between items-center shrink-0 ${
-              isOcean ? "bg-sky-950/80 border-sky-900/60" : isDark ? "bg-slate-850 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}>
+            <div
+              className={`p-4 border-b flex justify-between items-center shrink-0 ${
+                isOcean
+                  ? "bg-sky-950/80 border-sky-900/60"
+                  : isDark
+                    ? "bg-slate-850 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
               <div>
-                
-<h2 className="font-bold flex items-center gap-2">
-                  <Calendar className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}/>
+                <h2 className="font-bold flex items-center gap-2">
+                  <Calendar
+                    className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                  />
                   {language === "bn" ? "অর্থবছর পরিচালনা" : "Financial Years"}
                 </h2>
                 <p className="text-xs opacity-70 mt-1">
-                  {language === "bn" ? "নতুন অর্থবছর যোগ করুন এবং পূর্ববর্তী বছর ক্লোজ করুন" : "Manage and close financial years"}
+                  {language === "bn"
+                    ? "নতুন অর্থবছর যোগ করুন এবং পূর্ববর্তী বছর ক্লোজ করুন"
+                    : "Manage and close financial years"}
                 </p>
               </div>
-              <button 
+              <button
                 onClick={() => setShowAddFyModal(true)}
                 className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                  isOcean ? "bg-sky-600 hover:bg-sky-500" : "bg-emerald-600 hover:bg-emerald-500"
+                  isOcean
+                    ? "bg-sky-600 hover:bg-sky-500"
+                    : "bg-emerald-600 hover:bg-emerald-500"
                 }`}
               >
-                <Plus className="w-4 h-4"/> {language === "bn" ? "নতুন অর্থবছর" : "Add FY"}
+                <Plus className="w-4 h-4" />{" "}
+                {language === "bn" ? "নতুন অর্থবছর" : "Add FY"}
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className={`uppercase tracking-wider font-semibold border-b ${
-                    isOcean ? "bg-sky-950 text-sky-300 border-sky-800" : isDark ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
-                  }`}>
-                    <th className="p-3">{language === "bn" ? "অর্থবছর" : "Financial Year"}</th>
-                    <th className="p-3">{language === "bn" ? "শুরুর তারিখ" : "Start Date"}</th>
-                    <th className="p-3">{language === "bn" ? "শেষের তারিখ" : "End Date"}</th>
-                    <th className="p-3 text-center">{language === "bn" ? "স্ট্যাটাস" : "Status"}</th>
-                    <th className="p-3 text-center">{language === "bn" ? "ক্লোজিং অবস্থা" : "Closing Status"}</th>
-                    <th className="p-3 text-right">{language === "bn" ? "অ্যাকশন" : "Action"}</th>
+                  <tr
+                    className={`uppercase tracking-wider font-semibold border-b ${
+                      isOcean
+                        ? "bg-sky-950 text-sky-300 border-sky-800"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 border-slate-700"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
+                  >
+                    <th className="p-3">
+                      {language === "bn" ? "অর্থবছর" : "Financial Year"}
+                    </th>
+                    <th className="p-3">
+                      {language === "bn" ? "শুরুর তারিখ" : "Start Date"}
+                    </th>
+                    <th className="p-3">
+                      {language === "bn" ? "শেষের তারিখ" : "End Date"}
+                    </th>
+                    <th className="p-3 text-center">
+                      {language === "bn" ? "স্ট্যাটাস" : "Status"}
+                    </th>
+                    <th className="p-3 text-center">
+                      {language === "bn" ? "ক্লোজিং অবস্থা" : "Closing Status"}
+                    </th>
+                    <th className="p-3 text-right">
+                      {language === "bn" ? "অ্যাকশন" : "Action"}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/10">
-                  {financialYears.map(fy => (
+                  {financialYears.map((fy) => (
                     <tr key={fy.id} className="hover:bg-slate-50/5 transition">
                       <td className="p-3 font-semibold">{fy.name}</td>
                       <td className="p-3 opacity-80">{fy.startDate}</td>
                       <td className="p-3 opacity-80">{fy.endDate}</td>
                       <td className="p-3 text-center">
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                          fy.status === "Active" 
-                            ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" 
-                            : "bg-slate-500/20 text-slate-400 border border-slate-500/30"
-                        }`}>
-                          {fy.status === "Active" ? (language === "bn" ? "সক্রিয়" : "Active") : (language === "bn" ? "নিষ্ক্রিয়" : "Inactive")}
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                            fy.status === "Active"
+                              ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                              : "bg-slate-500/20 text-slate-400 border border-slate-500/30"
+                          }`}
+                        >
+                          {fy.status === "Active"
+                            ? language === "bn"
+                              ? "সক্রিয়"
+                              : "Active"
+                            : language === "bn"
+                              ? "নিষ্ক্রিয়"
+                              : "Inactive"}
                         </span>
                       </td>
                       <td className="p-3 text-center">
@@ -923,18 +1279,24 @@ export function SettingsView({
                               className="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-xl text-xs font-semibold inline-flex items-center gap-1.5 shadow transition"
                             >
                               <Lock className="w-3.5 h-3.5" />
-                              {language === "bn" ? "বছর ক্লোজ করুন" : "Close Year"}
+                              {language === "bn"
+                                ? "বছর ক্লোজ করুন"
+                                : "Close Year"}
                             </button>
                           ) : (
                             <span className="text-slate-400 text-xs italic">
-                              {language === "bn" ? "শুধুমাত্র অ্যাডমিন" : "Admin only"}
+                              {language === "bn"
+                                ? "শুধুমাত্র অ্যাডমিন"
+                                : "Admin only"}
                             </span>
                           )
                         ) : (
                           <div className="text-xs opacity-60">
                             {fy.closedAt && (
                               <span>
-                                {language === "bn" ? "ক্লোজ করা হয়েছে: " : "Closed on: "} 
+                                {language === "bn"
+                                  ? "ক্লোজ করা হয়েছে: "
+                                  : "Closed on: "}
                                 {fy.closedAt.split("T")[0]}
                               </span>
                             )}
@@ -952,12 +1314,20 @@ export function SettingsView({
         {/* Categories */}
         {currentTab === "categories" && (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className={`p-4 border-b flex flex-wrap gap-3 justify-between items-center shrink-0 ${
-              isOcean ? "bg-sky-950/80 border-sky-900/60" : isDark ? "bg-slate-850 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}>
+            <div
+              className={`p-4 border-b flex flex-wrap gap-3 justify-between items-center shrink-0 ${
+                isOcean
+                  ? "bg-sky-950/80 border-sky-900/60"
+                  : isDark
+                    ? "bg-slate-850 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <h2 className="font-bold flex items-center gap-2">
-                  <Folder className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}/> 
+                  <Folder
+                    className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                  />
                   {t.allCategories}
                   <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-400 font-mono">
                     {categories.length}
@@ -965,11 +1335,19 @@ export function SettingsView({
                 </h2>
                 <input
                   type="text"
-                  placeholder={language === "bn" ? "খাত বা কোড খুঁজুন..." : "Search category or code..."}
+                  placeholder={
+                    language === "bn"
+                      ? "খাত বা কোড খুঁজুন..."
+                      : "Search category or code..."
+                  }
                   value={catSearch}
-                  onChange={e => setCatSearch(e.target.value)}
+                  onChange={(e) => setCatSearch(e.target.value)}
                   className={`px-3 py-1.5 text-xs border rounded-xl bg-transparent focus:outline-none w-48 sm:w-64 ${
-                    isOcean ? "border-sky-800 focus:border-sky-500 text-sky-100" : isDark ? "border-slate-700 focus:border-emerald-500 text-slate-100" : "border-slate-300 focus:border-emerald-600 text-slate-900"
+                    isOcean
+                      ? "border-sky-800 focus:border-sky-500 text-sky-100"
+                      : isDark
+                        ? "border-slate-700 focus:border-emerald-500 text-slate-100"
+                        : "border-slate-300 focus:border-emerald-600 text-slate-900"
                   }`}
                 />
               </div>
@@ -979,29 +1357,40 @@ export function SettingsView({
                   onClick={() => handleRestoreDefaults("categories")}
                   disabled={isRestoring}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition ${
-                    isOcean 
-                      ? "bg-sky-900/50 hover:bg-sky-900 text-sky-200 border-sky-700" 
-                      : isDark 
-                      ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600" 
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                    isOcean
+                      ? "bg-sky-900/50 hover:bg-sky-900 text-sky-200 border-sky-700"
+                      : isDark
+                        ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
                   }`}
                   title="বিকেবি প্রমিত ব্যয়ের খাত ও বাজেট হেড রিকভার করুন"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isRestoring ? "animate-spin" : ""}`} />
-                  {language === "bn" ? "বিকেবি প্রমিত খাত রিকভার" : "Restore BKB Heads"}
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${isRestoring ? "animate-spin" : ""}`}
+                  />
+                  {language === "bn"
+                    ? "বিকেবি প্রমিত খাত রিকভার"
+                    : "Restore BKB Heads"}
                 </button>
 
-                <button 
+                <button
                   onClick={() => {
                     setEditingCategory(null);
-                    setCatCode(""); setCatName(""); setCatHead(""); setCatDesc(""); setCatAllowQuotation(true);
+                    setCatCode("");
+                    setCatName("");
+                    setCatHead("");
+                    setCatDesc("");
+                    setCatAllowQuotation(true);
                     setShowCategoryModal(true);
-                  }} 
+                  }}
                   className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                    isOcean ? "bg-sky-600 hover:bg-sky-500" : "bg-emerald-600 hover:bg-emerald-500"
+                    isOcean
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "bg-emerald-600 hover:bg-emerald-500"
                   }`}
                 >
-                  <Plus className="w-4 h-4"/> {language === "bn" ? "নতুন খাত যোগ করুন" : "Add Category"}
+                  <Plus className="w-4 h-4" />{" "}
+                  {language === "bn" ? "নতুন খাত যোগ করুন" : "Add Category"}
                 </button>
               </div>
             </div>
@@ -1009,22 +1398,42 @@ export function SettingsView({
             <div className="flex-1 overflow-y-auto p-4">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className={`uppercase tracking-wider font-semibold border-b ${
-                    isOcean ? "bg-sky-950 text-sky-300 border-sky-800" : isDark ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
-                  }`}>
+                  <tr
+                    className={`uppercase tracking-wider font-semibold border-b ${
+                      isOcean
+                        ? "bg-sky-950 text-sky-300 border-sky-800"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 border-slate-700"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
+                  >
                     <th className="p-3">Code</th>
                     <th className="p-3">Name</th>
                     <th className="p-3">Budget Head</th>
-                    <th className="p-3">{language === "bn" ? "কোটেশন প্রযোজ্য" : "Quotation Applicable"}</th>
-                    <th className="p-3">{language === "bn" ? "অতিরিক্ত ব্যয় অনুমতি" : "Allow Excess Budget"}</th>
-                    <th className="p-3">{language === "bn" ? "অনুমোদন প্রয়োজন" : "Require Approval"}</th>
+                    <th className="p-3">
+                      {language === "bn"
+                        ? "কোটেশন প্রযোজ্য"
+                        : "Quotation Applicable"}
+                    </th>
+                    <th className="p-3">
+                      {language === "bn"
+                        ? "অতিরিক্ত ব্যয় অনুমতি"
+                        : "Allow Excess Budget"}
+                    </th>
+                    <th className="p-3">
+                      {language === "bn"
+                        ? "অনুমোদন প্রয়োজন"
+                        : "Require Approval"}
+                    </th>
                     <th className="p-3">Status</th>
                     <th className="p-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}>
+                <tbody
+                  className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}
+                >
                   {categories
-                    .filter(c => {
+                    .filter((c) => {
                       if (!catSearch.trim()) return true;
                       const q = catSearch.toLowerCase();
                       return (
@@ -1033,77 +1442,109 @@ export function SettingsView({
                         (c.budgetHead && c.budgetHead.toLowerCase().includes(q))
                       );
                     })
-                    .map(c => (
-                    <tr key={c.id} className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}>
-                      <td className="p-3 font-mono font-semibold">{c.code}</td>
-                      <td className="p-3 font-medium">{c.name}</td>
-                      <td className="p-3 opacity-80">{c.budgetHead}</td>
-                      <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleQuotation(c)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
-                            c.allowInQuotation !== false
-                              ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30"
-                              : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300 hover:bg-slate-300"
-                          }`}
-                        >
-                          {c.allowInQuotation !== false ? (language === "bn" ? "✓ চালু" : "Enabled") : (language === "bn" ? "✕ বন্ধ" : "Disabled")}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAllowExcess(c)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
-                            c.allowExcess
-                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/30"
-                              : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300 hover:bg-slate-300"
-                          }`}
-                        >
-                          {c.allowExcess ? (language === "bn" ? "✓ অনুমোদিত" : "Allowed") : (language === "bn" ? "✕ নিষিদ্ধ" : "Restricted")}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleRequireApproval(c)}
-                          className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
-                            c.requireApproval !== false
-                              ? "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30 hover:bg-purple-500/30"
-                              : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300 hover:bg-slate-300"
-                          }`}
-                        >
-                          {c.requireApproval !== false ? (language === "bn" ? "✓ আবশ্যক" : "Required") : (language === "bn" ? "✕ প্রয়োজন নেই" : "Optional")}
-                        </button>
-                      </td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${c.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{c.status}</span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => {
-                              setEditingCategory(c);
-                              setCatCode(c.code);
-                              setCatName(c.name);
-                              setCatHead(c.budgetHead);
-                              setCatDesc(c.description);
-                              setCatAllowQuotation(c.allowInQuotation ?? true);
-                              setShowCategoryModal(true);
-                            }}
-                            className="text-xs font-semibold px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40 text-blue-400"
-                            title="Edit"
+                    .map((c) => (
+                      <tr
+                        key={c.id}
+                        className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}
+                      >
+                        <td className="p-3 font-mono font-semibold">
+                          {c.code}
+                        </td>
+                        <td className="p-3 font-medium">{c.name}</td>
+                        <td className="p-3 opacity-80">{c.budgetHead}</td>
+                        <td className="p-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleQuotation(c)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                              c.allowInQuotation !== false
+                                ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30"
+                                : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300 hover:bg-slate-300"
+                            }`}
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
+                            {c.allowInQuotation !== false
+                              ? language === "bn"
+                                ? "✓ চালু"
+                                : "Enabled"
+                              : language === "bn"
+                                ? "✕ বন্ধ"
+                                : "Disabled"}
                           </button>
-                          <button onClick={() => handleToggleStatus('category', c)} className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40">
-                            Toggle Status
+                        </td>
+                        <td className="p-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleAllowExcess(c)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                              c.allowExcess
+                                ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/30"
+                                : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300 hover:bg-slate-300"
+                            }`}
+                          >
+                            {c.allowExcess
+                              ? language === "bn"
+                                ? "✓ অনুমোদিত"
+                                : "Allowed"
+                              : language === "bn"
+                                ? "✕ নিষিদ্ধ"
+                                : "Restricted"}
                           </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-3">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleRequireApproval(c)}
+                            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+                              c.requireApproval !== false
+                                ? "bg-purple-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30 hover:bg-purple-500/30"
+                                : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border-slate-300 hover:bg-slate-300"
+                            }`}
+                          >
+                            {c.requireApproval !== false
+                              ? language === "bn"
+                                ? "✓ আবশ্যক"
+                                : "Required"
+                              : language === "bn"
+                                ? "✕ প্রয়োজন নেই"
+                                : "Optional"}
+                          </button>
+                        </td>
+                        <td className="p-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-semibold ${c.status === "Active" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
+                          >
+                            {c.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingCategory(c);
+                                setCatCode(c.code);
+                                setCatName(c.name);
+                                setCatHead(c.budgetHead);
+                                setCatDesc(c.description);
+                                setCatAllowQuotation(
+                                  c.allowInQuotation ?? true,
+                                );
+                                setShowCategoryModal(true);
+                              }}
+                              className="text-xs font-semibold px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40 text-blue-400"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleToggleStatus("category", c)}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40"
+                            >
+                              Toggle Status
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -1113,12 +1554,20 @@ export function SettingsView({
         {/* Offices */}
         {currentTab === "offices" && (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className={`p-4 border-b flex flex-wrap gap-3 justify-between items-center shrink-0 ${
-              isOcean ? "bg-sky-950/80 border-sky-900/60" : isDark ? "bg-slate-850 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}>
+            <div
+              className={`p-4 border-b flex flex-wrap gap-3 justify-between items-center shrink-0 ${
+                isOcean
+                  ? "bg-sky-950/80 border-sky-900/60"
+                  : isDark
+                    ? "bg-slate-850 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <h2 className="font-bold flex items-center gap-2">
-                  <Building2 className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}/> 
+                  <Building2
+                    className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                  />
                   {t.allOffices}
                   <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/20 text-emerald-400 font-mono">
                     {offices.length}
@@ -1126,11 +1575,19 @@ export function SettingsView({
                 </h2>
                 <input
                   type="text"
-                  placeholder={language === "bn" ? "কার্যালয়, শাখা বা কোড খুঁজুন..." : "Search office, branch or code..."}
+                  placeholder={
+                    language === "bn"
+                      ? "কার্যালয়, শাখা বা কোড খুঁজুন..."
+                      : "Search office, branch or code..."
+                  }
                   value={offSearch}
-                  onChange={e => setOffSearch(e.target.value)}
+                  onChange={(e) => setOffSearch(e.target.value)}
                   className={`px-3 py-1.5 text-xs border rounded-xl bg-transparent focus:outline-none w-48 sm:w-64 ${
-                    isOcean ? "border-sky-800 focus:border-sky-500 text-sky-100" : isDark ? "border-slate-700 focus:border-emerald-500 text-slate-100" : "border-slate-300 focus:border-emerald-600 text-slate-900"
+                    isOcean
+                      ? "border-sky-800 focus:border-sky-500 text-sky-100"
+                      : isDark
+                        ? "border-slate-700 focus:border-emerald-500 text-slate-100"
+                        : "border-slate-300 focus:border-emerald-600 text-slate-900"
                   }`}
                 />
               </div>
@@ -1140,29 +1597,39 @@ export function SettingsView({
                   onClick={() => handleRestoreDefaults("offices")}
                   disabled={isRestoring}
                   className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition ${
-                    isOcean 
-                      ? "bg-sky-900/50 hover:bg-sky-900 text-sky-200 border-sky-700" 
-                      : isDark 
-                      ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600" 
-                      : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
+                    isOcean
+                      ? "bg-sky-900/50 hover:bg-sky-900 text-sky-200 border-sky-700"
+                      : isDark
+                        ? "bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-600"
+                        : "bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300"
                   }`}
                   title="বিকেবি রাঙ্গামাটি অঞ্চলের সকল শাখা ও আঞ্চলিক কার্যালয় রিকভার করুন"
                 >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isRestoring ? "animate-spin" : ""}`} />
-                  {language === "bn" ? "বিকেবি শাখা তালিকা রিকভার" : "Restore BKB Branches"}
+                  <RefreshCw
+                    className={`w-3.5 h-3.5 ${isRestoring ? "animate-spin" : ""}`}
+                  />
+                  {language === "bn"
+                    ? "বিকেবি শাখা তালিকা রিকভার"
+                    : "Restore BKB Branches"}
                 </button>
 
-                <button 
+                <button
                   onClick={() => {
                     setEditingOffice(null);
-                    setOffCode(""); setOffName(""); setOffType("SubOffice"); setOffAddress("");
+                    setOffCode("");
+                    setOffName("");
+                    setOffType("SubOffice");
+                    setOffAddress("");
                     setShowOfficeModal(true);
-                  }} 
+                  }}
                   className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                    isOcean ? "bg-sky-600 hover:bg-sky-500" : "bg-emerald-600 hover:bg-emerald-500"
+                    isOcean
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "bg-emerald-600 hover:bg-emerald-500"
                   }`}
                 >
-                  <Plus className="w-4 h-4"/> {language === "bn" ? "নতুন অফিস যোগ করুন" : "Add Office"}
+                  <Plus className="w-4 h-4" />{" "}
+                  {language === "bn" ? "নতুন অফিস যোগ করুন" : "Add Office"}
                 </button>
               </div>
             </div>
@@ -1170,9 +1637,15 @@ export function SettingsView({
             <div className="flex-1 overflow-y-auto p-4">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className={`uppercase tracking-wider font-semibold border-b ${
-                    isOcean ? "bg-sky-950 text-sky-300 border-sky-800" : isDark ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
-                  }`}>
+                  <tr
+                    className={`uppercase tracking-wider font-semibold border-b ${
+                      isOcean
+                        ? "bg-sky-950 text-sky-300 border-sky-800"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 border-slate-700"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
+                  >
                     <th className="p-3">Code</th>
                     <th className="p-3">Name</th>
                     <th className="p-3">Type</th>
@@ -1181,9 +1654,11 @@ export function SettingsView({
                     <th className="p-3 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}>
+                <tbody
+                  className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}
+                >
                   {offices
-                    .filter(o => {
+                    .filter((o) => {
                       if (!offSearch.trim()) return true;
                       const q = offSearch.toLowerCase();
                       return (
@@ -1192,38 +1667,50 @@ export function SettingsView({
                         (o.address && o.address.toLowerCase().includes(q))
                       );
                     })
-                    .map(o => (
-                    <tr key={o.id} className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}>
-                      <td className="p-3 font-mono font-semibold">{o.code}</td>
-                      <td className="p-3 font-medium">{o.name}</td>
-                      <td className="p-3 opacity-80">{o.type}</td>
-                      <td className="p-3 opacity-70 text-xs">{o.address}</td>
-                      <td className="p-3">
-                        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${o.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{o.status}</span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={() => {
-                              setEditingOffice(o);
-                              setOffCode(o.code);
-                              setOffName(o.name);
-                              setOffType(o.type);
-                              setOffAddress(o.address || "");
-                              setShowOfficeModal(true);
-                            }}
-                            className="text-xs font-semibold px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40 text-blue-400"
-                            title="Edit"
+                    .map((o) => (
+                      <tr
+                        key={o.id}
+                        className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}
+                      >
+                        <td className="p-3 font-mono font-semibold">
+                          {o.code}
+                        </td>
+                        <td className="p-3 font-medium">{o.name}</td>
+                        <td className="p-3 opacity-80">{o.type}</td>
+                        <td className="p-3 opacity-70 text-xs">{o.address}</td>
+                        <td className="p-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-semibold ${o.status === "Active" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
                           >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button onClick={() => handleToggleStatus('office', o)} className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40">
-                            Toggle Status
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                            {o.status}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                setEditingOffice(o);
+                                setOffCode(o.code);
+                                setOffName(o.name);
+                                setOffType(o.type);
+                                setOffAddress(o.address || "");
+                                setShowOfficeModal(true);
+                              }}
+                              className="text-xs font-semibold px-2 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40 text-blue-400"
+                              title="Edit"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleToggleStatus("office", o)}
+                              className="text-xs font-semibold px-2.5 py-1 rounded-lg border border-slate-700 hover:bg-slate-700/40"
+                            >
+                              Toggle Status
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
@@ -1233,41 +1720,61 @@ export function SettingsView({
         {/* Users */}
         {currentTab === "users" && (
           <div className="flex-1 flex flex-col min-h-0">
-            <div className={`p-4 border-b flex justify-between items-center shrink-0 ${
-              isOcean ? "bg-sky-950/80 border-sky-900/60" : isDark ? "bg-slate-850 border-slate-800" : "bg-slate-50 border-slate-200"
-            }`}>
+            <div
+              className={`p-4 border-b flex justify-between items-center shrink-0 ${
+                isOcean
+                  ? "bg-sky-950/80 border-sky-900/60"
+                  : isDark
+                    ? "bg-slate-850 border-slate-800"
+                    : "bg-slate-50 border-slate-200"
+              }`}
+            >
               <h2 className="font-bold flex items-center gap-2">
-                
-              <Users className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}/> 
-              {language === "bn" ? "ব্যবহারকারী তালিকা" : "System Users"}
-            </h2>
-            {isAdmin ? (
-              <button 
-                onClick={() => setShowUserModal(true)} 
-                className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                  isOcean ? "bg-sky-600 hover:bg-sky-500" : "bg-emerald-600 hover:bg-emerald-500"
-                }`}
-              >
-                <Plus className="w-4 h-4"/> {language === "bn" ? "নতুন ব্যবহারকারী" : "Add User"}
-              </button>
-            ) : (
-              <button 
-                onClick={() => setShowProposalModal(true)} 
-                className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                  isOcean ? "bg-sky-600 hover:bg-sky-500" : "bg-emerald-600 hover:bg-emerald-500"
-                }`}
-              >
-                <UserPlus className="w-4 h-4"/> {language === "bn" ? "সহকর্মীর আইডি প্রস্তাব দিন" : "Propose Colleague"}
-              </button>
-            )}
-
+                <Users
+                  className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                />
+                {language === "bn" ? "ব্যবহারকারী তালিকা" : "System Users"}
+              </h2>
+              {isAdmin ? (
+                <button
+                  onClick={openAddUser}
+                  className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
+                    isOcean
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "bg-emerald-600 hover:bg-emerald-500"
+                  }`}
+                >
+                  <Plus className="w-4 h-4" />{" "}
+                  {language === "bn" ? "নতুন ব্যবহারকারী" : "Add User"}
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowProposalModal(true)}
+                  className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
+                    isOcean
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "bg-emerald-600 hover:bg-emerald-500"
+                  }`}
+                >
+                  <UserPlus className="w-4 h-4" />{" "}
+                  {language === "bn"
+                    ? "সহকর্মীর আইডি প্রস্তাব দিন"
+                    : "Propose Colleague"}
+                </button>
+              )}
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
-                  <tr className={`uppercase tracking-wider font-semibold border-b ${
-                    isOcean ? "bg-sky-950 text-sky-300 border-sky-800" : isDark ? "bg-slate-800 text-slate-300 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
-                  }`}>
+                  <tr
+                    className={`uppercase tracking-wider font-semibold border-b ${
+                      isOcean
+                        ? "bg-sky-950 text-sky-300 border-sky-800"
+                        : isDark
+                          ? "bg-slate-800 text-slate-300 border-slate-700"
+                          : "bg-slate-100 text-slate-700 border-slate-200"
+                    }`}
+                  >
                     <th className="p-3">User ID & Name</th>
                     <th className="p-3">Designation</th>
                     <th className="p-3">Role</th>
@@ -1276,69 +1783,120 @@ export function SettingsView({
                     <th className="p-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}>
-                  {users.map(u => {
-                    const off = offices.find(o => o.id === u.officeId);
+                <tbody
+                  className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}
+                >
+                  {users.map((u) => {
+                    const off = offices.find((o) => o.id === u.officeId);
                     return (
-                      <tr key={u.id} className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}>
+                      <tr
+                        key={u.id}
+                        className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}
+                      >
                         <td className="p-3 font-medium">
                           <div className="flex items-center gap-2">
-                            <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                              isOcean ? "bg-sky-500/20 text-sky-300" : "bg-emerald-500/20 text-emerald-400"
-                            }`}>
-                              {u.name ? u.name.charAt(0) : (u.userId ? u.userId.charAt(0).toUpperCase() : "U")}
+                            <div
+                              className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                                isOcean
+                                  ? "bg-sky-500/20 text-sky-300"
+                                  : "bg-emerald-500/20 text-emerald-400"
+                              }`}
+                            >
+                              {u.name
+                                ? u.name.charAt(0)
+                                : u.userId
+                                  ? u.userId.charAt(0).toUpperCase()
+                                  : "U"}
                             </div>
                             <div>
-                              <div className="font-semibold">{u.name || u.userId || "User"}</div>
-                              <div className="font-mono text-xs text-slate-400">ID: {u.userId || u.email}</div>
+                              <div className="font-semibold">
+                                {u.name || u.userId || "User"}
+                              </div>
+                              <div className="font-mono text-xs text-slate-400">
+                                ID: {u.userId || u.email}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="p-3 opacity-80 text-xs">{u.designation || 'N/A'}</td>
-                        <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                            isOcean ? "bg-sky-500/20 text-sky-300" : "bg-blue-500/20 text-blue-300"
-                          }`}>{u.role}</span>
+                        <td className="p-3 opacity-80 text-xs">
+                          {u.designation || "N/A"}
                         </td>
-                        <td className="p-3 opacity-70 text-xs">{off?.name || 'N/A'}</td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${u.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
-                            {u.status || 'Active'}
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-semibold border ${
+                              u.role === "Super Admin"
+                                ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                                : u.role === "Admin" ||
+                                    u.role === "Head Office Admin"
+                                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                  : u.role === "Moderator"
+                                    ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                    : "bg-sky-500/20 text-sky-300 border-sky-500/30"
+                            }`}
+                          >
+                            {u.role}
                           </span>
                         </td>
-                        
+                        <td className="p-3 opacity-70 text-xs">
+                          {off?.name || "N/A"}
+                        </td>
+                        <td className="p-3">
+                          <span
+                            className={`px-2 py-0.5 rounded text-xs font-semibold ${u.status === "Active" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
+                          >
+                            {u.status || "Active"}
+                          </span>
+                        </td>
+
                         <td className="p-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             {isAdmin && (
                               <>
-                                <button 
+                                <button
+                                  onClick={() => openEditUser(u)}
+                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition flex items-center gap-1"
+                                  title={
+                                    language === "bn"
+                                      ? "রোল আপগ্রেড বা শাখা ট্রান্সফার (সম্পাদনা)"
+                                      : "Edit Role / Transfer Branch"
+                                  }
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>
+                                    {language === "bn" ? "সম্পাদনা" : "Edit"}
+                                  </span>
+                                </button>
+
+                                <button
                                   onClick={() => handleAdminResetPassword(u.id)}
                                   className="px-2 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20 transition flex items-center gap-1"
                                   title="Reset Password"
                                 >
                                   <KeyRound className="w-3 h-3" /> Reset
                                 </button>
-                                
-                                <button 
+
+                                <button
                                   onClick={() => handleToggleUserStatus(u)}
                                   className="px-2 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition"
                                   title="Toggle Active/Inactive"
                                 >
-                                  {u.status === 'Inactive' ? 'Activate' : 'Deactivate'}
+                                  {u.status === "Inactive"
+                                    ? "Activate"
+                                    : "Deactivate"}
                                 </button>
                                 <button
                                   onClick={() => handleDeleteUser(u)}
                                   className="p-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/20 transition"
-                                  title={language === "bn" ? "ডিলিট করুন" : "Delete"}
+                                  title={
+                                    language === "bn" ? "ডিলিট করুন" : "Delete"
+                                  }
                                 >
                                   <Trash2 className="w-4 h-4" />
                                 </button>
-
                               </>
                             )}
                           </div>
                         </td>
-  
                       </tr>
                     );
                   })}
@@ -1348,70 +1906,126 @@ export function SettingsView({
           </div>
         )}
 
-        {(currentTab === "fy") && (
-           <div className="p-6 text-center opacity-60 text-xs">
-             {language === "bn" ? "অর্থবছর পরিচালনা করুন।" : "Manage financial year lists here."}
-           </div>
-        )}
-
-        {(currentTab === "database") && (
-          <DatabaseSettingsTab currentUser={currentUser} />
-        )}
-
-        {(currentTab === "apps-script") && (
-          <div className="flex-1 overflow-hidden relative">
-             <AppsScriptDeployView />
+        {currentTab === "fy" && (
+          <div className="p-6 text-center opacity-60 text-xs">
+            {language === "bn"
+              ? "অর্থবছর পরিচালনা করুন।"
+              : "Manage financial year lists here."}
           </div>
         )}
 
-        {(currentTab === "developer") && (
+        {currentTab === "database" && (
+          <DatabaseSettingsTab currentUser={currentUser} />
+        )}
+
+        {currentTab === "apps-script" && (
+          <div className="flex-1 overflow-hidden relative">
+            <AppsScriptDeployView />
+          </div>
+        )}
+
+        {currentTab === "developer" && (
           <div className="p-6 overflow-y-auto flex-1 max-w-4xl">
             <DeveloperProfile />
           </div>
         )}
-
       </div>
 
       {showCategoryModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6">
-          <div className={`m-auto rounded-2xl max-w-md w-full p-6 shadow-xl border ${
-            isOcean ? "bg-[#0f172a] border-sky-800 text-sky-100" : isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-          }`}>
-            <h3 className="text-lg font-bold mb-4">{editingCategory ? "Edit Category" : "Add New Category"}</h3>
+          <div
+            className={`m-auto rounded-2xl max-w-md w-full p-6 shadow-xl border ${
+              isOcean
+                ? "bg-[#0f172a] border-sky-800 text-sky-100"
+                : isDark
+                  ? "bg-slate-900 border-slate-800 text-slate-100"
+                  : "bg-white border-slate-200 text-slate-900"
+            }`}
+          >
+            <h3 className="text-lg font-bold mb-4">
+              {editingCategory ? "Edit Category" : "Add New Category"}
+            </h3>
             <form onSubmit={handleAddCategory} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Code</label>
-                  <input type="text" required value={catCode} onChange={e => setCatCode(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    Code
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={catCode}
+                    onChange={(e) => setCatCode(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Budget Head</label>
-                  <input type="text" required value={catHead} onChange={e => setCatHead(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    Budget Head
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={catHead}
+                    onChange={(e) => setCatHead(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold opacity-75 mb-1">Name</label>
-                <input type="text" required value={catName} onChange={e => setCatName(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                <label className="block text-xs font-semibold opacity-75 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={catName}
+                  onChange={(e) => setCatName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                />
               </div>
               <div>
-                <label className="block text-xs font-semibold opacity-75 mb-1">Description</label>
-                <textarea required value={catDesc} onChange={e => setCatDesc(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                <label className="block text-xs font-semibold opacity-75 mb-1">
+                  Description
+                </label>
+                <textarea
+                  required
+                  value={catDesc}
+                  onChange={(e) => setCatDesc(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                />
               </div>
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="catAllowQuotation"
                   checked={catAllowQuotation}
-                  onChange={e => setCatAllowQuotation(e.target.checked)}
+                  onChange={(e) => setCatAllowQuotation(e.target.checked)}
                   className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <label htmlFor="catAllowQuotation" className="text-xs font-medium cursor-pointer">
-                  {language === "bn" ? "কোটেশন প্রক্রিয়ায় এই খাত প্রযোজ্য" : "Applicable in Quotation Process"}
+                <label
+                  htmlFor="catAllowQuotation"
+                  className="text-xs font-medium cursor-pointer"
+                >
+                  {language === "bn"
+                    ? "কোটেশন প্রক্রিয়ায় এই খাত প্রযোজ্য"
+                    : "Applicable in Quotation Process"}
                 </label>
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setShowCategoryModal(false)} className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl text-xs bg-emerald-600 text-white font-semibold">Save</button>
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs bg-emerald-600 text-white font-semibold"
+                >
+                  Save
+                </button>
               </div>
             </form>
           </div>
@@ -1420,35 +2034,87 @@ export function SettingsView({
 
       {showOfficeModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6">
-          <div className={`m-auto rounded-2xl max-w-md w-full p-6 shadow-xl border ${
-            isOcean ? "bg-[#0f172a] border-sky-800 text-sky-100" : isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-          }`}>
-            <h3 className="text-lg font-bold mb-4">{editingOffice ? "Edit Office" : "Add New Office"}</h3>
+          <div
+            className={`m-auto rounded-2xl max-w-md w-full p-6 shadow-xl border ${
+              isOcean
+                ? "bg-[#0f172a] border-sky-800 text-sky-100"
+                : isDark
+                  ? "bg-slate-900 border-slate-800 text-slate-100"
+                  : "bg-white border-slate-200 text-slate-900"
+            }`}
+          >
+            <h3 className="text-lg font-bold mb-4">
+              {editingOffice ? "Edit Office" : "Add New Office"}
+            </h3>
             <form onSubmit={handleAddOffice} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Type</label>
-                  <select value={offType} onChange={e => setOffType(e.target.value as any)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent">
-                    <option value="SubOffice" className="text-slate-900">Sub-Office</option>
-                    <option value="HeadOffice" className="text-slate-900">Head Office</option>
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    Type
+                  </label>
+                  <select
+                    value={offType}
+                    onChange={(e) => setOffType(e.target.value as any)}
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  >
+                    <option value="SubOffice" className="text-slate-900">
+                      Sub-Office
+                    </option>
+                    <option value="HeadOffice" className="text-slate-900">
+                      Head Office
+                    </option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Code</label>
-                  <input type="text" required value={offCode} onChange={e => setOffCode(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    Code
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={offCode}
+                    onChange={(e) => setOffCode(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-semibold opacity-75 mb-1">Name</label>
-                <input type="text" required value={offName} onChange={e => setOffName(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                <label className="block text-xs font-semibold opacity-75 mb-1">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={offName}
+                  onChange={(e) => setOffName(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                />
               </div>
               <div>
-                <label className="block text-xs font-semibold opacity-75 mb-1">Address</label>
-                <textarea required value={offAddress} onChange={e => setOffAddress(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                <label className="block text-xs font-semibold opacity-75 mb-1">
+                  Address
+                </label>
+                <textarea
+                  required
+                  value={offAddress}
+                  onChange={(e) => setOffAddress(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                />
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setShowOfficeModal(false)} className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl text-xs bg-emerald-600 text-white font-semibold">Save</button>
+                <button
+                  type="button"
+                  onClick={() => setShowOfficeModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs bg-emerald-600 text-white font-semibold"
+                >
+                  Save
+                </button>
               </div>
             </form>
           </div>
@@ -1457,72 +2123,275 @@ export function SettingsView({
 
       {showUserModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6">
-          <div className={`m-auto rounded-2xl max-w-lg w-full p-6 shadow-xl border ${
-            isOcean ? "bg-[#0f172a] border-sky-800 text-sky-100" : isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-          }`}>
-            <h3 className="text-lg font-bold mb-4">Add New System User</h3>
-            <form onSubmit={handleAddUser} className="space-y-4">
+          <div
+            className={`m-auto rounded-2xl max-w-lg w-full p-6 shadow-xl border ${
+              isOcean
+                ? "bg-[#0f172a] border-sky-800 text-sky-100"
+                : isDark
+                  ? "bg-slate-900 border-slate-800 text-slate-100"
+                  : "bg-white border-slate-200 text-slate-900"
+            }`}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-700/40 mb-4">
+              <h3 className="text-base font-bold flex items-center gap-2">
+                <ShieldCheck
+                  className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
+                />
+                {editingUser
+                  ? language === "bn"
+                    ? "ব্যবহারকারী সম্পাদনা, রোল আপগ্রেড ও শাখা ট্রান্সফার"
+                    : "Edit User, Role & Branch Transfer"
+                  : language === "bn"
+                    ? "নতুন ব্যবহারকারী যোগ করুন"
+                    : "Add New System User"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUserModal(false);
+                  setEditingUser(null);
+                }}
+                className="p-1 rounded-lg opacity-60 hover:opacity-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveUser} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">User ID (Login)</label>
-                  <input type="text" required value={userIdVal} onChange={e => setUserIdVal(e.target.value)} placeholder="e.g. ctg_user2" className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn"
+                      ? "ইউজার আইডি (Login ID)"
+                      : "User ID (Login)"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={userIdVal}
+                    onChange={(e) => setUserIdVal(e.target.value)}
+                    placeholder="e.g. ctg_user2"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent font-mono"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Full Name</label>
-                  <input type="text" required value={userName} onChange={e => setUserName(e.target.value)} placeholder="Mr. Rahim" className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn" ? "পূর্ণ নাম (Full Name)" : "Full Name"}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    placeholder="জনাব মোঃ আব্দুর রহিম"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Designation</label>
-                  <input type="text" required value={userDesignation} onChange={e => setUserDesignation(e.target.value)} placeholder="Accounts Officer" className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn" ? "পদবী (Designation)" : "Designation"}
+                  </label>
+                  <input
+                    type="text"
+                    value={userDesignation}
+                    onChange={(e) => setUserDesignation(e.target.value)}
+                    placeholder="কর্মকর্তা / শাখা প্রধান"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Email</label>
-                  <input type="email" required value={userEmail} onChange={e => setUserEmail(e.target.value)} placeholder="user@office.gov" className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn" ? "ইমেইল (Email)" : "Email"}
+                  </label>
+                  <input
+                    type="email"
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    placeholder="user@office.gov"
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent font-mono"
+                  />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Role</label>
-                  <select value={userRole} onChange={e => setUserRole(e.target.value as any)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent">
-                    <option value="Super Admin" className="text-slate-900">Super Admin</option>
-                    <option value="Head Office Admin" className="text-slate-900">Head Office Admin</option>
-                    <option value="Head Office User" className="text-slate-900">Head Office User</option>
-                    <option value="Sub-office User" className="text-slate-900">Sub-office User</option>
-                    <option value="Report Viewer" className="text-slate-900">Report Viewer</option>
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn"
+                      ? "রোল / পদমর্যাদা (Role & Access)"
+                      : "Role / Access Level"}
+                  </label>
+                  <select
+                    value={userRole}
+                    onChange={(e) => setUserRole(e.target.value as any)}
+                    className={`w-full px-3 py-2 border rounded-xl text-xs bg-transparent font-medium ${
+                      isDark
+                        ? "bg-slate-900 text-slate-100"
+                        : "bg-white text-slate-900"
+                    }`}
+                  >
+                    <option value="Super Admin" className="text-slate-900">
+                      Super Admin (সুপার এডমিন - পূর্ণ নিয়ন্ত্রণ)
+                    </option>
+                    <option value="Admin" className="text-slate-900">
+                      Admin (এডমিন - সেন্ট্রাল ম্যানেজমেন্ট)
+                    </option>
+                    <option value="Moderator" className="text-slate-900">
+                      Moderator (মডারেটর - নোটশীট ও রিপোর্ট যাচাইকারী)
+                    </option>
+                    <option value="Sub-office User" className="text-slate-900">
+                      Sub-office User (শাখা/আঞ্চলিক কার্যালয় ব্যবহারকারী)
+                    </option>
+                    <option value="Head Office User" className="text-slate-900">
+                      Head Office User (হেড অফিস ব্যবহারকারী)
+                    </option>
+                    <option value="Report Viewer" className="text-slate-900">
+                      Report Viewer (রিপোর্ট পরিদর্শক)
+                    </option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Assigned Office</label>
-                  <select value={userOffice} onChange={e => setUserOffice(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent">
-                    <option value="" className="text-slate-900">Select Office</option>
-                    {offices.map(o => (
-                      <option key={o.id} value={o.id} className="text-slate-900">{o.name}</option>
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn"
+                      ? "শাখা / কর্মস্থল (Branch / Office)"
+                      : "Assigned Office / Branch"}
+                  </label>
+                  <select
+                    value={userOffice}
+                    onChange={(e) => setUserOffice(e.target.value)}
+                    className={`w-full px-3 py-2 border rounded-xl text-xs bg-transparent font-medium ${
+                      isDark
+                        ? "bg-slate-900 text-slate-100"
+                        : "bg-white text-slate-900"
+                    }`}
+                  >
+                    <option value="" className="text-slate-900">
+                      {language === "bn"
+                        ? "-- শাখা নির্বাচন করুন --"
+                        : "-- Select Office --"}
+                    </option>
+                    {offices.map((o) => (
+                      <option
+                        key={o.id}
+                        value={o.id}
+                        className="text-slate-900"
+                      >
+                        {o.code ? `[${o.code}] ` : ""}
+                        {o.name} (
+                        {o.type === "HeadOffice"
+                          ? language === "bn"
+                            ? "আঞ্চলিক/প্রধান"
+                            : "HO"
+                          : language === "bn"
+                            ? "শাখা"
+                            : "Branch"}
+                        )
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
 
+              {/* Branch transfer helper note */}
+              {editingUser && (
+                <div
+                  className={`p-2.5 rounded-xl border text-xs flex items-start gap-2 ${
+                    isOcean
+                      ? "bg-sky-950/40 border-sky-800/60 text-sky-200"
+                      : isDark
+                        ? "bg-slate-800/50 border-slate-700/60 text-slate-300"
+                        : "bg-blue-50 border-blue-200 text-blue-800"
+                  }`}
+                >
+                  <span className="font-bold shrink-0">💡 টিপস:</span>
+                  <span>
+                    {language === "bn"
+                      ? "শাখা ট্রান্সফার: এখানে শাখা/কর্মস্থল পরিবর্তন করে সংরক্ষণ করলেই উক্ত ইউজার আইডি তাৎক্ষণিকভাবে নতুন শাখার জন্য কার্যকর হবে।"
+                      : "Branch Transfer: Changing the branch here immediately moves this User ID and its operational access to the new branch."}
+                  </span>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Initial Password</label>
-                  <input type="password" required value={userPassword} onChange={e => setUserPassword(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent" />
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {editingUser
+                      ? language === "bn"
+                        ? "নতুন পাসওয়ার্ড (ঐচ্ছিক)"
+                        : "New Password (Optional)"
+                      : language === "bn"
+                        ? "প্রাথমিক পাসওয়ার্ড"
+                        : "Initial Password"}
+                  </label>
+                  <input
+                    type="password"
+                    required={!editingUser}
+                    value={userPassword}
+                    onChange={(e) => setUserPassword(e.target.value)}
+                    placeholder={
+                      editingUser
+                        ? language === "bn"
+                          ? "অপরিবর্তিত রাখতে ফাঁকা রাখুন"
+                          : "Leave blank to keep current"
+                        : "password123"
+                    }
+                    className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold opacity-75 mb-1">Status</label>
-                  <select value={userStatus} onChange={e => setUserStatus(e.target.value as any)} className="w-full px-3 py-2 border rounded-xl text-xs bg-transparent">
-                    <option value="Active" className="text-slate-900">Active</option>
-                    <option value="Inactive" className="text-slate-900">Inactive</option>
+                  <label className="block text-xs font-semibold opacity-75 mb-1">
+                    {language === "bn"
+                      ? "আইডির অবস্থা (Status)"
+                      : "Account Status"}
+                  </label>
+                  <select
+                    value={userStatus}
+                    onChange={(e) => setUserStatus(e.target.value as any)}
+                    className={`w-full px-3 py-2 border rounded-xl text-xs bg-transparent font-medium ${
+                      isDark
+                        ? "bg-slate-900 text-slate-100"
+                        : "bg-white text-slate-900"
+                    }`}
+                  >
+                    <option value="Active" className="text-slate-900">
+                      Active (সক্রিয়)
+                    </option>
+                    <option value="Inactive" className="text-slate-900">
+                      Inactive (নিষ্ক্রিয়)
+                    </option>
                   </select>
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-700/50">
-                <button type="button" onClick={() => setShowUserModal(false)} className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100">Cancel</button>
-                <button type="submit" className="px-4 py-2 rounded-xl text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold">Save User</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setEditingUser(null);
+                  }}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100 transition"
+                >
+                  {language === "bn" ? "বাতিল" : "Cancel"}
+                </button>
+                <button
+                  type="submit"
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold text-white shadow transition ${
+                    isOcean
+                      ? "bg-sky-600 hover:bg-sky-500"
+                      : "bg-emerald-600 hover:bg-emerald-500"
+                  }`}
+                >
+                  {editingUser
+                    ? language === "bn"
+                      ? "আপডেট সংরক্ষণ করুন"
+                      : "Save Changes"
+                    : language === "bn"
+                      ? "ব্যবহারকারী তৈরি করুন"
+                      : "Create User"}
+                </button>
               </div>
             </form>
           </div>
@@ -1536,48 +2405,98 @@ export function SettingsView({
             <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-800/30">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-sky-400" />
-                <h3 className="font-bold text-slate-100 text-sm">{language === "bn" ? "সহকর্মীর ইউজার আইডির প্রস্তাবনা" : "Propose Colleague User ID"}</h3>
+                <h3 className="font-bold text-slate-100 text-sm">
+                  {language === "bn"
+                    ? "সহকর্মীর ইউজার আইডির প্রস্তাবনা"
+                    : "Propose Colleague User ID"}
+                </h3>
               </div>
-              <button 
+              <button
                 onClick={() => setShowProposalModal(false)}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={submitProposal} className="p-5 flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{language === "bn" ? "সহকর্মীর পূর্ণ নাম *" : "Colleague's Full Name *"}</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {language === "bn"
+                    ? "সহকর্মীর পূর্ণ নাম *"
+                    : "Colleague's Full Name *"}
+                </label>
                 <div className="relative">
-                  <input type="text" required value={proposalName} onChange={e => setProposalName(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none" placeholder="e.g. Md. Rahim" />
+                  <input
+                    type="text"
+                    required
+                    value={proposalName}
+                    onChange={(e) => setProposalName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none"
+                    placeholder="e.g. Md. Rahim"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{language === "bn" ? "প্রস্তাবিত ইউজার আইডি *" : "Requested User ID *"}</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {language === "bn"
+                    ? "প্রস্তাবিত ইউজার আইডি *"
+                    : "Requested User ID *"}
+                </label>
                 <div className="relative">
-                  <input type="text" required value={proposalUserId} onChange={e => setProposalUserId(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none font-mono" placeholder="e.g. rahim_ctg" />
+                  <input
+                    type="text"
+                    required
+                    value={proposalUserId}
+                    onChange={(e) => setProposalUserId(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none font-mono"
+                    placeholder="e.g. rahim_ctg"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{language === "bn" ? "ইমেইল এড্রেস" : "Email Address"}</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {language === "bn" ? "ইমেইল এড্রেস" : "Email Address"}
+                </label>
                 <div className="relative">
-                  <input type="email" value={proposalEmail} onChange={e => setProposalEmail(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none font-mono" placeholder="rahim@example.com" />
+                  <input
+                    type="email"
+                    value={proposalEmail}
+                    onChange={(e) => setProposalEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none font-mono"
+                    placeholder="rahim@example.com"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">{language === "bn" ? "পদবী" : "Designation"}</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  {language === "bn" ? "পদবী" : "Designation"}
+                </label>
                 <div className="relative">
-                  <input type="text" value={proposalDesignation} onChange={e => setProposalDesignation(e.target.value)} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none" placeholder="Manager" />
+                  <input
+                    type="text"
+                    value={proposalDesignation}
+                    onChange={(e) => setProposalDesignation(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:border-sky-500 focus:outline-none"
+                    placeholder="Manager"
+                  />
                 </div>
               </div>
 
               <div className="pt-2 mt-2 border-t border-slate-800">
-                <button type="submit" disabled={proposalLoading} className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition disabled:opacity-50">
-                  {proposalLoading ? "Submitting..." : (language === "bn" ? "প্রস্তাব পাঠান" : "Submit Request")}
+                <button
+                  type="submit"
+                  disabled={proposalLoading}
+                  className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs transition disabled:opacity-50"
+                >
+                  {proposalLoading
+                    ? "Submitting..."
+                    : language === "bn"
+                      ? "প্রস্তাব পাঠান"
+                      : "Submit Request"}
                 </button>
               </div>
             </form>
@@ -1585,19 +2504,29 @@ export function SettingsView({
         </div>
       )}
 
-
       {/* Add Financial Year Modal */}
       {showAddFyModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6">
-          <div className={`m-auto rounded-2xl max-w-md w-full p-6 shadow-xl border ${
-            isOcean ? "bg-[#0f172a] border-sky-800 text-sky-100" : isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-          }`}>
+          <div
+            className={`m-auto rounded-2xl max-w-md w-full p-6 shadow-xl border ${
+              isOcean
+                ? "bg-[#0f172a] border-sky-800 text-sky-100"
+                : isDark
+                  ? "bg-slate-900 border-slate-800 text-slate-100"
+                  : "bg-white border-slate-200 text-slate-900"
+            }`}
+          >
             <div className="flex justify-between items-center pb-3 border-b border-slate-700/50 mb-4">
               <h3 className="font-bold text-base flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-emerald-500" />
-                {language === "bn" ? "নতুন অর্থবছর যোগ করুন" : "Add New Financial Year"}
+                {language === "bn"
+                  ? "নতুন অর্থবছর যোগ করুন"
+                  : "Add New Financial Year"}
               </h3>
-              <button onClick={() => setShowAddFyModal(false)} className="p-1 rounded-lg opacity-60 hover:opacity-100">
+              <button
+                onClick={() => setShowAddFyModal(false)}
+                className="p-1 rounded-lg opacity-60 hover:opacity-100"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1605,16 +2534,22 @@ export function SettingsView({
             <form onSubmit={handleAddFY} className="space-y-4 text-xs">
               <div>
                 <label className="block font-semibold mb-1 opacity-80">
-                  {language === "bn" ? "অর্থবছরের নাম (যেমন: ২০২৫-২০২৬):" : "Financial Year Name (e.g. 2025-2026):"}
+                  {language === "bn"
+                    ? "অর্থবছরের নাম (যেমন: ২০২৫-২০২৬):"
+                    : "Financial Year Name (e.g. 2025-2026):"}
                 </label>
                 <input
                   type="text"
                   required
                   placeholder="২০২৫-২০২৬"
                   value={newFyName}
-                  onChange={e => setNewFyName(e.target.value)}
+                  onChange={(e) => setNewFyName(e.target.value)}
                   className={`w-full px-3 py-2 border rounded-xl bg-transparent font-medium ${
-                    isOcean ? "border-sky-700 text-sky-100" : isDark ? "border-slate-700 text-slate-100" : "border-slate-300 text-slate-900"
+                    isOcean
+                      ? "border-sky-700 text-sky-100"
+                      : isDark
+                        ? "border-slate-700 text-slate-100"
+                        : "border-slate-300 text-slate-900"
                   }`}
                 />
               </div>
@@ -1628,9 +2563,13 @@ export function SettingsView({
                     type="date"
                     required
                     value={newFyStartDate}
-                    onChange={e => setNewFyStartDate(e.target.value)}
+                    onChange={(e) => setNewFyStartDate(e.target.value)}
                     className={`w-full px-3 py-2 border rounded-xl bg-transparent font-medium ${
-                      isOcean ? "border-sky-700 text-sky-100" : isDark ? "border-slate-700 text-slate-100" : "border-slate-300 text-slate-900"
+                      isOcean
+                        ? "border-sky-700 text-sky-100"
+                        : isDark
+                          ? "border-slate-700 text-slate-100"
+                          : "border-slate-300 text-slate-900"
                     }`}
                   />
                 </div>
@@ -1642,9 +2581,13 @@ export function SettingsView({
                     type="date"
                     required
                     value={newFyEndDate}
-                    onChange={e => setNewFyEndDate(e.target.value)}
+                    onChange={(e) => setNewFyEndDate(e.target.value)}
                     className={`w-full px-3 py-2 border rounded-xl bg-transparent font-medium ${
-                      isOcean ? "border-sky-700 text-sky-100" : isDark ? "border-slate-700 text-slate-100" : "border-slate-300 text-slate-900"
+                      isOcean
+                        ? "border-sky-700 text-sky-100"
+                        : isDark
+                          ? "border-slate-700 text-slate-100"
+                          : "border-slate-300 text-slate-900"
                     }`}
                   />
                 </div>
@@ -1656,21 +2599,36 @@ export function SettingsView({
                 </label>
                 <select
                   value={newFyStatus}
-                  onChange={e => setNewFyStatus(e.target.value as any)}
+                  onChange={(e) => setNewFyStatus(e.target.value as any)}
                   className={`w-full px-3 py-2 border rounded-xl bg-transparent font-medium ${
-                    isOcean ? "border-sky-700 text-sky-100 bg-sky-950" : isDark ? "border-slate-700 text-slate-100 bg-slate-800" : "border-slate-300 text-slate-900 bg-white"
+                    isOcean
+                      ? "border-sky-700 text-sky-100 bg-sky-950"
+                      : isDark
+                        ? "border-slate-700 text-slate-100 bg-slate-800"
+                        : "border-slate-300 text-slate-900 bg-white"
                   }`}
                 >
-                  <option value="Active" className="text-slate-900">{language === "bn" ? "সক্রিয় (Active)" : "Active"}</option>
-                  <option value="Inactive" className="text-slate-900">{language === "bn" ? "নিষ্ক্রিয় (Inactive)" : "Inactive"}</option>
+                  <option value="Active" className="text-slate-900">
+                    {language === "bn" ? "সক্রিয় (Active)" : "Active"}
+                  </option>
+                  <option value="Inactive" className="text-slate-900">
+                    {language === "bn" ? "নিষ্ক্রিয় (Inactive)" : "Inactive"}
+                  </option>
                 </select>
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-700/50">
-                <button type="button" onClick={() => setShowAddFyModal(false)} className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAddFyModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold opacity-70 hover:opacity-100"
+                >
                   {language === "bn" ? "বাতিল" : "Cancel"}
                 </button>
-                <button type="submit" className="px-4 py-2 rounded-xl text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow"
+                >
                   {language === "bn" ? "সংরক্ষণ করুন" : "Save Financial Year"}
                 </button>
               </div>
@@ -1682,15 +2640,26 @@ export function SettingsView({
       {/* Close Financial Year Modal */}
       {showCloseModal && closingFy && (
         <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6 sm:p-6">
-          <div className={`rounded-2xl max-w-3xl w-full p-6 shadow-2xl border m-auto max-h-[90vh] flex flex-col ${
-            isOcean ? "bg-[#0f172a] border-sky-800 text-sky-100" : isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"
-          }`}>
+          <div
+            className={`rounded-2xl max-w-3xl w-full p-6 shadow-2xl border m-auto max-h-[90vh] flex flex-col ${
+              isOcean
+                ? "bg-[#0f172a] border-sky-800 text-sky-100"
+                : isDark
+                  ? "bg-slate-900 border-slate-800 text-slate-100"
+                  : "bg-white border-slate-200 text-slate-900"
+            }`}
+          >
             <div className="flex justify-between items-center pb-4 border-b border-slate-700/50 shrink-0">
               <h3 className="text-lg font-bold flex items-center gap-2 text-amber-500">
                 <Lock className="w-5 h-5" />
-                {language === "bn" ? `অর্থবছর ক্লোজিং: ${closingFy.name}` : `Close Financial Year: ${closingFy.name}`}
+                {language === "bn"
+                  ? `অর্থবছর ক্লোজিং: ${closingFy.name}`
+                  : `Close Financial Year: ${closingFy.name}`}
               </h3>
-              <button onClick={() => setShowCloseModal(false)} className="p-1 rounded-lg opacity-60 hover:opacity-100 hover:bg-slate-800/50">
+              <button
+                onClick={() => setShowCloseModal(false)}
+                className="p-1 rounded-lg opacity-60 hover:opacity-100 hover:bg-slate-800/50"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1700,31 +2669,61 @@ export function SettingsView({
               <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-2">
                 <div className="flex items-center gap-2 font-bold text-amber-400">
                   <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {language === "bn" ? "জরুরি নির্দেশনা ও নিয়মাবলী:" : "Important Rules & Consequences:"}
+                  {language === "bn"
+                    ? "জরুরি নির্দেশনা ও নিয়মাবলী:"
+                    : "Important Rules & Consequences:"}
                 </div>
                 <ul className="list-disc pl-5 space-y-1 text-xs opacity-90">
-                  <li>{language === "bn" ? "অর্থবছরটি লক করা হবে (423 Locked)। এর পর এতে আর কোনো বরাদ্দ, ব্যয় বা নোটশিট যোগ/সম্পাদনা করা যাবে না।" : "The financial year will be locked (423 Locked). No further entries or edits will be allowed."}</li>
-                  <li>{language === "bn" ? "কোনো পেন্ডিং (Pending) ব্যয় থাকলে এই বছর ক্লোজ করা যাবে না।" : "If there are pending expenses for this year, closing will be rejected."}</li>
-                  <li>{language === "bn" ? "পরবর্তী অর্থবছরে নির্বাচিত মান অনুযায়ী স্বয়ংক্রিয়ভাবে ওপেনিং ব্যালেন্স (Opening Balance) তৈরি হবে।" : "Opening Balances will be generated automatically for the target financial year based on your matrix below."}</li>
+                  <li>
+                    {language === "bn"
+                      ? "অর্থবছরটি লক করা হবে (423 Locked)। এর পর এতে আর কোনো বরাদ্দ, ব্যয় বা নোটশিট যোগ/সম্পাদনা করা যাবে না।"
+                      : "The financial year will be locked (423 Locked). No further entries or edits will be allowed."}
+                  </li>
+                  <li>
+                    {language === "bn"
+                      ? "কোনো পেন্ডিং (Pending) ব্যয় থাকলে এই বছর ক্লোজ করা যাবে না।"
+                      : "If there are pending expenses for this year, closing will be rejected."}
+                  </li>
+                  <li>
+                    {language === "bn"
+                      ? "পরবর্তী অর্থবছরে নির্বাচিত মান অনুযায়ী স্বয়ংক্রিয়ভাবে ওপেনিং ব্যালেন্স (Opening Balance) তৈরি হবে।"
+                      : "Opening Balances will be generated automatically for the target financial year based on your matrix below."}
+                  </li>
                 </ul>
               </div>
 
               {/* Target FY Selector */}
               <div>
                 <label className="block font-bold mb-1 opacity-80">
-                  {language === "bn" ? "ওপেনিং ব্যালেন্স বহনের জন্য লক্ষ্য অর্থবছর (Target FY):" : "Target FY for Opening Balance Transfer:"}
+                  {language === "bn"
+                    ? "ওপেনিং ব্যালেন্স বহনের জন্য লক্ষ্য অর্থবছর (Target FY):"
+                    : "Target FY for Opening Balance Transfer:"}
                 </label>
                 <select
                   value={targetFyId}
-                  onChange={e => setTargetFyId(e.target.value)}
+                  onChange={(e) => setTargetFyId(e.target.value)}
                   className={`w-full px-3 py-2 border rounded-xl bg-transparent font-semibold focus:outline-none ${
-                    isOcean ? "border-sky-700 text-sky-100 bg-sky-950" : isDark ? "border-slate-700 text-slate-100 bg-slate-800" : "border-slate-300 text-slate-900 bg-white"
+                    isOcean
+                      ? "border-sky-700 text-sky-100 bg-sky-950"
+                      : isDark
+                        ? "border-slate-700 text-slate-100 bg-slate-800"
+                        : "border-slate-300 text-slate-900 bg-white"
                   }`}
                 >
-                  <option value="" disabled className="text-slate-900">Select Target Financial Year</option>
-                  {financialYears.filter(f => f.id !== closingFy.id).map(f => (
-                    <option key={f.id} value={f.id} className="text-slate-900">{f.name} {f.status === "Active" ? "(Active)" : ""}</option>
-                  ))}
+                  <option value="" disabled className="text-slate-900">
+                    Select Target Financial Year
+                  </option>
+                  {financialYears
+                    .filter((f) => f.id !== closingFy.id)
+                    .map((f) => (
+                      <option
+                        key={f.id}
+                        value={f.id}
+                        className="text-slate-900"
+                      >
+                        {f.name} {f.status === "Active" ? "(Active)" : ""}
+                      </option>
+                    ))}
                 </select>
               </div>
 
@@ -1732,18 +2731,30 @@ export function SettingsView({
               <div>
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-3">
                   <label className="font-bold opacity-80">
-                    {language === "bn" ? "অফিস ও খাতভিত্তিক অবশিষ্টাংশ এবং ওপেনিং ব্যালেন্স নির্ধারণ:" : "Office & Category Carry-Forward Matrix:"}
+                    {language === "bn"
+                      ? "অফিস ও খাতভিত্তিক অবশিষ্টাংশ এবং ওপেনিং ব্যালেন্স নির্ধারণ:"
+                      : "Office & Category Carry-Forward Matrix:"}
                   </label>
                   <div className="flex flex-wrap items-center gap-2">
                     <select
                       value={closingOfficeId}
                       onChange={(e) => setClosingOfficeId(e.target.value)}
                       className={`px-3 py-1.5 border rounded-lg text-xs font-semibold focus:outline-none ${
-                        isOcean ? "border-sky-700 text-sky-100 bg-sky-950" : isDark ? "border-slate-700 text-slate-100 bg-slate-800" : "border-slate-300 text-slate-900 bg-white"
+                        isOcean
+                          ? "border-sky-700 text-sky-100 bg-sky-950"
+                          : isDark
+                            ? "border-slate-700 text-slate-100 bg-slate-800"
+                            : "border-slate-300 text-slate-900 bg-white"
                       }`}
                     >
-                      {offices.map(off => (
-                        <option key={off.id} value={off.id} className="text-slate-900">{off.name}</option>
+                      {offices.map((off) => (
+                        <option
+                          key={off.id}
+                          value={off.id}
+                          className="text-slate-900"
+                        >
+                          {off.name}
+                        </option>
                       ))}
                     </select>
                     <button
@@ -1751,26 +2762,45 @@ export function SettingsView({
                       onClick={() => {
                         if (!closingOfficeId) return;
                         const newMap = { ...carryMap };
-                        categories.forEach(cat => {
+                        categories.forEach((cat) => {
                           const key = `${closingOfficeId}_${cat.id}`;
-                          const fyAllocations = allocations.filter(a => a.financialYearId === closingFy.id && a.officeId === closingOfficeId && a.categoryId === cat.id);
-                          const fyExpenses = expenses.filter(e => e.financialYearId === closingFy.id && e.officeId === closingOfficeId && e.categoryId === cat.id && e.status !== "Rejected");
-                          const totalAlloc = fyAllocations.reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
-                          const totalSpent = fyExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
+                          const fyAllocations = allocations.filter(
+                            (a) =>
+                              a.financialYearId === closingFy.id &&
+                              a.officeId === closingOfficeId &&
+                              a.categoryId === cat.id,
+                          );
+                          const fyExpenses = expenses.filter(
+                            (e) =>
+                              e.financialYearId === closingFy.id &&
+                              e.officeId === closingOfficeId &&
+                              e.categoryId === cat.id &&
+                              e.status !== "Rejected",
+                          );
+                          const totalAlloc = fyAllocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount || 0),
+                            0,
+                          );
+                          const totalSpent = fyExpenses.reduce(
+                            (sum, e) => sum + Number(e.amount || 0),
+                            0,
+                          );
                           newMap[key] = Math.max(0, totalAlloc - totalSpent);
                         });
                         setCarryMap(newMap);
                       }}
                       className="px-2.5 py-1.5 rounded-lg bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold hover:bg-emerald-600/30 whitespace-nowrap"
                     >
-                      {language === "bn" ? "বর্তমান অফিসে ১০০% ট্রান্সফার" : "Set 100% for this Office"}
+                      {language === "bn"
+                        ? "বর্তমান অফিসে ১০০% ট্রান্সফার"
+                        : "Set 100% for this Office"}
                     </button>
                     <button
                       type="button"
                       onClick={() => {
                         if (!closingOfficeId) return;
                         const newMap = { ...carryMap };
-                        categories.forEach(cat => {
+                        categories.forEach((cat) => {
                           newMap[`${closingOfficeId}_${cat.id}`] = 0;
                         });
                         setCarryMap(newMap);
@@ -1785,49 +2815,105 @@ export function SettingsView({
                 <div className="border rounded-xl overflow-hidden max-h-[30vh] overflow-y-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
-                      <tr className={`border-b font-semibold sticky top-0 z-10 ${
-                        isOcean ? "bg-sky-950 text-sky-200 border-sky-800" : isDark ? "bg-slate-800 text-slate-200 border-slate-700" : "bg-slate-100 text-slate-700 border-slate-200"
-                      }`}>
-                        <th className="p-2.5">{language === "bn" ? "খাত" : "Category"}</th>
-                        <th className="p-2.5 text-right">{language === "bn" ? "চলতি ব্যালেন্স" : "Available Balance"}</th>
-                        <th className="p-2.5 text-right">{language === "bn" ? "ওপেনিং ব্যালেন্স ট্রান্সফার" : "Opening Balance Amount"}</th>
+                      <tr
+                        className={`border-b font-semibold sticky top-0 z-10 ${
+                          isOcean
+                            ? "bg-sky-950 text-sky-200 border-sky-800"
+                            : isDark
+                              ? "bg-slate-800 text-slate-200 border-slate-700"
+                              : "bg-slate-100 text-slate-700 border-slate-200"
+                        }`}
+                      >
+                        <th className="p-2.5">
+                          {language === "bn" ? "খাত" : "Category"}
+                        </th>
+                        <th className="p-2.5 text-right">
+                          {language === "bn"
+                            ? "চলতি ব্যালেন্স"
+                            : "Available Balance"}
+                        </th>
+                        <th className="p-2.5 text-right">
+                          {language === "bn"
+                            ? "ওপেনিং ব্যালেন্স ট্রান্সফার"
+                            : "Opening Balance Amount"}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-700/20 font-mono">
-                      {closingOfficeId && categories.map(cat => {
-                        const key = `${closingOfficeId}_${cat.id}`;
-                        const fyAllocations = allocations.filter(a => a.financialYearId === closingFy.id && a.officeId === closingOfficeId && a.categoryId === cat.id);
-                        const fyExpenses = expenses.filter(e => e.financialYearId === closingFy.id && e.officeId === closingOfficeId && e.categoryId === cat.id && e.status !== "Rejected");
-                        const totalAlloc = fyAllocations.reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
-                        const totalSpent = fyExpenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
-                        const currentAvail = Math.max(0, totalAlloc - totalSpent);
-                        const currentCarry = carryMap[key] !== undefined ? carryMap[key] : currentAvail;
+                      {closingOfficeId &&
+                        categories.map((cat) => {
+                          const key = `${closingOfficeId}_${cat.id}`;
+                          const fyAllocations = allocations.filter(
+                            (a) =>
+                              a.financialYearId === closingFy.id &&
+                              a.officeId === closingOfficeId &&
+                              a.categoryId === cat.id,
+                          );
+                          const fyExpenses = expenses.filter(
+                            (e) =>
+                              e.financialYearId === closingFy.id &&
+                              e.officeId === closingOfficeId &&
+                              e.categoryId === cat.id &&
+                              e.status !== "Rejected",
+                          );
+                          const totalAlloc = fyAllocations.reduce(
+                            (sum, a) => sum + Number(a.allocatedAmount || 0),
+                            0,
+                          );
+                          const totalSpent = fyExpenses.reduce(
+                            (sum, e) => sum + Number(e.amount || 0),
+                            0,
+                          );
+                          const currentAvail = Math.max(
+                            0,
+                            totalAlloc - totalSpent,
+                          );
+                          const currentCarry =
+                            carryMap[key] !== undefined
+                              ? carryMap[key]
+                              : currentAvail;
 
-                        return (
-                          <tr key={key} className="hover:bg-slate-800/10">
-                            <td className="p-2 font-sans font-medium">{cat.name}</td>
-                            <td className="p-2 text-right text-emerald-400 font-semibold">৳{currentAvail.toLocaleString("bn-BD")}</td>
-                            <td className="p-2 text-right">
-                              <input
-                                type="number"
-                                min="0"
-                                value={currentCarry}
-                                onChange={e => {
-                                  const val = Math.max(0, Number(e.target.value) || 0);
-                                  setCarryMap({ ...carryMap, [key]: val });
-                                }}
-                                className={`w-28 px-2 py-1 text-right border rounded-lg bg-transparent font-bold text-xs focus:outline-none ${
-                                  isOcean ? "border-sky-700 text-sky-100" : isDark ? "border-slate-700 text-slate-100" : "border-slate-300 text-slate-900"
-                                }`}
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
+                          return (
+                            <tr key={key} className="hover:bg-slate-800/10">
+                              <td className="p-2 font-sans font-medium">
+                                {cat.name}
+                              </td>
+                              <td className="p-2 text-right text-emerald-400 font-semibold">
+                                ৳{currentAvail.toLocaleString("bn-BD")}
+                              </td>
+                              <td className="p-2 text-right">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={currentCarry}
+                                  onChange={(e) => {
+                                    const val = Math.max(
+                                      0,
+                                      Number(e.target.value) || 0,
+                                    );
+                                    setCarryMap({ ...carryMap, [key]: val });
+                                  }}
+                                  className={`w-28 px-2 py-1 text-right border rounded-lg bg-transparent font-bold text-xs focus:outline-none ${
+                                    isOcean
+                                      ? "border-sky-700 text-sky-100"
+                                      : isDark
+                                        ? "border-slate-700 text-slate-100"
+                                        : "border-slate-300 text-slate-900"
+                                  }`}
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
                       {!closingOfficeId && (
                         <tr>
-                          <td colSpan={3} className="p-4 text-center opacity-60">
-                            {language === "bn" ? "অনুগ্রহ করে একটি অফিস নির্বাচন করুন" : "Please select an office"}
+                          <td
+                            colSpan={3}
+                            className="p-4 text-center opacity-60"
+                          >
+                            {language === "bn"
+                              ? "অনুগ্রহ করে একটি অফিস নির্বাচন করুন"
+                              : "Please select an office"}
                           </td>
                         </tr>
                       )}
@@ -1860,14 +2946,19 @@ export function SettingsView({
                 onClick={handleConfirmCloseFY}
                 className="px-5 py-2 rounded-xl text-xs bg-amber-600 hover:bg-amber-500 text-white font-bold inline-flex items-center gap-2 shadow disabled:opacity-50"
               >
-                {isSubmittingClose ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
-                {language === "bn" ? "🔒 বছর ক্লোজ ও ওপেনিং ব্যালেন্স ট্রান্সফার নিশ্চিত করুন" : "🔒 Confirm Close Financial Year"}
+                {isSubmittingClose ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+                {language === "bn"
+                  ? "🔒 বছর ক্লোজ ও ওপেনিং ব্যালেন্স ট্রান্সফার নিশ্চিত করুন"
+                  : "🔒 Confirm Close Financial Year"}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

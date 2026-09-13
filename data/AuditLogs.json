@@ -1,5 +1,205 @@
 [
   {
+    "id": "al-1789325705302",
+    "timestamp": "2026-09-13 18:55:05",
+    "userId": "usr-1",
+    "action": "CREATE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789325704269",
+    "details": "Created record in Users",
+    "prevHash": "aa1cb8335294aa334208bd50a8e5deb7743305e79b3a511da13c672ffa1e6cbc"
+  },
+  {
+    "id": "al-1789325697602",
+    "timestamp": "2026-09-13 18:54:57",
+    "userId": "usr-1",
+    "action": "CREATE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789325696168",
+    "details": "Created record in Users",
+    "prevHash": "0e8cae1933d1938916c4c1ce2461d5b4ded132b6525bf51413f7f0de49ee9819"
+  },
+  {
+    "id": "al-1789325667357",
+    "timestamp": "2026-09-13 18:54:27",
+    "userId": "usr-1",
+    "action": "CREATE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789325666563",
+    "details": "Created record in Users",
+    "prevHash": "4d11268328812bc012618ec4449ebad30318907a96a91f754262a93aa9efe867"
+  },
+  {
+    "id": "al-1789325660171",
+    "timestamp": "2026-09-13 18:54:20",
+    "userId": "usr-1",
+    "action": "CREATE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789325659440",
+    "details": "Created record in Users",
+    "prevHash": "c4cc47091d3f7b2d39eeca8cee306a960ce06390720991da2209d16074ad219a"
+  },
+  {
+    "id": "al-1789325653151",
+    "timestamp": "2026-09-13 18:54:13",
+    "userId": "usr-1",
+    "action": "UPDATE_USERS",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Updated record usr-1 in Users",
+    "prevHash": "f06cd60dc043de9a7c96f6df9072e426c078ef79de62553dbe50c53dd04bd188"
+  },
+  {
+    "id": "al-1789325601583",
+    "timestamp": "2026-09-13 18:53:21",
+    "userId": "moderator",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "6fd253e862b1cd2ded54504e603bdb3c1191ede8b92914f60779f4afd09e310c"
+  },
+  {
+    "id": "al-1789325601578",
+    "timestamp": "2026-09-13 18:53:21",
+    "userId": "admin_user",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "efbf85e5da6f7e3cbbd2c77366008eb6b4b10f0bfd3704140173d88058bb7d5a"
+  },
+  {
+    "id": "al-1789325554597",
+    "timestamp": "2026-09-13 18:52:34",
+    "userId": "moderator",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "2553c95ec4256716e5ddfb017a5a7e2760e7bc3af8f40d412d8dcd72d1d93e78"
+  },
+  {
+    "id": "al-1789325554592",
+    "timestamp": "2026-09-13 18:52:34",
+    "userId": "admin_user",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "456ca7804cb2f3f3512529281ba4d2b8a21ad62723e380597fc4d82ac2ffc85b"
+  },
+  {
+    "id": "al-1789325541354",
+    "timestamp": "2026-09-13 18:52:21",
+    "userId": "moderator",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "978876bd33bee8198c29a6d96ab9597d9573c2957fb8110fc39454dcfa058b8b"
+  },
+  {
+    "id": "al-1789325541349",
+    "timestamp": "2026-09-13 18:52:21",
+    "userId": "admin_user",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "dbafa56c4c4ff47fae2e4b64c5e1b0def0fb9849868a4cb5a4e2bcd358a4bc40"
+  },
+  {
+    "id": "al-1789325513678",
+    "timestamp": "2026-09-13 18:51:53",
+    "userId": "moderator",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "df1e4b6b393f0a755743d6996b0552adf5ffbf5b4160062dce063236b36cfe77"
+  },
+  {
+    "id": "al-1789325513672",
+    "timestamp": "2026-09-13 18:51:53",
+    "userId": "admin_user",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "59c735f9f00821a30934bfc060aafc118367ba70eb9ef6c2cc26a60b03310422"
+  },
+  {
+    "id": "al-1789325513657",
+    "timestamp": "2026-09-13 18:51:53",
+    "userId": "admin",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "usr-1",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "cb71a70adc75c8efe38c2d7fa5292b59e49afffa6ea030bcac7822ca7438fa13"
+  },
+  {
+    "id": "al-1789297713947",
+    "timestamp": "2026-09-13 11:08:33",
+    "userId": "user1",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "system",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "60abc7235f25e652c15f67718be22fe717dbefba0c1069edb6783ffb20b2da28"
+  },
+  {
+    "id": "al-1789297689052",
+    "timestamp": "2026-09-13 11:08:09",
+    "userId": "usr-1",
+    "action": "CREATE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789297687860",
+    "details": "Created record in Users",
+    "prevHash": "f57fded00c6b12e123049a6e2af792ea50b37158987ab803c85d5881ccc26177"
+  },
+  {
+    "id": "al-1789233152658",
+    "timestamp": "2026-09-12 17:12:32",
+    "userId": "usr-1",
+    "action": "UPDATE_EXPENSES",
+    "tableName": "Expenses",
+    "recordId": "exp-1788968856863",
+    "details": "Updated expense exp-1788968856863. Old: {\"id\":\"exp-1788968856863\",\"financialYearId\":\"fy-3\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-2\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form2\",\"expenseDate\":\"2026-09-09\",\"amount\":16537,\"baseAmount\":16537,\"vatRate\":10,\"vatAmount\":1653.7,\"taxRate\":5,\"taxAmount\":826.85,\"voucherNo\":\"প্রশা-1(14)/2026-2027/386\",\"voucherDate\":\"2026-09-09\",\"description\":\"সঞ্চয়ী হিসাব জমা বই (1000 টি), আমানত লিফলেট (3000 টি)\",\"remarks\":\"\",\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-12 17:12:25\"},\"hasStockChalan\":\"না\",\"vatChalanNo\":\"\",\"vatChalanDate\":\"\",\"quotationItems\":[{\"itemDescription\":\"সঞ্চয়ী হিসাব জমা বই\",\"specification\":\"\",\"qty\":1000,\"unit\":\"টি\",\"unitPrice\":8.15,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.15,\"qty\":1000,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.08,\"qty\":1000,\"totalPrice\":8080,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.2,\"qty\":1000,\"totalPrice\":8200,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]},{\"itemDescription\":\"আমানত লিফলেট\",\"specification\":\"\",\"qty\":3000,\"unit\":\"টি\",\"unitPrice\":2.15,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.15,\"qty\":3000,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.1,\"qty\":3000,\"totalPrice\":6300,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.2,\"qty\":3000,\"totalPrice\":6600,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]}],\"branchEntries\":[],\"debitAccount\":\"৪১/৮৬\",\"paymentType\":\"একক সরবরাহকারী\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"memoForwardingNo\":\"সূত্র নং-কশি-০৬ (অংশ-০৩)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-09\",\"supplyRecipientName\":\"জনাব মোজাম্মেল হক\",\"supplyRecipientDesignation\":\"প্রোপ্রাইটর\",\"supplyRecipientOrgName\":\"রঙতুলি প্রেস\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"supplierOrg1\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg2\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg3\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"status\":\"Pending\",\"netPayable\":14056.45,\"grossAmount\":16537,\"noteSheetId\":\"ns-1788968856938\"}, New: {\"id\":\"exp-1788968856863\",\"financialYearId\":\"fy-3\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-2\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form2\",\"expenseDate\":\"2026-09-09\",\"amount\":16537,\"baseAmount\":16537,\"vatRate\":10,\"vatAmount\":1653.7,\"taxRate\":5,\"taxAmount\":826.85,\"voucherNo\":\"প্রশা-1(14)/2026-2027/386\",\"voucherDate\":\"2026-09-09\",\"description\":\"সঞ্চয়ী হিসাব জমা বই (1000 টি), আমানত লিফলেট (3000 টি)\",\"remarks\":\"\",\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-12 17:12:30\"},\"hasStockChalan\":\"না\",\"vatChalanNo\":\"\",\"vatChalanDate\":\"\",\"quotationItems\":[{\"itemDescription\":\"সঞ্চয়ী হিসাব জমা বই\",\"specification\":\"\",\"qty\":1000,\"unit\":\"টি\",\"unitPrice\":8.15,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.15,\"qty\":1000,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.08,\"qty\":1000,\"totalPrice\":8080,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.2,\"qty\":1000,\"totalPrice\":8200,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]},{\"itemDescription\":\"আমানত লিফলেট\",\"specification\":\"\",\"qty\":3000,\"unit\":\"টি\",\"unitPrice\":2.15,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.15,\"qty\":3000,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.1,\"qty\":3000,\"totalPrice\":6300,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.2,\"qty\":3000,\"totalPrice\":6600,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]}],\"branchEntries\":[],\"debitAccount\":\"৪১/৮৬\",\"paymentType\":\"একক সরবরাহকারী\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"memoForwardingNo\":\"সূত্র নং-কশি-০৬ (অংশ-০৩)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-09\",\"supplyRecipientName\":\"জনাব মোজাম্মেল হক\",\"supplyRecipientDesignation\":\"প্রোপ্রাইটর\",\"supplyRecipientOrgName\":\"রঙতুলি প্রেস\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"supplierOrg1\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg2\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg3\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"status\":\"Pending\",\"netPayable\":14056.45,\"grossAmount\":16537,\"noteSheetId\":\"ns-1788968856938\"}",
+    "prevHash": "9d3e0825bd2bdf6fe9d9224c281273e847ca10f874728d67f5d9813af1cb432d"
+  },
+  {
+    "id": "al-1789233147058",
+    "timestamp": "2026-09-12 17:12:27",
+    "userId": "usr-1",
+    "action": "UPDATE_EXPENSES",
+    "tableName": "Expenses",
+    "recordId": "exp-1788968856863",
+    "details": "Updated expense exp-1788968856863. Old: {\"id\":\"exp-1788968856863\",\"financialYearId\":\"fy-3\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-2\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form2\",\"expenseDate\":\"2026-09-09\",\"amount\":16537,\"baseAmount\":16537,\"vatRate\":10,\"vatAmount\":1653.7,\"taxRate\":5,\"taxAmount\":826.85,\"voucherNo\":\"প্রশা-1(14)/2026-2027/\",\"voucherDate\":\"2026-09-09\",\"description\":\"সঞ্চয়ী হিসাব জমা বই (1000 টি), আমানত লিফলেট (3000 টি)\",\"remarks\":\"\",\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-09 15:47:34\"},\"hasStockChalan\":\"না\",\"vatChalanNo\":\"\",\"vatChalanDate\":\"\",\"quotationItems\":[{\"itemDescription\":\"সঞ্চয়ী হিসাব জমা বই\",\"specification\":\"\",\"qty\":1000,\"unit\":\"টি\",\"unitPrice\":8.15,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.15,\"qty\":1000,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.08,\"qty\":1000,\"totalPrice\":8080,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.2,\"qty\":1000,\"totalPrice\":8200,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]},{\"itemDescription\":\"আমানত লিফলেট\",\"specification\":\"\",\"qty\":3000,\"unit\":\"টি\",\"unitPrice\":2.15,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.15,\"qty\":3000,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.1,\"qty\":3000,\"totalPrice\":6300,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.2,\"qty\":3000,\"totalPrice\":6600,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]}],\"branchEntries\":[],\"debitAccount\":\"৪১/৮৬\",\"paymentType\":\"একক সরবরাহকারী\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"memoForwardingNo\":\"সূত্র নং-কশি-০৬ (অংশ-০৩)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-09\",\"supplyRecipientName\":\"জনাব মোজাম্মেল হক\",\"supplyRecipientDesignation\":\"প্রোপ্রাইটর\",\"supplyRecipientOrgName\":\"রঙতুলি প্রেস\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"supplierOrg1\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg2\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg3\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"status\":\"Pending\",\"netPayable\":14056.45,\"grossAmount\":16537,\"noteSheetId\":\"ns-1788968856938\"}, New: {\"id\":\"exp-1788968856863\",\"financialYearId\":\"fy-3\",\"officeId\":\"off-ho\",\"categoryId\":\"cat-2\",\"expenseType\":\"Quotation\",\"quotationFormType\":\"Form2\",\"expenseDate\":\"2026-09-09\",\"amount\":16537,\"baseAmount\":16537,\"vatRate\":10,\"vatAmount\":1653.7,\"taxRate\":5,\"taxAmount\":826.85,\"voucherNo\":\"প্রশা-1(14)/2026-2027/386\",\"voucherDate\":\"2026-09-09\",\"description\":\"সঞ্চয়ী হিসাব জমা বই (1000 টি), আমানত লিফলেট (3000 টি)\",\"remarks\":\"\",\"supportingDocument\":\"\",\"applicant\":{\"type\":\"OwnOffice\",\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\"},\"entryOfficer\":{\"name\":\"Mr. Admin (HO)\",\"designation\":\"Director\",\"officeId\":\"off-ho\",\"userId\":\"usr-1\",\"dateTime\":\"2026-09-12 17:12:25\"},\"hasStockChalan\":\"না\",\"vatChalanNo\":\"\",\"vatChalanDate\":\"\",\"quotationItems\":[{\"itemDescription\":\"সঞ্চয়ী হিসাব জমা বই\",\"specification\":\"\",\"qty\":1000,\"unit\":\"টি\",\"unitPrice\":8.15,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.15,\"qty\":1000,\"totalPrice\":8150,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.08,\"qty\":1000,\"totalPrice\":8080,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":8.2,\"qty\":1000,\"totalPrice\":8200,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]},{\"itemDescription\":\"আমানত লিফলেট\",\"specification\":\"\",\"qty\":3000,\"unit\":\"টি\",\"unitPrice\":2.15,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\",\"suppliers\":[{\"nameAndAddress\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.15,\"qty\":3000,\"totalPrice\":6450,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"২য় সর্বোচ্চ দরদাতা\"},{\"nameAndAddress\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.1,\"qty\":3000,\"totalPrice\":6300,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বনিম্ন দরদাতা\"},{\"nameAndAddress\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"unitPrice\":2.2,\"qty\":3000,\"totalPrice\":6600,\"vatRate\":10,\"taxRate\":5,\"remarks\":\"সর্বোচ্চ দরদাতা\"}]}],\"branchEntries\":[],\"debitAccount\":\"৪১/৮৬\",\"paymentType\":\"একক সরবরাহকারী\",\"memoSupplyOrderNo\":\"সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/\",\"memoForwardingNo\":\"সূত্র নং-কশি-০৬ (অংশ-০৩)/২০২৬-২০২৭/\",\"quotationDate\":\"2026-09-09\",\"supplyRecipientName\":\"জনাব মোজাম্মেল হক\",\"supplyRecipientDesignation\":\"প্রোপ্রাইটর\",\"supplyRecipientOrgName\":\"রঙতুলি প্রেস\",\"supplyRecipientAddress1\":\"বনরূপা\",\"supplyRecipientAddress2\":\"রাঙ্গামাটি।\",\"supplierOrg1\":\"সীবলী অপসেট প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg2\":\"রঙতুলি প্রেস, বনরূপা, রাঙ্গামাটি।\",\"supplierOrg3\":\"জেকে, প্রিন্টার্স, বনরূপা, রাঙ্গামাটি।\",\"status\":\"Pending\",\"netPayable\":14056.45,\"grossAmount\":16537,\"noteSheetId\":\"ns-1788968856938\"}",
+    "prevHash": "60cb4f239296442edc75c500f31af1b8a433e0a299daa9a80a011a1dfaae1e6c"
+  },
+  {
+    "id": "al-1789233126365",
+    "timestamp": "2026-09-12 17:12:06",
+    "userId": "usr-1",
+    "action": "CREATE_ALLOCATIONS",
+    "tableName": "Allocations",
+    "recordId": "all-1789233125542",
+    "details": "Created record in Allocations",
+    "prevHash": "f8252745dbd261539f18bffc5bf26f374803046b60449ac5e2f08403761f0601"
+  },
+  {
+    "id": "al-1789232607522",
+    "timestamp": "2026-09-12 17:03:27",
+    "userId": "usr-1",
+    "action": "UPDATE_SETTINGS",
+    "tableName": "Settings",
+    "recordId": "sys-1",
+    "details": "Updated record sys-1 in Settings",
+    "prevHash": "12ad6ff928d732fceeba534942a4a6931f47f5247611cc96b8ec856c7c449cd9"
+  },
+  {
     "id": "al-1789015334952",
     "timestamp": "2026-09-10 04:42:14",
     "userId": "admin",

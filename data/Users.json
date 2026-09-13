@@ -2,11 +2,11 @@
   {
     "id": "usr-1",
     "userId": "admin",
-    "name": "Mr. Admin (HO)",
+    "name": "সুপার এডমিন (Super Admin)",
     "email": "admin@headoffice.gov",
-    "role": "Head Office Admin",
+    "role": "Super Admin",
     "officeId": "off-ho",
-    "designation": "Director",
+    "designation": "Super Administrator",
     "passwordHash": "28a5052a7a6fc48230bece66e4a15b0201ccb0ab9029916a191ed2351e1c0221c317929b2ed1ff7a2f10c2d094e93731c7e3e2b6bd77c63aa30c2298613596a9",
     "status": "Active",
     "passwordSalt": "d2168aa1d134274da18135270fee3e9c"
@@ -46,5 +46,65 @@
     "passwordHash": "531fcd5ea0655acca8df879b66b0368426c97be7f2b337575f128a8c532336f8263ad88dd057be8db3a5b949646b0e532786cc1960a3cae10ee77210497b4114",
     "status": "Active",
     "passwordSalt": "c89909b71e8247fda82a779b82baa649"
+  },
+  {
+    "id": "use-1789297687860",
+    "userId": "user01",
+    "name": "Proggya Paromi Chakma",
+    "email": "user@oaem.com",
+    "role": "Head Office User",
+    "officeId": "off-ho",
+    "designation": "Officer",
+    "status": "Active",
+    "passwordSalt": "c7db51cb759a6151caa4e9428d3ecab0",
+    "passwordHash": "c94532585dd7f4dfe56bd614500b14c81712f87f43ccdc8279baf5377bc47254809dcadcbe205342d39d2b1b48ec16784a9b02cb654d63a1ae630e12c974608e"
+  },
+  {
+    "id": "use-1789325659440",
+    "userId": "admin_user",
+    "name": "এডমিন কর্মকর্তা (Site Admin)",
+    "email": "admin.user@headoffice.gov",
+    "role": "Admin",
+    "officeId": "off-ho",
+    "designation": "Assistant Director / Admin",
+    "status": "Active",
+    "passwordSalt": "e842a7a3ade9d3ba0ee70ad6508bda0f",
+    "passwordHash": "b354e691cf682bd2ce2f8e42fbc5373eaa1c44dddcd5c96020a10efe1206ed0e844460bf2d0f12d6b7b15dcf2c5c624051548f204e5f69641f2e66dc7355edeb"
+  },
+  {
+    "id": "use-1789325666563",
+    "userId": "moderator",
+    "name": "মডারেটর কর্মকর্তা (Moderator)",
+    "email": "moderator@headoffice.gov",
+    "role": "Moderator",
+    "officeId": "off-ho",
+    "designation": "Accounts Officer / Moderator",
+    "status": "Active",
+    "passwordSalt": "53f185d3597dbb173e7e47ff00dbb8cb",
+    "passwordHash": "606ef8e2e9f59f41f177357a898e4070c8f0f0d1873f6085f760a75f6b3f44d88b9d2e827471932733adfda1bb6a05f05c725a4480e2ff7449fa45749085d6a5"
+  },
+  {
+    "id": "use-1789325696168",
+    "userId": "admin_user",
+    "name": "এডমিন কর্মকর্তা (Site Admin)",
+    "email": "admin.user@headoffice.gov",
+    "role": "Admin",
+    "officeId": "off-ho",
+    "designation": "Assistant Director / Admin",
+    "status": "Active",
+    "passwordSalt": "17ba5be7bd7e09df16bd5b172492cf24",
+    "passwordHash": "4b681ede3e099f32b9c499cd379e37bd4b9378311bd97a62f06fadbe90489f747a67a0a53bee215cd457aac29f919bc4bb357ef32f4dff9650ce6735a79bb23b"
+  },
+  {
+    "id": "use-1789325704269",
+    "userId": "moderator",
+    "name": "মডারেটর কর্মকর্তা (Moderator)",
+    "email": "moderator@headoffice.gov",
+    "role": "Moderator",
+    "officeId": "off-ho",
+    "designation": "Accounts Officer / Moderator",
+    "status": "Active",
+    "passwordSalt": "bb6133e89cceadc670d45602971445b3",
+    "passwordHash": "eebae325d69df591e29e40f2a920b33f56c2aad6f00233f866bc9b9a5e51bd1aacdd0d9889b3832346a3299550c12b791e3862bccb3a961d3c4c7d36341f2c93"
   }
 ]

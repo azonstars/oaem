@@ -277,8 +277,10 @@ const translations: Record<Language, Translations> = {
     welcomeBack: "স্বাগতম,",
     headOfficeBadge: "প্রধান কার্যালয় (Head Office)",
     subOfficeBadge: "অধীনস্থ অফিস (Sub-Office)",
-    headOfficeSub: "সার্বিক বরাদ্দ, উপ-অফিস তদারকি এবং বাজেট ব্যবহারের পূর্ণাঙ্গ নিয়ন্ত্রণ।",
-    subOfficeSub: "শাখা অফিসের বরাদ্দ ব্যবহার, ব্যয় ভাউচার এন্ট্রি ও নোট শিট তৈরি।",
+    headOfficeSub:
+      "সার্বিক বরাদ্দ, উপ-অফিস তদারকি এবং বাজেট ব্যবহারের পূর্ণাঙ্গ নিয়ন্ত্রণ।",
+    subOfficeSub:
+      "শাখা অফিসের বরাদ্দ ব্যবহার, ব্যয় ভাউচার এন্ট্রি ও নোট শিট তৈরি।",
     newExpenseBtn: "নতুন ব্যয় এন্ট্রি",
     newAllocationBtn: "নতুন বরাদ্দ প্রদান",
     statAllocation: "মূল বরাদ্দ (Initial)",
@@ -298,13 +300,16 @@ const translations: Record<Language, Translations> = {
     allocated: "বরাদ্দ",
     remaining: "অবশিষ্ট",
     availableForUse: "ব্যবহারযোগ্য স্থিতি",
-    overspentAlert: "সতর্কতা: বরাদ্দের চেয়ে ব্যয় বেশি হয়েছে (Negative Balance)!",
-    formulaNote: "হিসাব সূত্র: প্রারম্ভিক স্থিতি + বরাদ্দ + অতিরিক্ত বরাদ্দ ± সমন্বয় - ব্যয় = অবশিষ্ট স্থিতি",
+    overspentAlert:
+      "সতর্কতা: বরাদ্দের চেয়ে ব্যয় বেশি হয়েছে (Negative Balance)!",
+    formulaNote:
+      "হিসাব সূত্র: প্রারম্ভিক স্থিতি + বরাদ্দ + অতিরিক্ত বরাদ্দ ± সমন্বয় - ব্যয় = অবশিষ্ট স্থিতি",
 
     allocationTitle: "বাজেট বরাদ্দ ব্যবস্থাপনা",
     allocationSubtitle: "বিভিন্ন অফিস ও খাতের জন্য সরকারি বরাদ্দ নির্ধারণ করুন",
     additionalAllocationTitle: "অতিরিক্ত বরাদ্দ",
-    additionalAllocationSubtitle: "জরুরী বা সংশোধিত অতিরিক্ত বাজেট বরাদ্দ এন্ট্রি",
+    additionalAllocationSubtitle:
+      "জরুরী বা সংশোধিত অতিরিক্ত বাজেট বরাদ্দ এন্ট্রি",
     adjustmentTitle: "বাজেট সমন্বয় (Adjustment)",
     adjustmentSubtitle: "খাত বা অফিসের মধ্যকার বাজেট সমন্বয় ও স্থানান্তর",
     addAllocation: "নতুন বরাদ্দ যুক্ত করুন",
@@ -319,7 +324,8 @@ const translations: Record<Language, Translations> = {
     csvBulkUpload: "সিএসভি ফাইল আপলোড",
 
     expensesTitle: "দৈনন্দিন অফিস ব্যয় এন্ট্রি",
-    expensesSubtitle: "ভাউচারভিত্তিক ব্যয় সংরক্ষণ ও স্বয়ংক্রিয় নোট শিট প্রস্তুত",
+    expensesSubtitle:
+      "ভাউচারভিত্তিক ব্যয় সংরক্ষণ ও স্বয়ংক্রিয় নোট শিট প্রস্তুত",
     addExpense: "নতুন ব্যয় এন্ট্রি করুন",
     applicantType: "আবেদনকারীর ধরণ",
     applicantOwnOffice: "নিজ অফিস / নিজস্ব কর্মকর্তা-কর্মচারী",
@@ -331,25 +337,30 @@ const translations: Record<Language, Translations> = {
     entryOfficerName: "কর্মকর্তার নাম",
     entryOfficerDesignation: "পদবী",
     supportingDoc: "সংযুক্ত নথির লিংক / ড্রাইভ লিংক",
-    duplicateVoucherAlert: "সতর্কতা: এই ভাউচার নম্বরটি ইতিমধ্যে সিস্টেমে বিদ্যমান!",
+    duplicateVoucherAlert:
+      "সতর্কতা: এই ভাউচার নম্বরটি ইতিমধ্যে সিস্টেমে বিদ্যমান!",
     viewNoteSheet: "নোট শিট দেখুন ও প্রিন্ট করুন",
-    autoNoteSheetNotice: "ব্যয় সংরক্ষণের সাথে সাথে টেমপ্লেট অনুযায়ী অটো নোট শিট তৈরি হবে।",
+    autoNoteSheetNotice:
+      "ব্যয় সংরক্ষণের সাথে সাথে টেমপ্লেট অনুযায়ী অটো নোট শিট তৈরি হবে।",
     bulkGenerateNoteSheets: "একক ক্লিকে সকল পেন্ডিং নোট শিট তৈরি করুন",
 
     noteSheetsTitle: "সরকারি অনুমোদন নোট শিট",
-    noteSheetsSubtitle: "ব্যয়ের বিপরীতে প্রস্তুতকৃত ডিজিটাল নোট শিট ও প্রিন্ট কপি",
+    noteSheetsSubtitle:
+      "ব্যয়ের বিপরীতে প্রস্তুতকৃত ডিজিটাল নোট শিট ও প্রিন্ট কপি",
     templatesTitle: "নোট শিট টেমপ্লেট",
     templatesSubtitle: "প্রতিটি ব্যয়ের খাতের জন্য প্রাতিষ্ঠানিক খসড়া ফরম্যাট",
     newNoteSheet: "নতুন নোট শিট তৈরি",
     newTemplate: "নতুন টেমপ্লেট যুক্ত করুন",
     templateSelect: "টেমপ্লেট নির্বাচন করুন",
-    templateVariablesHint: "উপলব্ধ ভেরিয়েবলসমূহ: {{OFFICE_NAME}}, {{FINANCIAL_YEAR}}, {{CATEGORY}}, {{EXPENSE_DATE}}, {{VOUCHER_DATE}}, {{AMOUNT}}, {{BASE_AMOUNT}}, {{VAT_RATE}}, {{VAT_AMOUNT}}, {{TAX_RATE}}, {{TAX_AMOUNT}}, {{NET_PAYABLE}}, {{GROSS_AMOUNT}}, {{DESCRIPTION}}, {{REMARKS}}, {{VOUCHER_NO}}, {{APPLICANT_NAME}}, {{APPLICANT_DESIGNATION}}, {{ENTRY_OFFICER}}, {{QUOTATION_DATE}}, {{MEMO_SUPPLY_ORDER_NO}}, {{MEMO_FORWARDING_NO}}, {{DEBIT_ACCOUNT}}, {{PAYMENT_TYPE}}, {{SUPPLY_RECIPIENT_NAME}}, {{SUPPLY_RECIPIENT_DESIGNATION}}, {{SUPPLY_RECIPIENT_ORG_NAME}}, {{SUPPLY_RECIPIENT_ADDRESS_1}}, {{SUPPLY_RECIPIENT_ADDRESS_2}}, {{SUPPLIER_ORG_1}}, {{SUPPLIER_ORG_2}}, {{SUPPLIER_ORG_3}}, {{SUPPLIER_1_UNIT_PRICE}}, {{SUPPLIER_1_TOTAL_PRICE}}, {{SUPPLIER_2_UNIT_PRICE}}, {{SUPPLIER_2_TOTAL_PRICE}}, {{SUPPLIER_3_UNIT_PRICE}}, {{SUPPLIER_3_TOTAL_PRICE}}, {{PROVISION_AMOUNT}}, {{BUDGET_ALLOCATION}}, {{ADDITIONAL_ALLOCATION}}, {{TOTAL_ALLOCATION}}, {{TOTAL_SPENT_SO_FAR}}, {{CURRENT_EXPENSE}}, {{TOTAL_SPENT_INCLUDING_CURRENT}}, {{REMAINING_BALANCE}}",
+    templateVariablesHint:
+      "উপলব্ধ ভেরিয়েবলসমূহ: {{OFFICE_NAME}}, {{FINANCIAL_YEAR}}, {{CATEGORY}}, {{EXPENSE_DATE}}, {{VOUCHER_DATE}}, {{AMOUNT}}, {{BASE_AMOUNT}}, {{VAT_RATE}}, {{VAT_AMOUNT}}, {{TAX_RATE}}, {{TAX_AMOUNT}}, {{NET_PAYABLE}}, {{GROSS_AMOUNT}}, {{DESCRIPTION}}, {{REMARKS}}, {{VOUCHER_NO}}, {{APPLICANT_NAME}}, {{APPLICANT_DESIGNATION}}, {{ENTRY_OFFICER}}, {{QUOTATION_DATE}}, {{MEMO_SUPPLY_ORDER_NO}}, {{MEMO_FORWARDING_NO}}, {{DEBIT_ACCOUNT}}, {{PAYMENT_TYPE}}, {{SUPPLY_RECIPIENT_NAME}}, {{SUPPLY_RECIPIENT_DESIGNATION}}, {{SUPPLY_RECIPIENT_ORG_NAME}}, {{SUPPLY_RECIPIENT_ADDRESS_1}}, {{SUPPLY_RECIPIENT_ADDRESS_2}}, {{SUPPLIER_ORG_1}}, {{SUPPLIER_ORG_2}}, {{SUPPLIER_ORG_3}}, {{SUPPLIER_1_UNIT_PRICE}}, {{SUPPLIER_1_TOTAL_PRICE}}, {{SUPPLIER_2_UNIT_PRICE}}, {{SUPPLIER_2_TOTAL_PRICE}}, {{SUPPLIER_3_UNIT_PRICE}}, {{SUPPLIER_3_TOTAL_PRICE}}, {{PROVISION_AMOUNT}}, {{BUDGET_ALLOCATION}}, {{ADDITIONAL_ALLOCATION}}, {{TOTAL_ALLOCATION}}, {{TOTAL_SPENT_SO_FAR}}, {{CURRENT_EXPENSE}}, {{TOTAL_SPENT_INCLUDING_CURRENT}}, {{REMAINING_BALANCE}}",
     subjectTitle: "বিষয় (Subject)",
     bodyContent: "নোটের মূল বক্তব্য",
     printPdf: "প্রিন্ট / পিডিএফ ডাউনলোড",
     combinedPdf: "খাতভিত্তিক সম্মিলিত নোট শিট",
     generatedDirectly: "সরাসরি প্রস্তুতকৃত",
-    noApprovalNeeded: "ডিজিটালাইজড অফিস নোট (ম্যানুয়াল কাজের গতি বৃদ্ধির জন্য সরাসরি কার্যকর)",
+    noApprovalNeeded:
+      "ডিজিটালাইজড অফিস নোট (ম্যানুয়াল কাজের গতি বৃদ্ধির জন্য সরাসরি কার্যকর)",
 
     // Print Layout & Page Setup
     printLayoutTitle: "প্রিন্ট লেআউট ও পেজ সেটআপ",
@@ -415,7 +426,8 @@ const translations: Record<Language, Translations> = {
     printReport: "প্রতিবেদন প্রিন্ট করুন",
 
     settingsTitle: "সিস্টেম ও প্রতিষ্ঠান সেটিংস",
-    settingsSubtitle: "প্রতিষ্ঠান তথ্য, অর্থবছর, ব্যয়ের খাত ও ব্যবহারকারী পরিচালনা",
+    settingsSubtitle:
+      "প্রতিষ্ঠান তথ্য, অর্থবছর, ব্যয়ের খাত ও ব্যবহারকারী পরিচালনা",
     institutionName: "প্রতিষ্ঠানের নাম",
     webAppName: "সফটওয়্যারের শিরোনাম",
     systemLogoUrl: "লোগোর ইউআরএল (ঐচ্ছিক)",
@@ -434,10 +446,11 @@ const translations: Record<Language, Translations> = {
     details: "বিস্তারিত বিবরণ",
 
     appsScriptTitle: "Google Apps Script ব্যাকএন্ড কোড",
-    appsScriptSubtitle: "Google Sheets-এ সরাসরি Web App হিসেবে ডেপ্লয় করার প্রস্তুত কোড",
+    appsScriptSubtitle:
+      "Google Sheets-এ সরাসরি Web App হিসেবে ডেপ্লয় করার প্রস্তুত কোড",
     copyCode: "কোড কপি করুন",
     copied: "কপি সম্পন্ন!",
-    setupInstructions: "ডেপ্লয়মেন্ট নির্দেশিকা"
+    setupInstructions: "ডেপ্লয়মেন্ট নির্দেশিকা",
   },
   en: {
     appName: "Office Allocation & Expense Management System",
@@ -490,8 +503,10 @@ const translations: Record<Language, Translations> = {
     welcomeBack: "Welcome back,",
     headOfficeBadge: "Head Office Portal",
     subOfficeBadge: "Sub-Office Portal",
-    headOfficeSub: "Complete oversight of all sub-office budgets, allocations, and expenditures.",
-    subOfficeSub: "Manage sub-office budget allocations, voucher expenses, and automated note sheets.",
+    headOfficeSub:
+      "Complete oversight of all sub-office budgets, allocations, and expenditures.",
+    subOfficeSub:
+      "Manage sub-office budget allocations, voucher expenses, and automated note sheets.",
     newExpenseBtn: "New Expense",
     newAllocationBtn: "New Allocation",
     statAllocation: "Initial Allocation",
@@ -511,15 +526,19 @@ const translations: Record<Language, Translations> = {
     allocated: "Allocated",
     remaining: "Remaining",
     availableForUse: "Available for Utilization",
-    overspentAlert: "Warning: Expenses exceed total allocation (Negative Balance)!",
-    formulaNote: "Formula: Opening Balance + Allocation + Additional Allocation ± Adjustment - Expense = Available Balance",
+    overspentAlert:
+      "Warning: Expenses exceed total allocation (Negative Balance)!",
+    formulaNote:
+      "Formula: Opening Balance + Allocation + Additional Allocation ± Adjustment - Expense = Available Balance",
 
     allocationTitle: "Budget Allocation Management",
     allocationSubtitle: "Allocate funds across offices and expenditure heads",
     additionalAllocationTitle: "Additional Allocation",
-    additionalAllocationSubtitle: "Manage supplementary and revised budget allocations",
+    additionalAllocationSubtitle:
+      "Manage supplementary and revised budget allocations",
     adjustmentTitle: "Budget Adjustment",
-    adjustmentSubtitle: "Inter-category and inter-office fund transfers and corrections",
+    adjustmentSubtitle:
+      "Inter-category and inter-office fund transfers and corrections",
     addAllocation: "Add Initial Allocation",
     addAdditional: "Add Additional Allocation",
     addAdjustment: "Add Budget Adjustment",
@@ -532,7 +551,8 @@ const translations: Record<Language, Translations> = {
     csvBulkUpload: "Bulk CSV Upload",
 
     expensesTitle: "Expense Voucher Entry",
-    expensesSubtitle: "Log voucher expenses with automatic Note Sheet generation",
+    expensesSubtitle:
+      "Log voucher expenses with automatic Note Sheet generation",
     addExpense: "Add New Expense",
     applicantType: "Applicant Type",
     applicantOwnOffice: "Own Office / Internal Staff",
@@ -544,29 +564,36 @@ const translations: Record<Language, Translations> = {
     entryOfficerName: "Officer Name",
     entryOfficerDesignation: "Designation",
     supportingDoc: "Supporting Document / Drive Link",
-    duplicateVoucherAlert: "Warning: This voucher number already exists in the system!",
+    duplicateVoucherAlert:
+      "Warning: This voucher number already exists in the system!",
     viewNoteSheet: "View & Print Note Sheet",
-    autoNoteSheetNotice: "Note Sheet is automatically generated upon saving based on Category Template.",
+    autoNoteSheetNotice:
+      "Note Sheet is automatically generated upon saving based on Category Template.",
     bulkGenerateNoteSheets: "Bulk Generate All Pending Note Sheets",
 
     noteSheetsTitle: "Digital Sanction Note Sheets",
-    noteSheetsSubtitle: "Official digitized sanction sheets with instant print and PDF export",
+    noteSheetsSubtitle:
+      "Official digitized sanction sheets with instant print and PDF export",
     templatesTitle: "Note Sheet Templates",
-    templatesSubtitle: "Standard official draft templates for each budget category",
+    templatesSubtitle:
+      "Standard official draft templates for each budget category",
     newNoteSheet: "Create Note Sheet",
     newTemplate: "Add Note Template",
     templateSelect: "Select Template",
-    templateVariablesHint: "Available variables: {{OFFICE_NAME}}, {{FINANCIAL_YEAR}}, {{CATEGORY}}, {{EXPENSE_DATE}}, {{VOUCHER_DATE}}, {{AMOUNT}}, {{BASE_AMOUNT}}, {{VAT_RATE}}, {{VAT_AMOUNT}}, {{TAX_RATE}}, {{TAX_AMOUNT}}, {{NET_PAYABLE}}, {{GROSS_AMOUNT}}, {{DESCRIPTION}}, {{REMARKS}}, {{VOUCHER_NO}}, {{APPLICANT_NAME}}, {{APPLICANT_DESIGNATION}}, {{ENTRY_OFFICER}}, {{QUOTATION_DATE}}, {{MEMO_SUPPLY_ORDER_NO}}, {{MEMO_FORWARDING_NO}}, {{DEBIT_ACCOUNT}}, {{PAYMENT_TYPE}}, {{SUPPLY_RECIPIENT_NAME}}, {{SUPPLY_RECIPIENT_DESIGNATION}}, {{SUPPLY_RECIPIENT_ORG_NAME}}, {{SUPPLY_RECIPIENT_ADDRESS_1}}, {{SUPPLY_RECIPIENT_ADDRESS_2}}, {{SUPPLIER_ORG_1}}, {{SUPPLIER_ORG_2}}, {{SUPPLIER_ORG_3}}, {{SUPPLIER_1_UNIT_PRICE}}, {{SUPPLIER_1_TOTAL_PRICE}}, {{SUPPLIER_2_UNIT_PRICE}}, {{SUPPLIER_2_TOTAL_PRICE}}, {{SUPPLIER_3_UNIT_PRICE}}, {{SUPPLIER_3_TOTAL_PRICE}}, {{PROVISION_AMOUNT}}, {{BUDGET_ALLOCATION}}, {{ADDITIONAL_ALLOCATION}}, {{TOTAL_ALLOCATION}}, {{TOTAL_SPENT_SO_FAR}}, {{CURRENT_EXPENSE}}, {{TOTAL_SPENT_INCLUDING_CURRENT}}, {{REMAINING_BALANCE}}",
+    templateVariablesHint:
+      "Available variables: {{OFFICE_NAME}}, {{FINANCIAL_YEAR}}, {{CATEGORY}}, {{EXPENSE_DATE}}, {{VOUCHER_DATE}}, {{AMOUNT}}, {{BASE_AMOUNT}}, {{VAT_RATE}}, {{VAT_AMOUNT}}, {{TAX_RATE}}, {{TAX_AMOUNT}}, {{NET_PAYABLE}}, {{GROSS_AMOUNT}}, {{DESCRIPTION}}, {{REMARKS}}, {{VOUCHER_NO}}, {{APPLICANT_NAME}}, {{APPLICANT_DESIGNATION}}, {{ENTRY_OFFICER}}, {{QUOTATION_DATE}}, {{MEMO_SUPPLY_ORDER_NO}}, {{MEMO_FORWARDING_NO}}, {{DEBIT_ACCOUNT}}, {{PAYMENT_TYPE}}, {{SUPPLY_RECIPIENT_NAME}}, {{SUPPLY_RECIPIENT_DESIGNATION}}, {{SUPPLY_RECIPIENT_ORG_NAME}}, {{SUPPLY_RECIPIENT_ADDRESS_1}}, {{SUPPLY_RECIPIENT_ADDRESS_2}}, {{SUPPLIER_ORG_1}}, {{SUPPLIER_ORG_2}}, {{SUPPLIER_ORG_3}}, {{SUPPLIER_1_UNIT_PRICE}}, {{SUPPLIER_1_TOTAL_PRICE}}, {{SUPPLIER_2_UNIT_PRICE}}, {{SUPPLIER_2_TOTAL_PRICE}}, {{SUPPLIER_3_UNIT_PRICE}}, {{SUPPLIER_3_TOTAL_PRICE}}, {{PROVISION_AMOUNT}}, {{BUDGET_ALLOCATION}}, {{ADDITIONAL_ALLOCATION}}, {{TOTAL_ALLOCATION}}, {{TOTAL_SPENT_SO_FAR}}, {{CURRENT_EXPENSE}}, {{TOTAL_SPENT_INCLUDING_CURRENT}}, {{REMAINING_BALANCE}}",
     subjectTitle: "Subject",
     bodyContent: "Body Content",
     printPdf: "Print / Save PDF",
     combinedPdf: "Combined Category PDF",
     generatedDirectly: "Directly Generated",
-    noApprovalNeeded: "Automated Office Sanction (Streamlined for rapid manual digitization)",
+    noApprovalNeeded:
+      "Automated Office Sanction (Streamlined for rapid manual digitization)",
 
     // Print Layout & Page Setup
     printLayoutTitle: "Print Layout & Page Setup",
-    printLayoutSubtitle: "Customize page dimensions, placement, margins and typography",
+    printLayoutSubtitle:
+      "Customize page dimensions, placement, margins and typography",
     contentPosition: "Note Sheet Content Position",
     posTop: "Top",
     posUpperMiddle: "Upper Middle",
@@ -619,7 +646,8 @@ const translations: Record<Language, Translations> = {
     signatureToggle: "Signatures & Seal Block",
 
     reportsTitle: "Financial Reports & Ledger",
-    reportsSubtitle: "Comprehensive office, category, and ledger financial analytics",
+    reportsSubtitle:
+      "Comprehensive office, category, and ledger financial analytics",
     officeSummaryTab: "Office-wise Report",
     categorySummaryTab: "Category-wise Report",
     expenseLedgerTab: "Detailed Expense Ledger",
@@ -628,7 +656,8 @@ const translations: Record<Language, Translations> = {
     printReport: "Print Report",
 
     settingsTitle: "System & Organization Settings",
-    settingsSubtitle: "Manage organization info, financial years, categories, and users",
+    settingsSubtitle:
+      "Manage organization info, financial years, categories, and users",
     institutionName: "Institution Name",
     webAppName: "System Display Title",
     systemLogoUrl: "Logo URL (Optional)",
@@ -639,7 +668,8 @@ const translations: Record<Language, Translations> = {
     generalSettingsTab: "General Settings",
 
     auditTitle: "Audit Trail & Activity Log",
-    auditSubtitle: "Tamper-evident logs of all allocations, expenses, and system actions",
+    auditSubtitle:
+      "Tamper-evident logs of all allocations, expenses, and system actions",
     timestamp: "Timestamp",
     user: "User",
     action: "Action",
@@ -647,11 +677,12 @@ const translations: Record<Language, Translations> = {
     details: "Details",
 
     appsScriptTitle: "Google Apps Script Backend Code",
-    appsScriptSubtitle: "Ready-to-deploy code to run as a Google Sheets Web App",
+    appsScriptSubtitle:
+      "Ready-to-deploy code to run as a Google Sheets Web App",
     copyCode: "Copy Code",
     copied: "Copied!",
-    setupInstructions: "Deployment Guide"
-  }
+    setupInstructions: "Deployment Guide",
+  },
 };
 
 interface LanguageContextType {
@@ -662,12 +693,14 @@ interface LanguageContextType {
   formatNumber: (num: number) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(
+  undefined,
+);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem("app_lang");
-    return (saved === "en" || saved === "bn") ? saved : "bn";
+    return saved === "en" || saved === "bn" ? saved : "bn";
   });
 
   const setLanguage = (lang: Language) => {
@@ -693,7 +726,9 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, formatCurrency, formatNumber }}>
+    <LanguageContext.Provider
+      value={{ language, setLanguage, t, formatCurrency, formatNumber }}
+    >
       {children}
     </LanguageContext.Provider>
   );

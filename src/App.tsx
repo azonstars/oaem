@@ -1,6 +1,19 @@
 import { apiFetch } from "./api";
 import React, { useEffect, useState } from "react";
-import { SystemSettings, FinancialYear, Office, User, Category, Allocation, Expense, NoteSheet, NoteTemplate, AuditLog, OpeningBalance } from "./types";
+import {
+  SystemSettings,
+  FinancialYear,
+  Office,
+  User,
+  Category,
+  Allocation,
+  Expense,
+  NoteSheet,
+  NoteTemplate,
+  AuditLog,
+  OpeningBalance,
+  isStaffOrAdmin,
+} from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
 import { Dashboard } from "./components/Dashboard";
@@ -15,6 +28,7 @@ import { AuditLogsView } from "./components/AuditLogsView";
 import { AboutModal } from "./components/AboutModal";
 import { LoginView } from "./components/LoginView";
 import { ChangePasswordModal } from "./components/ChangePasswordModal";
+import { ProposeUserModal } from "./components/ProposeUserModal";
 import { AppFooter } from "./components/AppFooter";
 import { useTheme } from "./context/ThemeContext";
 
@@ -32,9 +46,12 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [isProposeUserOpen, setIsProposeUserOpen] = useState(false);
 
   // Data states
-  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(null);
+  const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(
+    null,
+  );
   const [financialYears, setFinancialYears] = useState<FinancialYear[]>([]);
   const [offices, setOffices] = useState<Office[]>([]);
   const [users, setUsers] = useState<User[]>([]);
@@ -87,12 +104,13 @@ export default function App() {
       setCurrentTab("dashboard");
     };
     window.addEventListener("auth-unauthorized", handleUnauthorized);
-    return () => window.removeEventListener("auth-unauthorized", handleUnauthorized);
+    return () =>
+      window.removeEventListener("auth-unauthorized", handleUnauthorized);
   }, []);
 
   const fetchAllData = () => {
-    const fetchJson = (url: string, defaultValue: any = []) => 
-      apiFetch(url).then(async res => {
+    const fetchJson = (url: string, defaultValue: any = []) =>
+      apiFetch(url).then(async (res) => {
         if (!res.ok) {
           if (res.status === 401) throw 401;
           return defaultValue;
@@ -115,7 +133,7 @@ export default function App() {
       fetchJson("/api/notesheets", []),
       fetchJson("/api/notetemplates", []),
       fetchJson("/api/openingbalances", []),
-      fetchJson("/api/auditlogs", [])
+      fetchJson("/api/auditlogs", []),
     ])
       .then(([set, fy, off, usr, cat, alc, exp, ns, nt, ob, al]) => {
         if (set[0]) setSystemSettings(set[0]);
@@ -131,14 +149,14 @@ export default function App() {
         setAuditLogs(al);
 
         let resolvedFy = "";
-        
+
         // Auto-determine current FY based on system setting if available
         let expectedFyName = "";
         if (set[0] && set[0].financialYearStartMonth) {
           const currentMonth = new Date().getMonth() + 1; // 1-12
           const currentYear = new Date().getFullYear();
           const startMonth = set[0].financialYearStartMonth;
-          
+
           if (currentMonth >= startMonth) {
             expectedFyName = `${currentYear}-${currentYear + 1}`;
           } else {
@@ -147,9 +165,11 @@ export default function App() {
         }
 
         const activeFy = fy.find((f: FinancialYear) => f.isActive);
-        const dynamicFy = fy.find((f: FinancialYear) => f.name === expectedFyName);
+        const dynamicFy = fy.find(
+          (f: FinancialYear) => f.name === expectedFyName,
+        );
         const savedFy = localStorage.getItem("govt_app_fy");
-        
+
         if (savedFy && fy.some((f: FinancialYear) => f.id === savedFy)) {
           resolvedFy = savedFy;
         } else if (dynamicFy) {
@@ -163,11 +183,12 @@ export default function App() {
         if (resolvedFy) {
           setSelectedFY(resolvedFy);
         }
-        
+
         setLoading(false);
       })
-      .catch(err => {
-        if (err !== 401 && err !== "Unauthorized") console.error("Failed to fetch initial data:", err);
+      .catch((err) => {
+        if (err !== 401 && err !== "Unauthorized")
+          console.error("Failed to fetch initial data:", err);
         setLoading(false);
       });
   };
@@ -180,17 +201,16 @@ export default function App() {
     }
   }, [currentUser?.id]);
 
-  const roleStr = currentUser?.role as string | undefined;
-  const isHeadOffice = roleStr === "Head Office Admin" || roleStr === "Super Admin" || roleStr === "Head Office User" || roleStr === "HeadOfficeAdmin" || roleStr === "Auditor";
+  const isHeadOffice = isStaffOrAdmin(currentUser?.role);
 
   const handleAddAllocation = async (allocation: Omit<Allocation, "id">) => {
     const res = await apiFetch("/api/allocations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...allocation, userId: currentUser.id })
+      body: JSON.stringify({ ...allocation, userId: currentUser.id }),
     });
     const newAlc = await res.json();
-    setAllocations(prev => [...prev, newAlc]);
+    setAllocations((prev) => [...prev, newAlc]);
     refreshLogs();
     return newAlc;
   };
@@ -201,21 +221,24 @@ export default function App() {
     if (!res.ok) {
       throw new Error(data.error || "Failed to delete allocation");
     }
-    setAllocations(prev => prev.filter(a => a.id !== id));
+    setAllocations((prev) => prev.filter((a) => a.id !== id));
     refreshLogs();
   };
 
-  const handleUpdateAllocation = async (id: string, updatedAllocation: Partial<Allocation>) => {
+  const handleUpdateAllocation = async (
+    id: string,
+    updatedAllocation: Partial<Allocation>,
+  ) => {
     const res = await apiFetch(`/api/allocations/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedAllocation)
+      body: JSON.stringify(updatedAllocation),
     });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || "Failed to update allocation");
     }
-    setAllocations(prev => prev.map(a => a.id === id ? data : a));
+    setAllocations((prev) => prev.map((a) => (a.id === id ? data : a)));
     refreshLogs();
   };
 
@@ -223,31 +246,33 @@ export default function App() {
     const res = await apiFetch("/api/expenses", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...expense, userId: currentUser.id })
+      body: JSON.stringify({ ...expense, userId: currentUser.id }),
     });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || "Failed to add expense");
     }
-    setExpenses(prev => [...prev, data]);
+    setExpenses((prev) => [...prev, data]);
     refreshLogs();
     fetchAllData();
     return data;
   };
 
-  const [expensesStatusFilter, setExpensesStatusFilter] = useState<"All" | "Pending" | "Approved" | "Rejected">("All");
+  const [expensesStatusFilter, setExpensesStatusFilter] = useState<
+    "All" | "Pending" | "Approved" | "Rejected"
+  >("All");
 
   const handleApproveExpense = async (id: string) => {
     const res = await apiFetch(`/api/expenses/${id}/approve`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId: currentUser.id })
+      body: JSON.stringify({ userId: currentUser.id }),
     });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || "Failed to approve expense");
     }
-    setExpenses(prev => prev.map(e => e.id === id ? data : e));
+    setExpenses((prev) => prev.map((e) => (e.id === id ? data : e)));
     refreshLogs();
     fetchAllData();
     return data;
@@ -257,29 +282,32 @@ export default function App() {
     const res = await apiFetch(`/api/expenses/${id}/reject`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason, userId: currentUser.id })
+      body: JSON.stringify({ reason, userId: currentUser.id }),
     });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || "Failed to reject expense");
     }
-    setExpenses(prev => prev.map(e => e.id === id ? data : e));
+    setExpenses((prev) => prev.map((e) => (e.id === id ? data : e)));
     refreshLogs();
     fetchAllData();
     return data;
   };
 
-  const handleUpdateExpense = async (id: string, updatedExpense: Partial<Expense>) => {
+  const handleUpdateExpense = async (
+    id: string,
+    updatedExpense: Partial<Expense>,
+  ) => {
     const res = await apiFetch(`/api/expenses/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...updatedExpense, userId: currentUser.id })
+      body: JSON.stringify({ ...updatedExpense, userId: currentUser.id }),
     });
     const data = await res.json();
     if (!res.ok) {
       throw new Error(data.error || "Failed to update expense");
     }
-    setExpenses(prev => prev.map(e => e.id === id ? data : e));
+    setExpenses((prev) => prev.map((e) => (e.id === id ? data : e)));
     refreshLogs();
     fetchAllData();
     return data;
@@ -287,7 +315,7 @@ export default function App() {
 
   const handleDeleteExpense = async (id: string) => {
     await apiFetch(`/api/expenses/${id}`, { method: "DELETE" });
-    setExpenses(prev => prev.filter(e => e.id !== id));
+    setExpenses((prev) => prev.filter((e) => e.id !== id));
     refreshLogs();
     fetchAllData();
   };
@@ -296,27 +324,30 @@ export default function App() {
     const res = await apiFetch("/api/notesheets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...noteSheet, userId: currentUser.id })
+      body: JSON.stringify({ ...noteSheet, userId: currentUser.id }),
     });
     const newNs = await res.json();
-    setNoteSheets(prev => [...prev, newNs]);
+    setNoteSheets((prev) => [...prev, newNs]);
     refreshLogs();
   };
 
-  const handleUpdateNoteSheetStatus = async (id: string, status: "Approved" | "Rejected") => {
+  const handleUpdateNoteSheetStatus = async (
+    id: string,
+    status: "Approved" | "Rejected",
+  ) => {
     const res = await apiFetch(`/api/notesheets/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, userId: currentUser.id })
+      body: JSON.stringify({ status, userId: currentUser.id }),
     });
     const updated = await res.json();
-    setNoteSheets(prev => prev.map(n => n.id === id ? updated : n));
+    setNoteSheets((prev) => prev.map((n) => (n.id === id ? updated : n)));
     refreshLogs();
   };
 
   const handleDeleteNoteSheet = async (id: string) => {
     await apiFetch(`/api/notesheets/${id}`, { method: "DELETE" });
-    setNoteSheets(prev => prev.filter(n => n.id !== id));
+    setNoteSheets((prev) => prev.filter((n) => n.id !== id));
     refreshLogs();
   };
 
@@ -324,34 +355,37 @@ export default function App() {
     const res = await apiFetch("/api/notetemplates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...template, userId: currentUser.id })
+      body: JSON.stringify({ ...template, userId: currentUser.id }),
     });
     const newTpl = await res.json();
-    setNoteTemplates(prev => [...prev, newTpl]);
+    setNoteTemplates((prev) => [...prev, newTpl]);
     refreshLogs();
   };
 
-  const handleUpdateTemplate = async (id: string, template: Partial<NoteTemplate>) => {
+  const handleUpdateTemplate = async (
+    id: string,
+    template: Partial<NoteTemplate>,
+  ) => {
     const res = await apiFetch(`/api/notetemplates/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...template, userId: currentUser.id })
+      body: JSON.stringify({ ...template, userId: currentUser.id }),
     });
     const updated = await res.json();
-    setNoteTemplates(prev => prev.map(t => t.id === id ? updated : t));
+    setNoteTemplates((prev) => prev.map((t) => (t.id === id ? updated : t)));
     refreshLogs();
   };
 
   const handleDeleteTemplate = async (id: string) => {
     await apiFetch(`/api/notetemplates/${id}`, { method: "DELETE" });
-    setNoteTemplates(prev => prev.filter(t => t.id !== id));
+    setNoteTemplates((prev) => prev.filter((t) => t.id !== id));
     refreshLogs();
   };
 
   const refreshLogs = () => {
     apiFetch("/api/auditlogs")
-      .then(res => res.ok ? res.json() : Promise.reject(res.status))
-      .then(data => setAuditLogs(data));
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then((data) => setAuditLogs(data));
   };
 
   if (loading) {
@@ -359,18 +393,27 @@ export default function App() {
       <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm text-slate-400">Loading Office Allocation & Expense System...</p>
+          <p className="text-sm text-slate-400">
+            Loading Office Allocation & Expense System...
+          </p>
         </div>
       </div>
     );
   }
 
   if (!currentUser) {
-    return <LoginView onLoginSuccess={user => setCurrentUser(user)} systemSettings={systemSettings} />;
+    return (
+      <LoginView
+        onLoginSuccess={(user) => setCurrentUser(user)}
+        systemSettings={systemSettings}
+      />
+    );
   }
 
   return (
-    <div className={`h-screen w-full overflow-hidden flex font-sans ${isCustom ? "bg-[#0d091a]" : isDark ? "bg-slate-950" : "bg-slate-50"}`}>
+    <div
+      className={`h-screen w-full overflow-hidden flex font-sans ${isCustom ? "bg-[#0d091a]" : isDark ? "bg-slate-950" : "bg-slate-50"}`}
+    >
       {systemSettings?.customThemeColor && isCustom && (
         <style>{`
           .theme-custom .text-amber-400,
@@ -416,125 +459,145 @@ export default function App() {
           onOpenAbout={() => setIsAboutOpen(true)}
           onLogout={() => setCurrentUser(null)}
           onChangePassword={() => setIsChangePasswordOpen(true)}
+          onOpenProposeUser={() => setIsProposeUserOpen(true)}
         />
 
-        <main className={`flex-1 w-full overflow-y-auto flex flex-col ${
-          isCustom ? "bg-[#0d091a] text-purple-100" : isDark ? "bg-slate-950 text-slate-100" : "bg-slate-50 text-slate-900"
-        }`}>
+        <main
+          className={`flex-1 w-full overflow-y-auto flex flex-col ${
+            isCustom
+              ? "bg-[#0d091a] text-purple-100"
+              : isDark
+                ? "bg-slate-950 text-slate-100"
+                : "bg-slate-50 text-slate-900"
+          }`}
+        >
           <div className="flex-1 w-full max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex flex-col">
-          {currentTab === "dashboard" && (
-            <Dashboard
-              allocations={allocations}
-              expenses={expenses}
-              categories={categories}
-              offices={offices}
-              financialYears={financialYears}
-              selectedFY={selectedFY}
-              currentUser={currentUser}
-              noteSheets={noteSheets}
-              setCurrentTab={setCurrentTab}
-              onNavigateExpenses={(filter) => {
-                setExpensesStatusFilter(filter);
-                setCurrentTab("expenses");
-              }}
-            />
-          )}
-          {currentTab === "allocations" && (
-            <AllocationsView
-              allocations={allocations}
-              expenses={expenses}
-              offices={offices}
-              categories={categories}
-              financialYears={financialYears}
-              selectedFY={selectedFY}
-              currentUser={currentUser}
-              onAddAllocation={handleAddAllocation}
-              onUpdateAllocation={handleUpdateAllocation}
-              onDeleteAllocation={handleDeleteAllocation}
-              isHeadOffice={isHeadOffice}
-              systemSettings={systemSettings}
-              refreshData={fetchAllData}
-            />
-          )}
-          {currentTab === "expenses" && (
-            <ExpensesView
-              expenses={expenses}
-              allocations={allocations}
-              offices={offices}
-              categories={categories}
-              financialYears={financialYears}
-              selectedFY={selectedFY}
-              currentUser={currentUser}
-              noteSheets={noteSheets}
-              onAddExpense={handleAddExpense}
-              onUpdateExpense={handleUpdateExpense}
-              onApproveExpense={handleApproveExpense}
-              onRejectExpense={handleRejectExpense}
-              onDeleteExpense={handleDeleteExpense}
-              isHeadOffice={isHeadOffice}
-              statusFilter={expensesStatusFilter}
-              setStatusFilter={setExpensesStatusFilter}
-              refreshData={fetchAllData}
-            />
-          )}
-          {currentTab === "reports" && (
-            <ReportsView
-              allocations={allocations}
-              expenses={expenses}
-              offices={offices}
-              categories={categories}
-              financialYears={financialYears}
-              selectedFY={selectedFY}
-              currentUser={currentUser}
-              isHeadOffice={isHeadOffice}
-              noteSheets={noteSheets}
-              systemSettings={systemSettings}
-              openingBalances={openingBalances}
-            />
-          )}
-          {currentTab === "notesheets" && (
-            <NoteSheetsView
-              noteSheets={noteSheets}
-              noteTemplates={noteTemplates}
-              financialYears={financialYears}
-              offices={offices}
-              categories={categories}
-              selectedFY={selectedFY}
-              currentUser={currentUser}
-              onAddNoteSheet={handleAddNoteSheet}
-              onDeleteNoteSheet={handleDeleteNoteSheet}
-              onAddTemplate={handleAddTemplate}
-              isHeadOffice={isHeadOffice}
-              refreshData={fetchAllData}
-            />
-          )}
-          {currentTab === "notetemplates" && (
-            <NoteTemplatesView
-              noteTemplates={noteTemplates}
-              categories={categories}
-              onAddTemplate={handleAddTemplate}
-              onUpdateTemplate={handleUpdateTemplate}
-              onDeleteTemplate={handleDeleteTemplate}
-            />
-          )}
+            {currentTab === "dashboard" && (
+              <Dashboard
+                allocations={allocations}
+                expenses={expenses}
+                categories={categories}
+                offices={offices}
+                financialYears={financialYears}
+                selectedFY={selectedFY}
+                currentUser={currentUser}
+                noteSheets={noteSheets}
+                setCurrentTab={setCurrentTab}
+                onNavigateExpenses={(filter) => {
+                  setExpensesStatusFilter(filter);
+                  setCurrentTab("expenses");
+                }}
+              />
+            )}
+            {currentTab === "allocations" && (
+              <AllocationsView
+                allocations={allocations}
+                expenses={expenses}
+                offices={offices}
+                categories={categories}
+                financialYears={financialYears}
+                selectedFY={selectedFY}
+                currentUser={currentUser}
+                onAddAllocation={handleAddAllocation}
+                onUpdateAllocation={handleUpdateAllocation}
+                onDeleteAllocation={handleDeleteAllocation}
+                isHeadOffice={isHeadOffice}
+                systemSettings={systemSettings}
+                refreshData={fetchAllData}
+              />
+            )}
+            {currentTab === "expenses" && (
+              <ExpensesView
+                expenses={expenses}
+                allocations={allocations}
+                offices={offices}
+                categories={categories}
+                financialYears={financialYears}
+                selectedFY={selectedFY}
+                currentUser={currentUser}
+                noteSheets={noteSheets}
+                onAddExpense={handleAddExpense}
+                onUpdateExpense={handleUpdateExpense}
+                onApproveExpense={handleApproveExpense}
+                onRejectExpense={handleRejectExpense}
+                onDeleteExpense={handleDeleteExpense}
+                isHeadOffice={isHeadOffice}
+                statusFilter={expensesStatusFilter}
+                setStatusFilter={setExpensesStatusFilter}
+                refreshData={fetchAllData}
+              />
+            )}
+            {currentTab === "reports" && (
+              <ReportsView
+                allocations={allocations}
+                expenses={expenses}
+                offices={offices}
+                categories={categories}
+                financialYears={financialYears}
+                selectedFY={selectedFY}
+                currentUser={currentUser}
+                isHeadOffice={isHeadOffice}
+                noteSheets={noteSheets}
+                systemSettings={systemSettings}
+                openingBalances={openingBalances}
+              />
+            )}
+            {currentTab === "notesheets" && (
+              <NoteSheetsView
+                noteSheets={noteSheets}
+                noteTemplates={noteTemplates}
+                financialYears={financialYears}
+                offices={offices}
+                categories={categories}
+                selectedFY={selectedFY}
+                currentUser={currentUser}
+                onAddNoteSheet={handleAddNoteSheet}
+                onDeleteNoteSheet={handleDeleteNoteSheet}
+                onAddTemplate={handleAddTemplate}
+                isHeadOffice={isHeadOffice}
+                refreshData={fetchAllData}
+              />
+            )}
+            {currentTab === "notetemplates" && (
+              <NoteTemplatesView
+                noteTemplates={noteTemplates}
+                categories={categories}
+                onAddTemplate={handleAddTemplate}
+                onUpdateTemplate={handleUpdateTemplate}
+                onDeleteTemplate={handleDeleteTemplate}
+              />
+            )}
 
-          {((currentTab === "settings" || currentTab === "offices" || currentTab === "categories" || currentTab === "users" || currentTab === "apps-script" || currentTab === "developer" || currentTab === "welcome-msg" || currentTab === "financial-years") && systemSettings) && (
-            <SettingsView
-              activeTab={currentTab === "settings" ? "general" : currentTab as any}
-              systemSettings={systemSettings}
-              financialYears={financialYears}
-              offices={offices}
-              categories={categories}
-              users={users}
-              currentUser={currentUser}
-              allocations={allocations}
-              expenses={expenses}
-              refreshData={fetchAllData}
-            />
-          )}
-          {currentTab === "auditlogs" && (
-            <AuditLogsView auditLogs={auditLogs} users={users} />
-          )}
+            {(currentTab === "settings" ||
+              currentTab === "database" ||
+              currentTab === "offices" ||
+              currentTab === "categories" ||
+              currentTab === "users" ||
+              currentTab === "apps-script" ||
+              currentTab === "developer" ||
+              currentTab === "welcome-msg" ||
+              currentTab === "financial-years") &&
+              systemSettings &&
+              isStaffOrAdmin(currentUser?.role) && (
+                <SettingsView
+                  activeTab={
+                    currentTab === "settings" ? "general" : (currentTab as any)
+                  }
+                  systemSettings={systemSettings}
+                  financialYears={financialYears}
+                  offices={offices}
+                  categories={categories}
+                  users={users}
+                  currentUser={currentUser}
+                  allocations={allocations}
+                  expenses={expenses}
+                  refreshData={fetchAllData}
+                />
+              )}
+            {currentTab === "auditlogs" &&
+              isStaffOrAdmin(currentUser?.role) && (
+                <AuditLogsView auditLogs={auditLogs} users={users} />
+              )}
           </div>
           <AppFooter onOpenAbout={() => setIsAboutOpen(true)} />
         </main>
@@ -545,6 +608,15 @@ export default function App() {
           isOpen={isAboutOpen}
           onClose={() => setIsAboutOpen(false)}
           systemSettings={systemSettings}
+        />
+      )}
+
+      {isProposeUserOpen && (
+        <ProposeUserModal
+          isOpen={isProposeUserOpen}
+          onClose={() => setIsProposeUserOpen(false)}
+          officeName={offices.find((o) => o.id === currentUser?.officeId)?.name}
+          onSuccess={fetchAllData}
         />
       )}
 

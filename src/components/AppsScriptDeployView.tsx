@@ -1,6 +1,15 @@
 import { apiFetch } from "../api";
 import React, { useEffect, useState } from "react";
-import { Copy, Check, X, FileSpreadsheet, FileCode, Database, HelpCircle, Download } from "lucide-react";
+import {
+  Copy,
+  Check,
+  X,
+  FileSpreadsheet,
+  FileCode,
+  Database,
+  HelpCircle,
+  Download,
+} from "lucide-react";
 import { useLanguage } from "../i18n";
 
 interface AppsScriptDeployViewProps {
@@ -9,7 +18,9 @@ interface AppsScriptDeployViewProps {
 
 type TabType = "code" | "setup" | "html" | "guide";
 
-export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}) {
+export function AppsScriptDeployView({
+  onClose,
+}: AppsScriptDeployViewProps = {}) {
   const { language } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>("code");
   const [codeGs, setCodeGs] = useState("");
@@ -19,18 +30,17 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
 
   useEffect(() => {
     apiFetch("/api/apps-script-code")
-      .then(res => res.ok ? res.json() : Promise.reject(res.status))
-      .then(data => {
+      .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+      .then((data) => {
         setCodeGs(data.codeGs || data.code || "");
         setSetupDb(data.setupDb || "");
         setIndexHtml(data.indexHtml || "");
       })
-      .catch(err => console.error(err));
+      .catch((err) => console.error(err));
   }, []);
 
-  
-
-  const currentCode = activeTab === "code" ? codeGs : activeTab === "setup" ? setupDb : indexHtml;
+  const currentCode =
+    activeTab === "code" ? codeGs : activeTab === "setup" ? setupDb : indexHtml;
 
   const handleCopy = (textToCopy: string) => {
     navigator.clipboard.writeText(textToCopy);
@@ -58,10 +68,14 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
           </div>
           <div>
             <h3 className="text-base font-bold">
-              {language === "bn" ? "Google Apps Script সম্পূর্ণ ডেপ্লয়মেন্ট সেন্টার" : "Google Apps Script Ready-to-Deploy Center"}
+              {language === "bn"
+                ? "Google Apps Script সম্পূর্ণ ডেপ্লয়মেন্ট সেন্টার"
+                : "Google Apps Script Ready-to-Deploy Center"}
             </h3>
             <p className="text-xs text-slate-400">
-              {language === "bn" ? "Google Sheets ডাটাবেস ও ড্রাইভের সাথে সরাসরি সংযুক্ত ওয়েব অ্যাপ" : "Standalone Web App connected directly with Google Sheets & Drive"}
+              {language === "bn"
+                ? "Google Sheets ডাটাবেস ও ড্রাইভের সাথে সরাসরি সংযুক্ত ওয়েব অ্যাপ"
+                : "Standalone Web App connected directly with Google Sheets & Drive"}
             </p>
           </div>
         </div>
@@ -73,7 +87,9 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
           <button
             onClick={() => setActiveTab("code")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTab === "code" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              activeTab === "code"
+                ? "bg-emerald-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             }`}
           >
             <FileCode className="w-3.5 h-3.5" /> Code.gs (Backend)
@@ -81,7 +97,9 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
           <button
             onClick={() => setActiveTab("setup")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTab === "setup" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              activeTab === "setup"
+                ? "bg-emerald-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             }`}
           >
             <Database className="w-3.5 h-3.5" /> SetupDatabase.gs
@@ -89,7 +107,9 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
           <button
             onClick={() => setActiveTab("html")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTab === "html" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              activeTab === "html"
+                ? "bg-emerald-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             }`}
           >
             <FileSpreadsheet className="w-3.5 h-3.5" /> Index.html (Frontend)
@@ -97,7 +117,9 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
           <button
             onClick={() => setActiveTab("guide")}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
-              activeTab === "guide" ? "bg-emerald-600 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+              activeTab === "guide"
+                ? "bg-emerald-600 text-white"
+                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
             }`}
           >
             <HelpCircle className="w-3.5 h-3.5" />
@@ -114,9 +136,25 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
                   ১. Google Sheets ডাটাবেস প্রস্তুতি (Google Sheets Setup)
                 </h4>
                 <ol className="list-decimal list-inside space-y-1.5 text-slate-300">
-                  <li>একটি নতুন <strong>Google Sheet</strong> খুলুন এবং নাম দিন <code className="text-emerald-300">Office_Allocation_Expense_DB</code>।</li>
-                  <li>মেনু থেকে <strong>Extensions &gt; Apps Script</strong> এ ক্লিক করুন।</li>
-                  <li><strong>SetupDatabase.gs</strong> ফাইলের কোড পেস্ট করে <code className="text-emerald-300">setupDatabase()</code> ফাংশনটি রান করুন। এটি স্বয়ংক্রিয়ভাবে ১০টি শিট (Settings, FinancialYears, Offices, Categories, Users, Allocations, Expenses, NoteSheets, NoteTemplates, AuditLogs) এবং গুগল ড্রাইভে PDF ফোল্ডার তৈরি করবে।</li>
+                  <li>
+                    একটি নতুন <strong>Google Sheet</strong> খুলুন এবং নাম দিন{" "}
+                    <code className="text-emerald-300">
+                      Office_Allocation_Expense_DB
+                    </code>
+                    ।
+                  </li>
+                  <li>
+                    মেনু থেকে <strong>Extensions &gt; Apps Script</strong> এ
+                    ক্লিক করুন।
+                  </li>
+                  <li>
+                    <strong>SetupDatabase.gs</strong> ফাইলের কোড পেস্ট করে{" "}
+                    <code className="text-emerald-300">setupDatabase()</code>{" "}
+                    ফাংশনটি রান করুন। এটি স্বয়ংক্রিয়ভাবে ১০টি শিট (Settings,
+                    FinancialYears, Offices, Categories, Users, Allocations,
+                    Expenses, NoteSheets, NoteTemplates, AuditLogs) এবং গুগল
+                    ড্রাইভে PDF ফোল্ডার তৈরি করবে।
+                  </li>
                 </ol>
               </div>
 
@@ -125,9 +163,21 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
                   ২. Apps Script কোড সংযোজন (Script Files Setup)
                 </h4>
                 <ol className="list-decimal list-inside space-y-1.5 text-slate-300">
-                  <li>Apps Script এডিটর-এ <strong>Code.gs</strong> ফাইলে আমাদের <code className="text-emerald-300">Code.gs</code> কোডটি পেস্ট করুন।</li>
-                  <li>+ বাটনে ক্লিক করে একটি নতুন <strong>HTML</strong> ফাইল তৈরি করুন এবং ফাইলের নাম দিন <code className="text-emerald-300">Index</code> (বা Index.html)।</li>
-                  <li>আমাদের <code className="text-emerald-300">Index.html</code> কোডটি সেখানে পেস্ট করুন।</li>
+                  <li>
+                    Apps Script এডিটর-এ <strong>Code.gs</strong> ফাইলে আমাদের{" "}
+                    <code className="text-emerald-300">Code.gs</code> কোডটি
+                    পেস্ট করুন।
+                  </li>
+                  <li>
+                    + বাটনে ক্লিক করে একটি নতুন <strong>HTML</strong> ফাইল তৈরি
+                    করুন এবং ফাইলের নাম দিন{" "}
+                    <code className="text-emerald-300">Index</code> (বা
+                    Index.html)।
+                  </li>
+                  <li>
+                    আমাদের <code className="text-emerald-300">Index.html</code>{" "}
+                    কোডটি সেখানে পেস্ট করুন।
+                  </li>
                 </ol>
               </div>
 
@@ -136,11 +186,30 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
                   ৩. Web App ডেপ্লয়মেন্ট (Deploy as Web App)
                 </h4>
                 <ol className="list-decimal list-inside space-y-1.5 text-slate-300">
-                  <li>উপরে ডানদিকের <strong>Deploy &gt; New deployment</strong> বাটনে ক্লিক করুন।</li>
-                  <li>গিয়ার আইকন থেকে <strong>Web app</strong> নির্বাচন করুন।</li>
-                  <li><strong>Execute as:</strong> <code className="text-emerald-300">Me (your-email)</code> নির্বাচন করুন।</li>
-                  <li><strong>Who has access:</strong> <code className="text-emerald-300">Anyone</code> অথবা <code className="text-emerald-300">Anyone within organization</code> দিন।</li>
-                  <li><strong>Deploy</strong> চাপুন এবং প্রাপ্ত <strong>Web App URL</strong> ব্রাউজারে ওপেন করুন।</li>
+                  <li>
+                    উপরে ডানদিকের <strong>Deploy &gt; New deployment</strong>{" "}
+                    বাটনে ক্লিক করুন।
+                  </li>
+                  <li>
+                    গিয়ার আইকন থেকে <strong>Web app</strong> নির্বাচন করুন।
+                  </li>
+                  <li>
+                    <strong>Execute as:</strong>{" "}
+                    <code className="text-emerald-300">Me (your-email)</code>{" "}
+                    নির্বাচন করুন।
+                  </li>
+                  <li>
+                    <strong>Who has access:</strong>{" "}
+                    <code className="text-emerald-300">Anyone</code> অথবা{" "}
+                    <code className="text-emerald-300">
+                      Anyone within organization
+                    </code>{" "}
+                    দিন।
+                  </li>
+                  <li>
+                    <strong>Deploy</strong> চাপুন এবং প্রাপ্ত{" "}
+                    <strong>Web App URL</strong> ব্রাউজারে ওপেন করুন।
+                  </li>
                 </ol>
               </div>
             </div>
@@ -148,7 +217,16 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
             <div className="relative">
               <div className="absolute top-3 right-3 flex items-center gap-2 z-10">
                 <button
-                  onClick={() => handleDownload(activeTab === "code" ? "Code.gs" : activeTab === "setup" ? "SetupDatabase.gs" : "Index.html", currentCode)}
+                  onClick={() =>
+                    handleDownload(
+                      activeTab === "code"
+                        ? "Code.gs"
+                        : activeTab === "setup"
+                          ? "SetupDatabase.gs"
+                          : "Index.html",
+                      currentCode,
+                    )
+                  }
                   className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs border border-slate-700 transition"
                   title="Download File"
                 >
@@ -159,8 +237,18 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
                   onClick={() => handleCopy(currentCode)}
                   className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs border border-slate-700 transition"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? (language === "bn" ? "কপি সম্পন্ন!" : "Copied!") : (language === "bn" ? "কোড কপি করুন" : "Copy Code")}
+                  {copied ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                  {copied
+                    ? language === "bn"
+                      ? "কপি সম্পন্ন!"
+                      : "Copied!"
+                    : language === "bn"
+                      ? "কোড কপি করুন"
+                      : "Copy Code"}
                 </button>
               </div>
 
@@ -187,7 +275,6 @@ export function AppsScriptDeployView({ onClose }: AppsScriptDeployViewProps = {}
             </button>
           )}
         </div>
-
       </div>
     </div>
   );

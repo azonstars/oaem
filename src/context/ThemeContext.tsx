@@ -38,7 +38,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove("theme-light", "theme-dark", "theme-ocean", "theme-custom", "dark");
+    root.classList.remove(
+      "theme-light",
+      "theme-dark",
+      "theme-ocean",
+      "theme-custom",
+      "dark",
+    );
     if (theme === "dark") {
       root.classList.add("dark", "theme-dark");
     } else if (theme === "custom") {

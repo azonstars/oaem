@@ -38,7 +38,16 @@ export const UsersSchema = z.object({
   userId: z.string().min(1, "User ID আবশ্যক"),
   name: z.string().min(1, "ব্যবহারকারীর নাম আবশ্যক"),
   email: z.string().min(1, "ইমেইল আবশ্যক"),
-  role: z.enum(["Super Admin", "Head Office Admin", "Head Office User", "Sub-office User", "Report Viewer"]),
+  role: z.enum([
+    "Super Admin",
+    "Admin",
+    "Moderator",
+    "User",
+    "Head Office Admin",
+    "Head Office User",
+    "Sub-office User",
+    "Report Viewer"
+  ]),
   officeId: z.string().min(1, "অফিস আইডি আবশ্যক"),
   designation: z.string().optional().default(""),
   status: z.enum(["Active", "Inactive"]).default("Active"),
