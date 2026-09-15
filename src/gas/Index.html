@@ -1098,7 +1098,7 @@
         var noticeTickerContainer = document.getElementById("noticeTickerContainer");
         var noticeTickerText = document.getElementById("noticeTickerText");
         
-        if (notices.length > 0 && noticeTickerContainer && noticeTickerText) {
+        if (sys.showNoticeBar !== false && notices.length > 0 && noticeTickerContainer && noticeTickerText) {
           noticeTickerContainer.classList.remove("hidden");
           window.currentNoticeIndex = 0;
           noticeTickerText.innerText = notices[window.currentNoticeIndex];

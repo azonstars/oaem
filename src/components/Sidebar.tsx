@@ -22,6 +22,7 @@ import {
   Database,
   PlayCircle,
   Code,
+  Layers,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -47,9 +48,14 @@ export function Sidebar({
   const { theme, isCustom } = useTheme();
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Only Super Admin, Admin, and Moderator can see categories, system settings, and audit logs
   const canAccessAdminMenus = isStaffOrAdmin(currentUser?.role);
   const isSuperAdmin = currentUser?.role === "Super Admin";
+  const isSuperAdminOrAdmin =
+    currentUser?.role === "Super Admin" || currentUser?.role === "Admin";
+  const _isAdmin =
+    currentUser?.role === "Admin" ||
+    currentUser?.role === "Super Admin" ||
+    currentUser?.role === "Head Office Admin";
 
   const isDark = theme === "dark";
   const isLight = theme === "light";
@@ -68,11 +74,22 @@ export function Sidebar({
   ].includes(currentTab);
   const [isSettingsOpen, setIsSettingsOpen] = useState(isSettingsActive);
 
+  const isExpensesActive = [
+    "expenses",
+    "postfacto-propose",
+    "postfacto-sanction",
+  ].includes(currentTab);
+  const [isExpensesOpen, setIsExpensesOpen] = useState(isExpensesActive);
+
   useEffect(() => {
-    if (isSettingsActive && !isCollapsed) {
-      setIsSettingsOpen(true);
+    if (!isCollapsed) {
+      if (isSettingsActive) setIsSettingsOpen(true);
+      else setIsSettingsOpen(false);
+
+      if (isExpensesActive) setIsExpensesOpen(true);
+      else setIsExpensesOpen(false);
     }
-  }, [isSettingsActive, isCollapsed]);
+  }, [isSettingsActive, isExpensesActive, isCollapsed]);
 
   const menuItems = [
     {
@@ -87,7 +104,31 @@ export function Sidebar({
       icon: DollarSign,
       adminOnly: false,
     },
-    { id: "expenses", label: t.menuExpenses, icon: Receipt, adminOnly: false },
+    {
+      id: "expenses",
+      label: t.menuExpenses,
+      icon: Receipt,
+      adminOnly: false,
+      subItems: [
+        {
+          id: "expenses",
+          label: language === "bn" ? "ব্যয় তালিকা" : "Expenses List",
+          icon: Receipt,
+        },
+        {
+          id: "postfacto-propose",
+          label:
+            language === "bn" ? "প্রস্তাব (খরচোত্তর)" : "Propose (Post-facto)",
+          icon: Receipt,
+        },
+        {
+          id: "postfacto-sanction",
+          label:
+            language === "bn" ? "মঞ্জুর (খরচোত্তর)" : "Sanction (Post-facto)",
+          icon: FileText,
+        },
+      ],
+    },
     {
       id: "notesheets",
       label: t.menuNoteSheets,
@@ -98,9 +139,16 @@ export function Sidebar({
       id: "notetemplates",
       label: t.menuNoteTemplates,
       icon: FileCode,
-      adminOnly: false,
+      adminOnly: true,
+      superAdminOnly: true,
     },
     { id: "reports", label: t.menuReports, icon: BarChart3, adminOnly: false },
+    {
+      id: "miscellaneous",
+      label: language === "bn" ? "বিবিধ" : "Miscellaneous",
+      icon: Layers,
+      adminOnly: false,
+    },
     { id: "auditlogs", label: t.menuAuditLogs, icon: History, adminOnly: true },
   ];
 
@@ -110,11 +158,14 @@ export function Sidebar({
       label: language === "bn" ? "সাধারণ কনফিগারেশন" : "General",
       icon: Sliders,
     },
-    ...(isSuperAdmin
+    ...(isSuperAdminOrAdmin
       ? [
           {
             id: "welcome-msg",
-            label: language === "bn" ? "ওয়েলকাম ও নোটিশ" : "Notices",
+            label:
+              language === "bn"
+                ? "ওয়েলকাম নোট ও নোটিশ"
+                : "Welcome Note & Notices",
             icon: MessageSquare,
           },
         ]
@@ -139,13 +190,20 @@ export function Sidebar({
       label: language === "bn" ? "ব্যবহারকারী তালিকা" : "Users",
       icon: Users,
     },
-    ...(isSuperAdmin
+    ...(isSuperAdminOrAdmin
       ? [
           {
             id: "database",
-            label: language === "bn" ? "ডাটাবেজ ও ব্যাকআপ" : "Database",
+            label:
+              language === "bn"
+                ? "ডাটা ব্যাকআপ ও ডাটাবেজ"
+                : "Data Backup & Database",
             icon: Database,
           },
+        ]
+      : []),
+    ...(isSuperAdmin
+      ? [
           {
             id: "apps-script",
             label: language === "bn" ? "গুগল স্ক্রিপ্ট" : "Apps Script",
@@ -160,9 +218,10 @@ export function Sidebar({
     },
   ];
 
-  const visibleMenu = menuItems.filter((item) =>
-    canAccessAdminMenus ? true : !item.adminOnly,
-  );
+  const visibleMenu = menuItems.filter((item) => {
+    if (item.superAdminOnly) return isSuperAdmin;
+    return canAccessAdminMenus ? true : !item.adminOnly;
+  });
 
   return (
     <>
@@ -411,6 +470,101 @@ export function Sidebar({
             }
 
             const Icon = item.icon;
+            if (item.subItems) {
+              const isGroupActive = item.subItems.some(
+                (sub) => sub.id === currentTab,
+              );
+              const isOpen =
+                item.id === "expenses" ? isExpensesOpen : isGroupActive;
+              const toggleOpen = () => {
+                if (item.id === "expenses") setIsExpensesOpen(!isExpensesOpen);
+              };
+
+              return (
+                <div key={item.id} className="pt-1 pb-1">
+                  <button
+                    onClick={() => {
+                      if (isCollapsed) {
+                        setIsCollapsed(false);
+                        if (item.id === "expenses") setIsExpensesOpen(true);
+                      } else {
+                        toggleOpen();
+                      }
+                    }}
+                    title={isCollapsed ? item.label : undefined}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                      isGroupActive
+                        ? isCustom
+                          ? "bg-purple-900/30 text-purple-200"
+                          : isDark
+                            ? "bg-slate-800/50 text-slate-200"
+                            : "bg-slate-100 text-slate-800"
+                        : isCustom
+                          ? "text-purple-200/80 hover:bg-[#251d45] hover:text-white"
+                          : isDark
+                            ? "text-slate-400 hover:bg-slate-800/80 hover:text-slate-100"
+                            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                    } ${isCollapsed ? "justify-center" : ""}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Icon
+                        className={`w-4 h-4 shrink-0 ${
+                          isGroupActive
+                            ? isCustom
+                              ? "text-amber-300"
+                              : isDark
+                                ? "text-slate-300"
+                                : "text-emerald-700"
+                            : ""
+                        }`}
+                      />
+                      {!isCollapsed && <span>{item.label}</span>}
+                    </div>
+                    {!isCollapsed &&
+                      (isOpen ? (
+                        <ChevronUp className="w-3.5 h-3.5 opacity-60" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+                      ))}
+                  </button>
+
+                  {!isCollapsed && isOpen && (
+                    <div className="mt-1 ml-3 pl-3 border-l-2 border-slate-200 dark:border-slate-800 space-y-0.5">
+                      {item.subItems.map((subItem) => {
+                        const SubIcon = subItem.icon;
+                        const isSubActive = currentTab === subItem.id;
+                        return (
+                          <button
+                            key={subItem.id}
+                            onClick={() => {
+                              setCurrentTab(subItem.id);
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                              isSubActive
+                                ? isCustom
+                                  ? "bg-gradient-to-r from-purple-700 to-amber-600 text-white shadow shadow-purple-950/60"
+                                  : isDark
+                                    ? "bg-emerald-600 text-white shadow shadow-emerald-950/40"
+                                    : "bg-emerald-100 text-emerald-800 font-bold"
+                                : isCustom
+                                  ? "text-purple-300/70 hover:text-white hover:bg-purple-900/40"
+                                  : isDark
+                                    ? "text-slate-400 hover:text-slate-100 hover:bg-slate-800/60"
+                                    : "text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                            }`}
+                          >
+                            <SubIcon className="w-3.5 h-3.5 shrink-0" />
+                            <span className="truncate">{subItem.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             const isActive = currentTab === item.id;
             return (
               <button

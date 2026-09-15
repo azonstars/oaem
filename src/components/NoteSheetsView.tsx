@@ -15,12 +15,10 @@ import {
   Printer,
   Building2,
   Trash2,
-  Layers,
   FileDown,
   Upload,
   Table as TableIcon,
   Eye,
-  Check,
   Save,
 } from "lucide-react";
 import { NoteSheetPreviewModal } from "./NoteSheetPreviewModal";
@@ -60,7 +58,7 @@ export function NoteSheetsView({
   const { t, language } = useLanguage();
   const { theme, isCustom } = useTheme();
   const isDark = theme === "dark";
-  const isLight = theme === "light";
+  const _isLight = theme === "light";
 
   const [showModal, setShowModal] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(
@@ -72,10 +70,9 @@ export function NoteSheetsView({
   const [selectedNoteSheet, setSelectedNoteSheet] = useState<NoteSheet | null>(
     null,
   );
-  const [combinedCategoryFilter, setCombinedCategoryFilter] =
+  const [_combinedCategoryFilter, _setCombinedCategoryFilter] =
     useState<string>("all");
 
-  // AI Generation State
   const [aiPromptCategory, setAiPromptCategory] = useState(
     categories[0]?.id || "",
   );
@@ -104,7 +101,6 @@ export function NoteSheetsView({
     }
   };
 
-  // Direct Word Download
   const handleDirectDownloadWord = (ns: NoteSheet) => {
     const off = offices.find((o) => o.id === ns.officeId);
     const formattedContent =
@@ -152,7 +148,6 @@ export function NoteSheetsView({
     URL.revokeObjectURL(url);
   };
 
-  // Word file upload in creation modal
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [showModalPreview, setShowModalPreview] = useState(false);
@@ -625,6 +620,7 @@ export function NoteSheetsView({
             offices.find((o) => o.id === selectedNoteSheet.officeId)?.name
           }
           onClose={() => setSelectedNoteSheet(null)}
+          currentUser={currentUser}
           onUpdateNoteSheet={refreshData}
         />
       )}

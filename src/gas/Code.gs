@@ -785,7 +785,8 @@ function saveSetting(settingData, currentUserId) {
     settingData.description || "",
     settingData.customThemeColor || "",
     settingData.welcomeMessages ? JSON.stringify(settingData.welcomeMessages) : "",
-    settingData.notices ? JSON.stringify(settingData.notices) : ""
+    settingData.notices ? JSON.stringify(settingData.notices) : "",
+    settingData.showNoticeBar !== false
   ];
 
   if (sheet.getLastRow() > 1) {

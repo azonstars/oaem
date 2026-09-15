@@ -14,6 +14,7 @@ import {
   Sparkles,
   RotateCcw,
   Eye,
+  EyeOff,
   HelpCircle,
   Save,
   AlertTriangle,
@@ -93,7 +94,6 @@ export function WelcomeMessageSettings({
   const { theme, isCustom, isDark } = useTheme();
   const isOcean = theme === "ocean";
 
-  // Active preview tab for testing all 4 periods
   const [previewSlot, setPreviewSlot] = useState<
     "morning" | "afternoon" | "evening" | "night"
   >("morning");
@@ -102,7 +102,6 @@ export function WelcomeMessageSettings({
   );
   const [newNoticeText, setNewNoticeText] = useState("");
 
-  // Track focused field for 1-click placeholder insertion
   const [focusedField, setFocusedField] = useState<
     | {
         type: "welcome";
@@ -128,7 +127,6 @@ export function WelcomeMessageSettings({
       ? settingsForm.notices
       : DEFAULT_NOTICES;
 
-  // Helper to extract messages or fallback
   const getSlotMessage = (
     slotKey: "morning" | "afternoon" | "evening" | "night",
   ): WelcomeMessageSlot => {
@@ -168,7 +166,6 @@ export function WelcomeMessageSettings({
     });
   };
 
-  // Insert placeholder token into currently focused input
   const insertPlaceholder = (tag: string) => {
     if (!focusedField) return;
     if (focusedField.type === "welcome") {
@@ -185,7 +182,6 @@ export function WelcomeMessageSettings({
     }
   };
 
-  // Reset single slot to default
   const handleResetSlot = (
     slotKey: "morning" | "afternoon" | "evening" | "night",
   ) => {
@@ -202,7 +198,6 @@ export function WelcomeMessageSettings({
   const [resetWelcomeConfirm, setResetWelcomeConfirm] = useState(false);
   const [resetNoticesConfirm, setResetNoticesConfirm] = useState(false);
 
-  // Reset all 4 slots to standard defaults
   const handleResetAllWelcome = () => {
     setResetWelcomeConfirm(true);
   };
@@ -220,7 +215,6 @@ export function WelcomeMessageSettings({
     setResetWelcomeConfirm(false);
   };
 
-  // Notice Handlers
   const handleAddNotice = () => {
     if (!newNoticeText.trim()) return;
     const updated = [...currentNotices, newNoticeText.trim()];
@@ -251,7 +245,6 @@ export function WelcomeMessageSettings({
     setResetNoticesConfirm(false);
   };
 
-  // Replace placeholders for live preview
   const renderPreview = (
     template: string,
     slot?: "morning" | "afternoon" | "evening" | "night",
@@ -284,7 +277,6 @@ export function WelcomeMessageSettings({
       );
   };
 
-  // Validate placeholders in any given text
   const checkInvalidPlaceholders = (text: string): string[] => {
     const matches = text.match(/{[a-zA-Z0-9_]+}/g) || [];
     return matches.filter((m) => !VALID_PLACEHOLDERS.includes(m));
@@ -698,6 +690,127 @@ export function WelcomeMessageSettings({
           </button>
         </div>
 
+        {/* Notice Bar ON/OFF Toggle Switch Card */}
+        <div
+          className={`p-4 rounded-2xl border transition-all ${
+            settingsForm.showNoticeBar !== false
+              ? isDark
+                ? "bg-emerald-950/20 border-emerald-800/60"
+                : "bg-emerald-50/80 border-emerald-200 shadow-2xs"
+              : isDark
+                ? "bg-slate-850 border-slate-800"
+                : "bg-slate-50 border-slate-200"
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div
+                className={`p-2.5 rounded-xl shrink-0 ${
+                  settingsForm.showNoticeBar !== false
+                    ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                    : "bg-slate-200 dark:bg-slate-800 text-slate-400"
+                }`}
+              >
+                {settingsForm.showNoticeBar !== false ? (
+                  <Megaphone className="w-5 h-5 animate-pulse" />
+                ) : (
+                  <EyeOff className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    {language === "bn"
+                      ? "হেডার নোটিশ বার প্রদর্শন স্ট্যাটাস (Header Notice Bar)"
+                      : "Header Notice Bar Display Status"}
+                  </h4>
+                  <span
+                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border flex items-center gap-1 ${
+                      settingsForm.showNoticeBar !== false
+                        ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800"
+                        : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-800"
+                    }`}
+                  >
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        settingsForm.showNoticeBar !== false
+                          ? "bg-emerald-500 animate-pulse"
+                          : "bg-rose-500"
+                      }`}
+                    />
+                    {settingsForm.showNoticeBar !== false
+                      ? language === "bn"
+                        ? "চালু (ON)"
+                        : "ENABLED (ON)"
+                      : language === "bn"
+                        ? "বন্ধ (OFF)"
+                        : "DISABLED (OFF)"}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
+                  {settingsForm.showNoticeBar !== false
+                    ? language === "bn"
+                      ? "নোটিশ বারটি বর্তমানে অ্যাপ্লিকেশনের শীর্ষে দৃশ্যমান রয়েছে এবং বিজ্ঞপ্তিগুলো পর্যায়ক্রমে ঘুরবে।"
+                      : "The notice bar is currently active and visible at the top of the header."
+                    : language === "bn"
+                      ? "নোটিশ বারটি বর্তমানে বন্ধ (OFF) রাখা হয়েছে। মূল অ্যাপ্লিকেশনের শীর্ষ থেকে এটি লুকানো থাকবে।"
+                      : "The notice bar is turned OFF and will be hidden from the top of the application."}
+                </p>
+              </div>
+            </div>
+
+            {/* Switch Toggle Button */}
+            <div className="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() =>
+                  setSettingsForm((prev) => ({
+                    ...prev,
+                    showNoticeBar: prev.showNoticeBar === false ? true : false,
+                  }))
+                }
+                className={`relative inline-flex h-7 w-13 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
+                  settingsForm.showNoticeBar !== false
+                    ? "bg-emerald-600"
+                    : "bg-slate-300 dark:bg-slate-700"
+                }`}
+                role="switch"
+                aria-checked={settingsForm.showNoticeBar !== false}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform shadow-md ${
+                    settingsForm.showNoticeBar !== false
+                      ? "translate-x-7"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setSettingsForm((prev) => ({
+                    ...prev,
+                    showNoticeBar: prev.showNoticeBar === false ? true : false,
+                  }))
+                }
+                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+                  settingsForm.showNoticeBar !== false
+                    ? "bg-emerald-600/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-600/20"
+                    : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-300"
+                }`}
+              >
+                {settingsForm.showNoticeBar !== false
+                  ? language === "bn"
+                    ? "চালু আছে"
+                    : "ON"
+                  : language === "bn"
+                    ? "বন্ধ আছে"
+                    : "OFF"}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Add New Notice Input */}
         <div
           className={`p-4 rounded-2xl border flex flex-col sm:flex-row gap-2.5 items-center ${
@@ -934,35 +1047,72 @@ export function WelcomeMessageSettings({
           </div>
 
           {/* Header Notice Ticker Preview */}
-          <div className="text-xs font-bold uppercase tracking-wider opacity-60 flex items-center gap-1.5 pt-2">
-            <Megaphone className="w-3.5 h-3.5 text-rose-500" />
-            <span>
-              {language === "bn"
-                ? "হেডার নোটিশ বার (Header Notice Ticker Preview):"
-                : "Header Notice Ticker Preview:"}
-            </span>
+          <div className="text-xs font-bold uppercase tracking-wider opacity-60 flex items-center justify-between pt-2">
+            <div className="flex items-center gap-1.5">
+              <Megaphone className="w-3.5 h-3.5 text-rose-500" />
+              <span>
+                {language === "bn"
+                  ? "হেডার নোটিশ বার (Header Notice Ticker Preview):"
+                  : "Header Notice Ticker Preview:"}
+              </span>
+            </div>
+            {settingsForm.showNoticeBar === false && (
+              <span className="text-[11px] font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
+                {language === "bn"
+                  ? "বর্তমানে বন্ধ (OFF)"
+                  : "Currently Disabled"}
+              </span>
+            )}
           </div>
 
-          <div
-            className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 ${
-              isDark
-                ? "bg-slate-950 border-slate-800"
-                : "bg-emerald-50 border-emerald-200"
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 font-bold text-xs flex items-center gap-1 shrink-0 border border-rose-500/30">
-                <Megaphone className="w-3 h-3 animate-pulse" />
-                বিজ্ঞপ্তি
-              </span>
-              <p className="text-xs font-medium truncate text-slate-800 dark:text-slate-200">
-                {renderPreview(currentNotices[0] || DEFAULT_NOTICES[0])}
-              </p>
+          {settingsForm.showNoticeBar === false ? (
+            <div
+              className={`p-3 rounded-xl border flex items-center justify-between gap-3 ${
+                isDark
+                  ? "bg-slate-900/80 border-slate-800 text-slate-400"
+                  : "bg-slate-100 border-slate-200 text-slate-500"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <EyeOff className="w-4 h-4 text-slate-400 shrink-0" />
+                <span className="text-xs font-medium">
+                  {language === "bn"
+                    ? "হেডার নোটিশ বার বর্তমানে বন্ধ (OFF) রয়েছে। মূল অ্যাপ্লিকেশনের শীর্ষে এটি লুকানো থাকবে।"
+                    : "The notice bar is currently turned OFF and will not appear in the header."}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setSettingsForm((prev) => ({ ...prev, showNoticeBar: true }))
+                }
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-500 underline shrink-0 cursor-pointer"
+              >
+                {language === "bn" ? "চালু করুন" : "Turn On"}
+              </button>
             </div>
-            <span className="text-xs font-mono opacity-60 shrink-0">
-              (১/{currentNotices.length})
-            </span>
-          </div>
+          ) : (
+            <div
+              className={`p-2.5 rounded-xl border flex items-center justify-between gap-3 ${
+                isDark
+                  ? "bg-slate-950 border-slate-800"
+                  : "bg-emerald-50 border-emerald-200"
+              }`}
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className="px-2 py-0.5 rounded-full bg-rose-500/15 text-rose-600 font-bold text-xs flex items-center gap-1 shrink-0 border border-rose-500/30">
+                  <Megaphone className="w-3 h-3 animate-pulse" />
+                  বিজ্ঞপ্তি
+                </span>
+                <p className="text-xs font-medium truncate text-slate-800 dark:text-slate-200">
+                  {renderPreview(currentNotices[0] || DEFAULT_NOTICES[0])}
+                </p>
+              </div>
+              <span className="text-xs font-mono opacity-60 shrink-0">
+                (১/{currentNotices.length})
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

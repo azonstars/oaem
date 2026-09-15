@@ -67,19 +67,15 @@ export function OfficeBudgetFloatingModal({
   const { t, formatCurrency, formatNumber, language } = useLanguage();
   const { isCustom, isDark } = useTheme();
 
-  // Date filters
   const [filterDateFrom, setFilterDateFrom] = useState<string>("");
   const [filterDateTo, setFilterDateTo] = useState<string>("");
 
-  // Category search filter
   const [searchCategory, setSearchCategory] = useState<string>("");
 
-  // Collapsed categories state - record of boolean (true = expanded, false/undefined = collapsed)
   const [expandedCategories, setExpandedCategories] = useState<
     Record<string, boolean>
   >({});
 
-  // Fullscreen toggle state for the floating modal
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   const printRef = useRef<HTMLDivElement>(null);
@@ -91,7 +87,6 @@ export function OfficeBudgetFloatingModal({
     ? offices.find((o) => o.id === effectiveOfficeId)
     : null;
 
-  // Filter allocations by office, financial year, and date range
   const filteredAllocations = useMemo(() => {
     return allocations.filter((a) => {
       if (a.financialYearId !== selectedFY) return false;
@@ -109,7 +104,6 @@ export function OfficeBudgetFloatingModal({
     filterDateTo,
   ]);
 
-  // Filter expenses by office, financial year, and date range
   const filteredExpenses = useMemo(() => {
     return expenses.filter((e) => {
       if (e.financialYearId !== selectedFY) return false;
@@ -127,7 +121,6 @@ export function OfficeBudgetFloatingModal({
     filterDateTo,
   ]);
 
-  // Group allocations & expenses by Category
   const categoryBudgetData = useMemo(() => {
     const map: Record<
       string,
@@ -146,7 +139,6 @@ export function OfficeBudgetFloatingModal({
       }
     > = {};
 
-    // First collect all categories that have allocations in this FY (or all active categories)
     categories.forEach((cat) => {
       map[cat.id] = {
         category: cat,
@@ -213,14 +205,12 @@ export function OfficeBudgetFloatingModal({
       }
     });
 
-    // Compute balance for each
     Object.values(map).forEach((item) => {
       item.balance = item.currentAllocation - item.totalExpense;
-      // Sort rows by date ascending
+
       item.rows.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
     });
 
-    // Filter out categories with 0 allocation AND 0 expenses unless searched
     return Object.values(map)
       .filter((item) => {
         const hasData =
@@ -246,7 +236,6 @@ export function OfficeBudgetFloatingModal({
       );
   }, [filteredAllocations, filteredExpenses, categories, searchCategory]);
 
-  // Overall metrics for the floating window
   const overallMetrics = useMemo(() => {
     return categoryBudgetData.reduce(
       (acc, item) => ({
@@ -301,7 +290,6 @@ export function OfficeBudgetFloatingModal({
     categoryBudgetData.length > 0 &&
     categoryBudgetData.every((item) => !!expandedCategories[item.category.id]);
 
-  // Quick Date Filter Presets
   const applyPresetFY = () => {
     if (currentFYObj) {
       setFilterDateFrom(currentFYObj.startDate || "");
@@ -332,12 +320,10 @@ export function OfficeBudgetFloatingModal({
     setFilterDateTo("");
   };
 
-  // Trigger Print / PDF
   const handlePrint = () => {
     window.print();
   };
 
-  // Export CSV
   const handleExportCSV = () => {
     let csv = `Office/Branch: ${isAllOffices ? "All Offices" : selectedOfficeObj?.name || "N/A"}\n`;
     csv += `Financial Year: ${currentFYObj?.name || "N/A"}\n`;

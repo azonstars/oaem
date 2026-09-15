@@ -14,6 +14,7 @@ export const SettingsSchema = z.object({
   requireExpenseApproval: z.boolean().optional(),
   financialYearStartMonth: z.number().min(1).max(12).optional(),
   financialYearEndMonth: z.number().min(1).max(12).optional(),
+  showNoticeBar: z.boolean().optional(),
 }).strip();
 
 export const FinancialYearsSchema = z.object({
@@ -165,6 +166,8 @@ export const NoteSheetsSchema = z.object({
   content: z.string().min(1, "নোটশিট কনটেন্ট আবশ্যক"),
   forwardingContent: z.string().optional(),
   supplyOrderContent: z.string().optional(),
+  sanctionNoteSheetContent: z.string().optional(),
+  sanctionLetterContent: z.string().optional(),
   pdfPath: z.string().optional(),
   status: z.string().optional(),
   createdBy: z.string().optional(),
@@ -181,6 +184,35 @@ export const OpeningBalancesSchema = z.object({
   sourceFYId: z.string().optional(),
 }).strip();
 
+export const BidderOrgSchema = z.object({
+  name: z.string().optional().default(""),
+  address: z.string().optional().default(""),
+  price: z.preprocess((val) => Number(val) || 0, z.number()).optional().default(0),
+});
+
+export const PostFactoProposalsSchema = z.object({
+  financialYearId: z.string().min(1, "অর্থবছর আবশ্যক"),
+  officeId: z.string().min(1, "অফিস আবশ্যক"),
+  categoryId: z.string().min(1, "বাজেট খাত আবশ্যক"),
+  description: z.string().min(1, "বিবরণ আবশ্যক"),
+  vatRate: z.preprocess((val) => Number(val) || 0, z.number()).optional().default(0),
+  taxRate: z.preprocess((val) => Number(val) || 0, z.number()).optional().default(0),
+  bidders: z.array(BidderOrgSchema).optional().default([]),
+  unitPrice: z.preprocess((val) => Number(val) || 0, z.number()).optional().default(0),
+  totalAmount: z.preprocess((val) => Number(val) || 0, z.number().positive("মোট মূল্য ০-এর বেশি হতে হবে")),
+  managerName: z.string().min(1, "ব্যবস্থাপকের নাম আবশ্যক"),
+  status: z.enum(["Pending", "Sanctioned", "Rejected"]).optional().default("Pending"),
+  submittedBy: z.string().optional().default(""),
+  submittedAt: z.string().optional().default(""),
+  sanctionMemoNo: z.string().optional().default(""),
+  sanctionDate: z.string().optional().default(""),
+  sanctionedAmount: z.preprocess((val) => Number(val) || 0, z.number()).optional().default(0),
+  sanctionRemarks: z.string().optional().default(""),
+  sanctionDocument: z.string().optional().default(""),
+  sanctionedBy: z.string().optional().default(""),
+  sanctionedAt: z.string().optional().default(""),
+}).strip();
+
 export const SheetSchemas: Record<string, z.ZodTypeAny> = {
   Settings: SettingsSchema,
   FinancialYears: FinancialYearsSchema,
@@ -192,6 +224,7 @@ export const SheetSchemas: Record<string, z.ZodTypeAny> = {
   NoteTemplates: NoteTemplatesSchema,
   NoteSheets: NoteSheetsSchema,
   OpeningBalances: OpeningBalancesSchema,
+  PostFactoProposals: PostFactoProposalsSchema,
 };
 
 export const SheetUpdateSchemas: Record<string, z.ZodTypeAny> = {
@@ -205,6 +238,7 @@ export const SheetUpdateSchemas: Record<string, z.ZodTypeAny> = {
   NoteTemplates: NoteTemplatesSchema.partial(),
   NoteSheets: NoteSheetsSchema.partial(),
   OpeningBalances: OpeningBalancesSchema.partial(),
+  PostFactoProposals: PostFactoProposalsSchema.partial(),
 };
 
 export function validateReferentialIntegrity(
@@ -334,6 +368,22 @@ export function checkReferentialIntegrityOnDelete(
       return {
         allowed: false,
         error: "এই অর্থবছরে ওপেনিং ব্যালেন্স বা ফরওয়ার্ড হিস্টোরি রয়েছে। অর্থবছরটি মুছে ফেলা সম্ভব নয়।"
+      };
+    }
+  }
+  if (sheet === "Users") {
+    const expenses = getSheetData("Expenses");
+    if (expenses.some((e: any) => e.userId === id)) {
+      return {
+        allowed: false,
+        error: "এই ব্যবহারকারীর নামে ব্যয় (Expense) সংরক্ষিত রয়েছে। আইডিটি মুছে ফেলা সম্ভব নয় — অনুগ্রহ করে এটি নিষ্ক্রিয় (Inactive) করুন।"
+      };
+    }
+    const noteSheets = getSheetData("NoteSheets");
+    if (noteSheets.some((n: any) => n.createdBy === id)) {
+      return {
+        allowed: false,
+        error: "এই ব্যবহারকারীর নামে নোটশীট (NoteSheet) সংরক্ষিত রয়েছে। আইডিটি মুছে ফেলা সম্ভব নয় — অনুগ্রহ করে এটি নিষ্ক্রিয় (Inactive) করুন।"
       };
     }
   }

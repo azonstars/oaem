@@ -1,16 +1,10 @@
 import React from "react";
 import {
-  Code2,
   Phone,
   MapPin,
   ShieldCheck,
-  Globe,
-  Mail,
   Cpu,
-  Award,
-  Server,
   Layers,
-  Clock,
   CheckCircle2,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
@@ -20,7 +14,7 @@ interface DeveloperProfileProps {
   variant?: "full" | "card" | "compact";
 }
 
-export function DeveloperProfile({ variant = "full" }: DeveloperProfileProps) {
+export function DeveloperProfile({ variant: _variant = "full" }: DeveloperProfileProps) {
   const { language } = useLanguage();
   const { theme, isCustom, isOcean } = useTheme();
   const isDark = theme === "dark";

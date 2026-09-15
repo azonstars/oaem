@@ -34,7 +34,6 @@ export interface Translations {
   warning: string;
   error: string;
 
-  // Sidebar Menu
   menuDashboard: string;
   menuAllocations: string;
   menuAdditionalAllocation: string;
@@ -51,7 +50,6 @@ export interface Translations {
   menuAuditLogs: string;
   menuAppsScript: string;
 
-  // Dashboard
   welcomeBack: string;
   headOfficeBadge: string;
   subOfficeBadge: string;
@@ -79,7 +77,6 @@ export interface Translations {
   overspentAlert: string;
   formulaNote: string;
 
-  // Allocations & Adjustments
   allocationTitle: string;
   allocationSubtitle: string;
   additionalAllocationTitle: string;
@@ -97,7 +94,6 @@ export interface Translations {
   allocatedBy: string;
   csvBulkUpload: string;
 
-  // Expenses
   expensesTitle: string;
   expensesSubtitle: string;
   addExpense: string;
@@ -116,7 +112,6 @@ export interface Translations {
   autoNoteSheetNotice: string;
   bulkGenerateNoteSheets: string;
 
-  // Note Sheets & Templates
   noteSheetsTitle: string;
   noteSheetsSubtitle: string;
   templatesTitle: string;
@@ -132,7 +127,6 @@ export interface Translations {
   generatedDirectly: string;
   noApprovalNeeded: string;
 
-  // Print Layout & Page Setup
   printLayoutTitle: string;
   printLayoutSubtitle: string;
   contentPosition: string;
@@ -186,7 +180,6 @@ export interface Translations {
   govtHeaderToggle: string;
   signatureToggle: string;
 
-  // Reports
   reportsTitle: string;
   reportsSubtitle: string;
   officeSummaryTab: string;
@@ -196,7 +189,6 @@ export interface Translations {
   exportCsv: string;
   printReport: string;
 
-  // Settings
   settingsTitle: string;
   settingsSubtitle: string;
   institutionName: string;
@@ -208,7 +200,6 @@ export interface Translations {
   usersTab: string;
   generalSettingsTab: string;
 
-  // Audit Logs
   auditTitle: string;
   auditSubtitle: string;
   timestamp: string;
@@ -217,7 +208,6 @@ export interface Translations {
   table: string;
   details: string;
 
-  // Apps Script Deployment
   appsScriptTitle: string;
   appsScriptSubtitle: string;
   copyCode: string;
@@ -362,7 +352,6 @@ const translations: Record<Language, Translations> = {
     noApprovalNeeded:
       "ডিজিটালাইজড অফিস নোট (ম্যানুয়াল কাজের গতি বৃদ্ধির জন্য সরাসরি কার্যকর)",
 
-    // Print Layout & Page Setup
     printLayoutTitle: "প্রিন্ট লেআউট ও পেজ সেটআপ",
     printLayoutSubtitle: "পেজ সাইজ, অবস্থান এবং মার্জিন কাস্টমাইজেশন",
     contentPosition: "নোট শিটের অবস্থান (Content Position)",
@@ -590,7 +579,6 @@ const translations: Record<Language, Translations> = {
     noApprovalNeeded:
       "Automated Office Sanction (Streamlined for rapid manual digitization)",
 
-    // Print Layout & Page Setup
     printLayoutTitle: "Print Layout & Page Setup",
     printLayoutSubtitle:
       "Customize page dimensions, placement, margins and typography",
@@ -710,7 +698,6 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const t = translations[language];
 
-  // Helper for Bengali/English numerals
   const formatNumber = (num: number): string => {
     if (isNaN(num)) return "0";
     const formatted = num.toLocaleString();

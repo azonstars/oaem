@@ -3,7 +3,6 @@ import JoditEditor from "jodit-react";
 import {
   X,
   Printer,
-  Sliders,
   Layout,
   MoveVertical,
   Maximize2,
@@ -11,7 +10,6 @@ import {
   ZoomOut,
   Check,
   RotateCcw,
-  FileText,
   BookmarkCheck,
   BookmarkPlus,
   Eye,
@@ -30,8 +28,6 @@ import {
   Download,
   Copy,
   FileDown,
-  ExternalLink,
-  Table as TableIcon,
   Edit,
   Save,
   AlertCircle,
@@ -45,13 +41,13 @@ import {
   ContentPosition,
   PageSize,
   Category,
-  TextAlign,
 } from "../types";
 import { useLanguage } from "../i18n";
 import { sanitizeHtml } from "../utils/sanitize";
 import { apiFetch } from "../api";
 
 interface NoteSheetPreviewModalProps {
+  key?: string;
   noteSheet: NoteSheet;
   onClose: () => void;
   categoryId?: string;
@@ -59,9 +55,15 @@ interface NoteSheetPreviewModalProps {
   officeName?: string;
   categories?: Category[];
   onUpdateNoteSheet?: () => void;
+  currentUser?: any;
+  initialTab?:
+    | "notesheet"
+    | "forwarding"
+    | "supplyorder"
+    | "sanctionnotesheet"
+    | "sanctionletter";
 }
 
-// Default Note Sheet Settings: Always Legal Size (216 × 356 mm) per official requirements
 export const DEFAULT_NOTESHEET_SETTINGS: PrintLayoutSettings = {
   position: "TOP",
   customTopOffset: 20,
@@ -91,7 +93,6 @@ export const DEFAULT_NOTESHEET_SETTINGS: PrintLayoutSettings = {
   includeSignatures: true,
 };
 
-// Default Forwarding & Supply Order Settings: Always A4 Size (210 × 297 mm)
 export const DEFAULT_A4_SETTINGS: PrintLayoutSettings = {
   ...DEFAULT_NOTESHEET_SETTINGS,
   pageSize: "A4",
@@ -99,15 +100,13 @@ export const DEFAULT_A4_SETTINGS: PrintLayoutSettings = {
   customHeight: 297,
 };
 
-const DEFAULT_SETTINGS = DEFAULT_NOTESHEET_SETTINGS;
+// const DEFAULT_SETTINGS = DEFAULT_NOTESHEET_SETTINGS;
 
-// Google Docs standard font size presets
 const GOOGLE_DOCS_FONT_SIZES = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28,
   32, 36, 40, 48, 56, 64, 72, 96, 120, 144, 200, 300, 500,
 ];
 
-// Available Bengali and English font families
 const FONT_FAMILIES = [
   {
     id: "'Hind Siliguri', 'Kalpurush', sans-serif",
@@ -127,7 +126,6 @@ const FONT_FAMILIES = [
   { id: "'Courier New', monospace", name: "মনোস্পেস (Courier New)" },
 ];
 
-// Jodit Editor Font and Size List mappings
 const JODIT_FONT_LIST: Record<string, string> = {
   "'Hind Siliguri', 'Kalpurush', sans-serif": "হিন্দ শিলিগুড়ি (Hind Siliguri)",
   "'Kalpurush', 'Hind Siliguri', serif": "কালপুরুষ (Kalpurush)",
@@ -152,7 +150,6 @@ const JODIT_FONT_SIZES = [
   64, 72,
 ];
 
-// Line Spacing Presets
 const LINE_SPACING_PRESETS = [
   { value: 1.0, label: "1.0 (Single)" },
   { value: 1.15, label: "1.15" },
@@ -164,7 +161,6 @@ const LINE_SPACING_PRESETS = [
   { value: 3.0, label: "3.0" },
 ];
 
-// Page Dimensions in mm
 const PAGE_DIMENSIONS: Record<
   Exclude<PageSize, "Custom">,
   { width: number; height: number }
@@ -182,16 +178,44 @@ export function NoteSheetPreviewModal({
   officeName,
   categories = [],
   onUpdateNoteSheet,
+  currentUser,
+  initialTab,
 }: NoteSheetPreviewModalProps) {
   const { t, language } = useLanguage();
   const printContainerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<any>(null);
 
+  const isAdmin = useMemo(() => {
+    if (currentUser) {
+      return (
+        currentUser.role === "Super Admin" ||
+        currentUser.role === "Head Office Admin" ||
+        currentUser.role === "Admin"
+      );
+    }
+    try {
+      const local = localStorage.getItem("user");
+      if (local) {
+        const u = JSON.parse(local);
+        return (
+          u.role === "Super Admin" ||
+          u.role === "Head Office Admin" ||
+          u.role === "Admin"
+        );
+      }
+    } catch (_e) {}
+    return false;
+  }, [currentUser]);
+
   const [currentNoteSheet, setCurrentNoteSheet] =
     useState<NoteSheet>(noteSheet);
   const [activeDocTab, setActiveDocTab] = useState<
-    "notesheet" | "forwarding" | "supplyorder"
-  >("notesheet");
+    | "notesheet"
+    | "forwarding"
+    | "supplyorder"
+    | "sanctionnotesheet"
+    | "sanctionletter"
+  >(initialTab || "notesheet");
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(noteSheet.title);
   const [editNoteSheetContent, setEditNoteSheetContent] = useState(
@@ -203,17 +227,20 @@ export function NoteSheetPreviewModal({
   const [editSupplyOrderContent, setEditSupplyOrderContent] = useState(
     noteSheet.supplyOrderContent || "",
   );
+  const [editSanctionNoteSheetContent, setEditSanctionNoteSheetContent] =
+    useState(noteSheet.sanctionNoteSheetContent || "");
+  const [editSanctionLetterContent, setEditSanctionLetterContent] = useState(
+    noteSheet.sanctionLetterContent || "",
+  );
   const [isSaving, setIsSaving] = useState(false);
   const [contentSaveSuccess, setContentSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Requirement 3: 3-part Legal sheet partition state for Regular Expense <= 1500 BDT
   const [legalPartition, setLegalPartition] = useState<
     "part1" | "part2" | "part3" | "all3" | "full"
   >("part1");
 
-  // Determine if this is a regular expense bill within 1500 BDT
   const isRegularExpenseUnder1500 = useMemo(() => {
     if ((currentNoteSheet as any).isUnder1500 !== undefined) {
       return Boolean((currentNoteSheet as any).isUnder1500);
@@ -250,20 +277,27 @@ export function NoteSheetPreviewModal({
     return false;
   }, [currentNoteSheet, editNoteSheetContent]);
 
-  // Determine if this notesheet already has internal multi-level approvals / Form1 hierarchy
   const hasInternalApproval = useMemo(() => {
     const content =
-      (currentNoteSheet.content || "") + (editNoteSheetContent || "");
+      (currentNoteSheet.content || "") +
+      (editNoteSheetContent || "") +
+      (currentNoteSheet.sanctionNoteSheetContent || "") +
+      (editSanctionNoteSheetContent || "");
     return (
       content.includes("আঞ্চলিক নিরীক্ষা কর্মকর্তা") ||
       content.includes("আঞ্চলিক ব্যবস্থাপক :-") ||
       content.includes("regular-signatures-single-line") ||
       (currentNoteSheet as any).quotationFormType === "Form1" ||
-      (currentNoteSheet as any).expenseType === "Quotation"
+      (currentNoteSheet as any).expenseType === "Quotation" ||
+      activeDocTab === "sanctionnotesheet"
     );
-  }, [currentNoteSheet, editNoteSheetContent]);
+  }, [
+    currentNoteSheet,
+    editNoteSheetContent,
+    editSanctionNoteSheetContent,
+    activeDocTab,
+  ]);
 
-  // Default fallback templates for Forwarding Letter and Supply Order
   const getDefaultForwardingHtml = () => {
     const offName = officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি";
     const dateStr = new Date()
@@ -366,11 +400,12 @@ export function NoteSheetPreviewModal({
         ০২। অত্র কার্যালয়ের প্রয়োজনীয় মালামাল/সেবা সরবরাহের নিমিত্তে দাখিলকৃত কোটেশন/দরপত্রের প্রেক্ষিতে বর্ণিত মালামাল সরবরাহের কার্যাদেশ প্রদান করা হলো।
       </p>
       <div style="margin-bottom: 10pt; font-weight: bold;">শর্তাবলী :</div>
-      <ol style="margin-top: 0; padding-left: 20px; line-height: 1.7;">
-        <li>সরবরাহকৃত নমুনা ও স্পেসিফিকেশন অনুযায়ী যথাযথ মান বজায় রেখে পণ্য সরবরাহ করতে হবে।</li>
-        <li>কার্যাদেশ প্রদানের নির্ধারিত কার্যদিবসের মধ্যে পণ্য সরবরাহ সম্পন্ন করতে হবে।</li>
-        <li>বিল দাখিল সাপেক্ষে সরকারি বিধি মোতাবেক ভ্যাট ও ট্যাক্স কর্তনপূর্বক বিল পরিশোধ করা হবে।</li>
-      </ol>
+      <div style="margin-top: 0; line-height: 1.7;">
+        <div style="display: flex;"><span style="min-width: 25px;">১।</span><span>অত্র কার্যালয় কর্তৃক সরবরাহকৃত নমুনা অনুযায়ী মালামাল সরবরাহ করতে হবে।</span></div>
+        <div style="display: flex;"><span style="min-width: 25px;">২।</span><span>কার্যাদেশ প্রদানের অনধিক ৫ (পাঁচ) কার্যদিবসের মধ্যে পণ্য সরবরাহ করতে হবে।</span></div>
+        <div style="display: flex;"><span style="min-width: 25px;">৩।</span><span>গুণগত মান ও যথাযথভাবে সরবরাহের পরিমাণ যাচাই করে বুঝে নেওয়ার পর বিল দাখিল সাপেক্ষে পেমেন্ট অর্ডার এর মাধ্যমে/নগদে বিল পরিশোধ করা হবে।</span></div>
+        <div style="display: flex;"><span style="min-width: 25px;">৪।</span><span>দাখিলকৃত মূল্য হতে ১০% ভ্যাট ও ৫% ট্যাক্স কর্তন করা হবে।</span></div>
+      </div>
       <div style="margin-top: 30pt; display: flex; justify-content: flex-end;">
         <div style="text-align: center; min-width: 160pt;">
           <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">অনুমোদনকারী</div>
@@ -384,23 +419,39 @@ export function NoteSheetPreviewModal({
   const activeEditContent =
     activeDocTab === "notesheet"
       ? editNoteSheetContent
-      : activeDocTab === "forwarding"
-        ? editForwardingContent ||
-          currentNoteSheet.forwardingContent ||
-          getDefaultForwardingHtml()
-        : editSupplyOrderContent ||
-          currentNoteSheet.supplyOrderContent ||
-          getDefaultSupplyOrderHtml();
+      : activeDocTab === "sanctionnotesheet"
+        ? editSanctionNoteSheetContent ||
+          currentNoteSheet.sanctionNoteSheetContent ||
+          ""
+        : activeDocTab === "forwarding"
+          ? editForwardingContent ||
+            currentNoteSheet.forwardingContent ||
+            getDefaultForwardingHtml()
+          : activeDocTab === "sanctionletter"
+            ? editSanctionLetterContent ||
+              currentNoteSheet.sanctionLetterContent ||
+              ""
+            : editSupplyOrderContent ||
+              currentNoteSheet.supplyOrderContent ||
+              getDefaultSupplyOrderHtml();
 
   const setActiveEditContent = (val: string) => {
     if (activeDocTab === "notesheet") setEditNoteSheetContent(val);
+    else if (activeDocTab === "sanctionnotesheet")
+      setEditSanctionNoteSheetContent(val);
     else if (activeDocTab === "forwarding") setEditForwardingContent(val);
     else if (activeDocTab === "supplyorder") setEditSupplyOrderContent(val);
+    else if (activeDocTab === "sanctionletter")
+      setEditSanctionLetterContent(val);
   };
 
-  // Switch tabs smoothly while keeping unsaved edits in sync across tabs
   const handleSwitchDocTab = (
-    tab: "notesheet" | "forwarding" | "supplyorder",
+    tab:
+      | "notesheet"
+      | "forwarding"
+      | "supplyorder"
+      | "sanctionnotesheet"
+      | "sanctionletter",
   ) => {
     if (tab === activeDocTab) return;
 
@@ -413,14 +464,17 @@ export function NoteSheetPreviewModal({
       }
       if (currentVal !== undefined && currentVal !== null) {
         if (activeDocTab === "notesheet") setEditNoteSheetContent(currentVal);
+        else if (activeDocTab === "sanctionnotesheet")
+          setEditSanctionNoteSheetContent(currentVal);
         else if (activeDocTab === "forwarding")
           setEditForwardingContent(currentVal);
         else if (activeDocTab === "supplyorder")
           setEditSupplyOrderContent(currentVal);
+        else if (activeDocTab === "sanctionletter")
+          setEditSanctionLetterContent(currentVal);
       }
     }
 
-    // Auto-initialize default templates if blank
     if (
       tab === "forwarding" &&
       !editForwardingContent &&
@@ -436,13 +490,13 @@ export function NoteSheetPreviewModal({
     }
 
     setActiveDocTab(tab);
-    // Ensure Requirement 1: Note sheets are Legal size, while Forwarding and Supply Orders are A4 size
+
     setSettingsMap((prev) => {
       const existing = prev[tab];
-      if (tab === "notesheet") {
+      if (tab === "notesheet" || tab === "sanctionnotesheet") {
         return {
           ...prev,
-          notesheet: {
+          [tab]: {
             ...(existing || DEFAULT_NOTESHEET_SETTINGS),
             pageSize: "Legal",
             customWidth: 216,
@@ -469,6 +523,8 @@ export function NoteSheetPreviewModal({
     setEditNoteSheetContent(noteSheet.content || "");
     setEditForwardingContent(noteSheet.forwardingContent || "");
     setEditSupplyOrderContent(noteSheet.supplyOrderContent || "");
+    setEditSanctionNoteSheetContent(noteSheet.sanctionNoteSheetContent || "");
+    setEditSanctionLetterContent(noteSheet.sanctionLetterContent || "");
   }, [noteSheet]);
 
   const handleSyncFromExpense = async () => {
@@ -502,6 +558,12 @@ export function NoteSheetPreviewModal({
         setEditNoteSheetContent(data.noteSheet.content || "");
         setEditForwardingContent(data.noteSheet.forwardingContent || "");
         setEditSupplyOrderContent(data.noteSheet.supplyOrderContent || "");
+        setEditSanctionNoteSheetContent(
+          data.noteSheet.sanctionNoteSheetContent || "",
+        );
+        setEditSanctionLetterContent(
+          data.noteSheet.sanctionLetterContent || "",
+        );
         setIsEditing(false);
         setContentSaveSuccess(true);
         setTimeout(() => setContentSaveSuccess(false), 3500);
@@ -531,15 +593,23 @@ export function NoteSheetPreviewModal({
       }
 
       let noteContent = editNoteSheetContent;
+      let sanctionNoteContent = editSanctionNoteSheetContent;
       let fwdContent = editForwardingContent;
       let soContent = editSupplyOrderContent;
+      let slContent = editSanctionLetterContent;
 
       if (activeDocTab === "notesheet") {
         noteContent = contentToSave;
         setEditNoteSheetContent(contentToSave);
+      } else if (activeDocTab === "sanctionnotesheet") {
+        sanctionNoteContent = contentToSave;
+        setEditSanctionNoteSheetContent(contentToSave);
       } else if (activeDocTab === "forwarding") {
         fwdContent = contentToSave;
         setEditForwardingContent(contentToSave);
+      } else if (activeDocTab === "sanctionletter") {
+        slContent = contentToSave;
+        setEditSanctionLetterContent(contentToSave);
       } else if (activeDocTab === "supplyorder") {
         soContent = contentToSave;
         setEditSupplyOrderContent(contentToSave);
@@ -551,6 +621,8 @@ export function NoteSheetPreviewModal({
         content: noteContent,
         forwardingContent: fwdContent,
         supplyOrderContent: soContent,
+        sanctionNoteSheetContent: sanctionNoteContent,
+        sanctionLetterContent: slContent,
       };
 
       const res = await apiFetch(
@@ -572,6 +644,10 @@ export function NoteSheetPreviewModal({
       setEditNoteSheetContent(data.content || noteContent);
       setEditForwardingContent(data.forwardingContent || fwdContent);
       setEditSupplyOrderContent(data.supplyOrderContent || soContent);
+      setEditSanctionNoteSheetContent(
+        data.sanctionNoteSheetContent || sanctionNoteContent,
+      );
+      setEditSanctionLetterContent(data.sanctionLetterContent || slContent);
 
       setIsEditing(false);
       setContentSaveSuccess(true);
@@ -599,9 +675,13 @@ export function NoteSheetPreviewModal({
       let body =
         activeDocTab === "notesheet"
           ? currentNoteSheet.content
-          : activeDocTab === "forwarding"
-            ? currentNoteSheet.forwardingContent
-            : currentNoteSheet.supplyOrderContent;
+          : activeDocTab === "sanctionnotesheet"
+            ? currentNoteSheet.sanctionNoteSheetContent
+            : activeDocTab === "forwarding"
+              ? currentNoteSheet.forwardingContent
+              : activeDocTab === "sanctionletter"
+                ? currentNoteSheet.sanctionLetterContent
+                : currentNoteSheet.supplyOrderContent;
       if (isEditing && editorRef.current) {
         if (typeof (editorRef.current as any).value === "string") {
           body = (editorRef.current as any).value;
@@ -640,7 +720,6 @@ export function NoteSheetPreviewModal({
     }
   };
 
-  // Resolve effective category ID
   const effectiveCategoryId = useMemo(() => {
     if (categoryId) return categoryId;
     if (categoryName && categories.length > 0) {
@@ -654,7 +733,9 @@ export function NoteSheetPreviewModal({
 
   const loadSettingsForDoc = (docType: string): PrintLayoutSettings => {
     const baseDefault =
-      docType === "forwarding" || docType === "supplyorder"
+      docType === "forwarding" ||
+      docType === "supplyorder" ||
+      docType === "sanctionletter"
         ? DEFAULT_A4_SETTINGS
         : DEFAULT_NOTESHEET_SETTINGS;
     try {
@@ -665,15 +746,18 @@ export function NoteSheetPreviewModal({
           fontSizePt = Math.max(1, Math.round(parsed.fontSizeScale * 0.12));
         }
 
-        // Enforce Requirement 1: Note sheets default to Legal size, Forwarding and Supply Order default to A4 size
         let enforcedPageSize = parsed.pageSize;
         let enforcedWidth = parsed.customWidth;
         let enforcedHeight = parsed.customHeight;
-        if (docType === "forwarding" || docType === "supplyorder") {
+        if (
+          docType === "forwarding" ||
+          docType === "supplyorder" ||
+          docType === "sanctionletter"
+        ) {
           enforcedPageSize = "A4";
           enforcedWidth = 210;
           enforcedHeight = 297;
-        } else if (docType === "notesheet") {
+        } else if (docType === "notesheet" || docType === "sanctionnotesheet") {
           if (!enforcedPageSize || enforcedPageSize === "A4") {
             enforcedPageSize = "Legal";
             enforcedWidth = 216;
@@ -709,8 +793,8 @@ export function NoteSheetPreviewModal({
         `notesheet_layout_${effectiveCategoryId}`,
       );
       if (generalSaved) return parseWithMigration(generalSaved);
-    } catch (e) {
-      console.warn("Failed to load saved print settings", e);
+    } catch (_e) {
+      console.warn("Failed to load saved print settings", _e);
     }
     return baseDefault;
   };
@@ -721,11 +805,13 @@ export function NoteSheetPreviewModal({
     notesheet: loadSettingsForDoc("notesheet"),
     forwarding: loadSettingsForDoc("forwarding"),
     supplyorder: loadSettingsForDoc("supplyorder"),
+    sanctionnotesheet: loadSettingsForDoc("sanctionnotesheet"),
+    sanctionletter: loadSettingsForDoc("sanctionletter"),
   }));
 
   const settings =
     settingsMap[activeDocTab] ||
-    (activeDocTab === "notesheet"
+    (activeDocTab === "notesheet" || activeDocTab === "sanctionnotesheet"
       ? DEFAULT_NOTESHEET_SETTINGS
       : DEFAULT_A4_SETTINGS);
   const setSettings = (
@@ -736,7 +822,7 @@ export function NoteSheetPreviewModal({
     setSettingsMap((prev) => {
       const current =
         prev[activeDocTab] ||
-        (activeDocTab === "notesheet"
+        (activeDocTab === "notesheet" || activeDocTab === "sanctionnotesheet"
           ? DEFAULT_NOTESHEET_SETTINGS
           : DEFAULT_A4_SETTINGS);
       const updated =
@@ -752,9 +838,12 @@ export function NoteSheetPreviewModal({
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Calculate effective dimensions based on Page Size & Orientation
   const { pageWidthMm, pageHeightMm } = useMemo(() => {
-    if (activeDocTab === "forwarding" || activeDocTab === "supplyorder") {
+    if (
+      activeDocTab === "forwarding" ||
+      activeDocTab === "supplyorder" ||
+      activeDocTab === "sanctionletter"
+    ) {
       return { pageWidthMm: 210, pageHeightMm: 297 };
     }
 
@@ -783,7 +872,6 @@ export function NoteSheetPreviewModal({
     activeDocTab,
   ]);
 
-  // Save current settings for this category & active doc tab
   const handleSaveForCategory = () => {
     try {
       localStorage.setItem(
@@ -798,15 +886,16 @@ export function NoteSheetPreviewModal({
       }
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
-    } catch (e) {
-      console.error(e);
+    } catch (_e) {
+      console.error(_e);
     }
   };
 
-  // Reset to system defaults for active doc tab
   const handleResetDefaults = () => {
     const baseDefault =
-      activeDocTab === "forwarding" || activeDocTab === "supplyorder"
+      activeDocTab === "forwarding" ||
+      activeDocTab === "supplyorder" ||
+      activeDocTab === "sanctionletter"
         ? DEFAULT_A4_SETTINGS
         : DEFAULT_NOTESHEET_SETTINGS;
     setSettings(baseDefault);
@@ -814,10 +903,9 @@ export function NoteSheetPreviewModal({
       localStorage.removeItem(
         `notesheet_layout_${effectiveCategoryId}_${activeDocTab}`,
       );
-    } catch (e) {}
+    } catch (_e) {}
   };
 
-  // Update helper
   const updateSetting = <K extends keyof PrintLayoutSettings>(
     key: K,
     value: PrintLayoutSettings[K],
@@ -838,7 +926,6 @@ export function NoteSheetPreviewModal({
     }));
   };
 
-  // Preset Margin Helpers
   const applyMarginPreset = (
     top: number,
     bottom: number,
@@ -851,7 +938,6 @@ export function NoteSheetPreviewModal({
     }));
   };
 
-  // Font Size Steppers (Google Docs Style +/-)
   const adjustFontSize = (delta: number) => {
     setSettings((prev) => {
       const current = prev.fontSizePt || 12;
@@ -860,7 +946,6 @@ export function NoteSheetPreviewModal({
     });
   };
 
-  // Compute CSS vertical positioning styles
   const positionStyles = useMemo(() => {
     const { position, customTopOffset, customLeftOffset, margins } = settings;
 
@@ -922,15 +1007,29 @@ export function NoteSheetPreviewModal({
         ? isEditing
           ? editNoteSheetContent
           : currentNoteSheet.content
-        : activeDocTab === "forwarding"
+        : activeDocTab === "sanctionnotesheet"
           ? isEditing
-            ? editForwardingContent
-            : currentNoteSheet.forwardingContent || editForwardingContent || ""
-          : isEditing
-            ? editSupplyOrderContent
-            : currentNoteSheet.supplyOrderContent ||
-              editSupplyOrderContent ||
-              "";
+            ? editSanctionNoteSheetContent
+            : currentNoteSheet.sanctionNoteSheetContent ||
+              editSanctionNoteSheetContent ||
+              ""
+          : activeDocTab === "forwarding"
+            ? isEditing
+              ? editForwardingContent
+              : currentNoteSheet.forwardingContent ||
+                editForwardingContent ||
+                ""
+            : activeDocTab === "sanctionletter"
+              ? isEditing
+                ? editSanctionLetterContent
+                : currentNoteSheet.sanctionLetterContent ||
+                  editSanctionLetterContent ||
+                  ""
+              : isEditing
+                ? editSupplyOrderContent
+                : currentNoteSheet.supplyOrderContent ||
+                  editSupplyOrderContent ||
+                  "";
 
     if (!raw || raw.trim() === "") {
       if (activeDocTab === "forwarding") return getDefaultForwardingHtml();
@@ -938,9 +1037,8 @@ export function NoteSheetPreviewModal({
       return "";
     }
 
-    // Strip standard hardcoded body font sizes across all tabs on paragraphs, divs, and spans
-    // so the dynamic font size slider and toolbar controls take immediate effect on text
-    // while preserving specialized compact font sizes within data tables
+
+
     raw = raw.replace(
       /(<(?:p|div|span|h[1-6])[^>]*?style="[^"]*?)font-size\s*:\s*(?:9(?:\.[0-9]+)?|10(?:\.[0-9]+)?|11(?:\.[0-9]+)?|12(?:\.[0-9]+)?|13(?:\.[0-9]+)?|14(?:\.[0-9]+)?|15(?:\.[0-9]+)?|16(?:\.[0-9]+)?|17(?:\.[0-9]+)?|18(?:\.[0-9]+)?)\s*(?:pt|px)\s*;?/gi,
       "$1",
@@ -959,14 +1057,17 @@ export function NoteSheetPreviewModal({
   const getFullDocumentHtml = (forWord: boolean = false) => {
     const formattedContent = getCleanHtmlContent();
     const isForwardingOrSupplyOrder =
-      activeDocTab === "forwarding" || activeDocTab === "supplyorder";
+      activeDocTab === "forwarding" ||
+      activeDocTab === "supplyorder" ||
+      activeDocTab === "sanctionletter";
     const hasDocInternalApproval =
       formattedContent.includes("আঞ্চলিক নিরীক্ষা কর্মকর্তা") ||
       formattedContent.includes("আঞ্চলিক ব্যবস্থাপক :-") ||
       formattedContent.includes("regular-signatures-single-line") ||
       (currentNoteSheet as any).quotationFormType === "Form1" ||
-      (currentNoteSheet as any).expenseType === "Quotation";
-    // Note Sheet format strictly starts directly with the Subject without any pad/header format above it
+      (currentNoteSheet as any).expenseType === "Quotation" ||
+      activeDocTab === "sanctionnotesheet";
+
     const govtHeaderHtml = "";
 
     const signaturesHtml =
@@ -1004,12 +1105,10 @@ export function NoteSheetPreviewModal({
     return { formattedContent, govtHeaderHtml, signaturesHtml };
   };
 
-  // Browser Print / PDF Execution
   const handlePrint = () => {
     const { formattedContent, govtHeaderHtml, signaturesHtml } =
       getFullDocumentHtml(false);
 
-    // Try popup window first for best print rendering and zero iframe restrictions
     try {
       const printWin = window.open("", "_blank", "width=900,height=950");
       if (printWin) {
@@ -1232,7 +1331,7 @@ export function NoteSheetPreviewModal({
                 .forwarding-table {
                   table-layout: auto !important;
                   width: 100% !important;
-                  font-size: ${Math.max(9.5, settings.fontSizePt - 1)}pt !important;
+                  font-size: ${settings.fontSizePt}pt !important;
                 }
                 table.forwarding-table th,
                 .forwarding-table th,
@@ -1240,6 +1339,7 @@ export function NoteSheetPreviewModal({
                 .forwarding-table td {
                   border: 1pt solid #000000 !important;
                   padding: 3.5pt 4pt !important;
+                  font-size: inherit !important;
                 }
                 .watermark-container {
                   position: absolute !important;
@@ -1350,11 +1450,10 @@ export function NoteSheetPreviewModal({
         printWin.document.close();
         return;
       }
-    } catch (e) {
-      console.warn("Popup blocked, falling back to iframe print", e);
+    } catch (_e) {
+      console.warn("Popup blocked, falling back to iframe print", _e);
     }
 
-    // Fallback: Invisible iframe print
     const iframe = document.createElement("iframe");
     iframe.style.position = "fixed";
     iframe.style.right = "0";
@@ -1520,7 +1619,7 @@ export function NoteSheetPreviewModal({
             .forwarding-table {
               table-layout: auto !important;
               width: 100% !important;
-              font-size: ${Math.max(9.5, settings.fontSizePt - 1)}pt !important;
+              font-size: ${settings.fontSizePt}pt !important;
             }
             table.forwarding-table th,
             .forwarding-table th,
@@ -1528,6 +1627,7 @@ export function NoteSheetPreviewModal({
             .forwarding-table td {
               border: 1pt solid #000000 !important;
               padding: 3.5pt 4pt !important;
+              font-size: inherit !important;
             }
             .watermark-container {
               position: absolute !important;
@@ -1616,7 +1716,6 @@ export function NoteSheetPreviewModal({
     }, 400);
   };
 
-  // Download as Word Document (.doc with full table styling & Bangla font)
   const handleDownloadWord = () => {
     const { formattedContent, govtHeaderHtml, signaturesHtml } =
       getFullDocumentHtml(true);
@@ -1727,7 +1826,6 @@ export function NoteSheetPreviewModal({
     URL.revokeObjectURL(url);
   };
 
-  // Download as HTML file
   const handleDownloadHtml = () => {
     const { formattedContent, govtHeaderHtml, signaturesHtml } =
       getFullDocumentHtml(false);
@@ -1772,7 +1870,6 @@ export function NoteSheetPreviewModal({
     URL.revokeObjectURL(url);
   };
 
-  // Copy Formatted Text / Content
   const handleCopyContent = () => {
     const rawText = currentNoteSheet.content
       .replace(/<[^>]*>/g, " ")
@@ -1782,14 +1879,12 @@ export function NoteSheetPreviewModal({
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  // Convert mm to screen pixels at the current zoom scale
-  // 1 mm ≈ 3.7795 px at standard 96 DPI
+
   const scaleRatio = 3.779527559 * zoom;
   const paperWidthPx = pageWidthMm * scaleRatio;
   const paperHeightPx = pageHeightMm * scaleRatio;
 
-  // Exact screen pixel size for font at current zoom:
-  // 1pt = (96 / 72) px = 1.333333 px.
+
   const previewFontPx = (settings.fontSizePt || 12) * 1.333333 * zoom;
 
   return (
@@ -2937,6 +3032,50 @@ export function NoteSheetPreviewModal({
                       : "Supply Order"}
                   </span>
                 </button>
+                {(noteSheet.sanctionNoteSheetContent ||
+                  currentNoteSheet.sanctionNoteSheetContent ||
+                  editSanctionNoteSheetContent ||
+                  activeDocTab === "sanctionnotesheet" ||
+                  (isAdmin && (currentNoteSheet as any).isPostFacto)) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchDocTab("sanctionnotesheet")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      activeDocTab === "sanctionnotesheet"
+                        ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
+                        : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
+                    }`}
+                  >
+                    <span>📑</span>
+                    <span>
+                      {language === "bn"
+                        ? "মঞ্জুরীর নোটশিট (Sanction Note)"
+                        : "Sanction Note Sheet"}
+                    </span>
+                  </button>
+                )}
+                {(noteSheet.sanctionLetterContent ||
+                  currentNoteSheet.sanctionLetterContent ||
+                  editSanctionLetterContent ||
+                  activeDocTab === "sanctionletter" ||
+                  (isAdmin && (currentNoteSheet as any).isPostFacto)) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchDocTab("sanctionletter")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      activeDocTab === "sanctionletter"
+                        ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
+                        : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
+                    }`}
+                  >
+                    <span>✅</span>
+                    <span>
+                      {language === "bn"
+                        ? "মঞ্জুরপত্র (Sanction Letter)"
+                        : "Sanction Letter"}
+                    </span>
+                  </button>
+                )}
               </div>
 
               <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400 shrink-0">
@@ -2946,7 +3085,7 @@ export function NoteSheetPreviewModal({
                 <span className="font-medium">
                   {isEditing
                     ? language === "bn"
-                      ? `${activeDocTab === "notesheet" ? "নোট শিট" : activeDocTab === "forwarding" ? "ফরোয়ার্ডিং পত্র" : "সাপ্লাই অর্ডার"} কাস্টম এডিট মোড চালু`
+                      ? `${activeDocTab === "notesheet" ? "নোট শিট" : activeDocTab === "sanctionnotesheet" ? "মঞ্জুরীর নোটশিট" : activeDocTab === "forwarding" ? "ফরোয়ার্ডিং পত্র" : activeDocTab === "sanctionletter" ? "মঞ্জুরপত্র" : "সাপ্লাই অর্ডার"} কাস্টম এডিট মোড চালু`
                       : "Custom Edit Mode Active"
                     : language === "bn"
                       ? "প্রিভিউ ও প্রিন্ট মোড"
@@ -2969,14 +3108,22 @@ export function NoteSheetPreviewModal({
                     {language === "bn"
                       ? activeDocTab === "notesheet"
                         ? "নোট শিটের বিষয়/শিরোনাম *"
-                        : activeDocTab === "forwarding"
-                          ? "ফরোয়ার্ডিং পত্রের বিষয়/শিরোনাম *"
-                          : "সাপ্লাই অর্ডারের বিষয়/শিরোনাম *"
+                        : activeDocTab === "sanctionnotesheet"
+                          ? "মঞ্জুরীর নোটশিটের বিষয়/শিরোনাম *"
+                          : activeDocTab === "forwarding"
+                            ? "ফরোয়ার্ডিং পত্রের বিষয়/শিরোনাম *"
+                            : activeDocTab === "sanctionletter"
+                              ? "মঞ্জুরপত্রের বিষয়/শিরোনাম *"
+                              : "সাপ্লাই অর্ডারের বিষয়/শিরোনাম *"
                       : activeDocTab === "notesheet"
                         ? "Note Sheet Subject/Title *"
-                        : activeDocTab === "forwarding"
-                          ? "Forwarding Letter Subject/Title *"
-                          : "Supply Order Subject/Title *"}
+                        : activeDocTab === "sanctionnotesheet"
+                          ? "Sanction Note Sheet Subject/Title *"
+                          : activeDocTab === "forwarding"
+                            ? "Forwarding Letter Subject/Title *"
+                            : activeDocTab === "sanctionletter"
+                              ? "Sanction Letter Subject/Title *"
+                              : "Supply Order Subject/Title *"}
                   </label>
                   <input
                     type="text"
@@ -2996,28 +3143,44 @@ export function NoteSheetPreviewModal({
                       {language === "bn"
                         ? activeDocTab === "notesheet"
                           ? "নোট শিট বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
-                          : activeDocTab === "forwarding"
-                            ? "ফরোয়ার্ডিং পত্র বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
-                            : "সাপ্লাই অর্ডার বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
+                          : activeDocTab === "sanctionnotesheet"
+                            ? "মঞ্জুরীর নোটশিট বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
+                            : activeDocTab === "forwarding"
+                              ? "ফরোয়ার্ডিং পত্র বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
+                              : activeDocTab === "sanctionletter"
+                                ? "মঞ্জুরপত্র বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
+                                : "সাপ্লাই অর্ডার বডি কনটেন্ট (সরাসরি টেক্সট বা HTML) *"
                         : activeDocTab === "notesheet"
                           ? "Note Sheet Body Content (Text or HTML) *"
-                          : activeDocTab === "forwarding"
-                            ? "Forwarding Body Content (Text or HTML) *"
-                            : "Supply Order Body Content (Text or HTML) *"}
+                          : activeDocTab === "sanctionnotesheet"
+                            ? "Sanction Note Body Content (Text or HTML) *"
+                            : activeDocTab === "forwarding"
+                              ? "Forwarding Body Content (Text or HTML) *"
+                              : activeDocTab === "sanctionletter"
+                                ? "Sanction Letter Body Content (Text or HTML) *"
+                                : "Supply Order Body Content (Text or HTML) *"}
                     </label>
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-medium text-emerald-400 bg-emerald-950/70 border border-emerald-800/60 px-2 py-0.5 rounded-md">
                         {language === "bn"
                           ? activeDocTab === "notesheet"
                             ? "নোট শিট এডিটিং"
-                            : activeDocTab === "forwarding"
-                              ? "ফরোয়ার্ডিং এডিটিং"
-                              : "সাপ্লাই অর্ডার এডিটিং"
+                            : activeDocTab === "sanctionnotesheet"
+                              ? "মঞ্জুরীর নোটশিট এডিটিং"
+                              : activeDocTab === "forwarding"
+                                ? "ফরোয়ার্ডিং এডিটিং"
+                                : activeDocTab === "sanctionletter"
+                                  ? "মঞ্জুরপত্র এডিটিং"
+                                  : "সাপ্লাই অর্ডার এডিটিং"
                           : activeDocTab === "notesheet"
                             ? "Editing Note Sheet"
-                            : activeDocTab === "forwarding"
-                              ? "Editing Forwarding"
-                              : "Editing Supply Order"}
+                            : activeDocTab === "sanctionnotesheet"
+                              ? "Editing Sanction Note"
+                              : activeDocTab === "forwarding"
+                                ? "Editing Forwarding"
+                                : activeDocTab === "sanctionletter"
+                                  ? "Editing Sanction Letter"
+                                  : "Editing Supply Order"}
                       </span>
                       <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
                         {language === "bn"
@@ -3206,9 +3369,13 @@ export function NoteSheetPreviewModal({
                           language === "bn"
                             ? activeDocTab === "notesheet"
                               ? "নোট শিটের বিবরণ লিখুন..."
-                              : activeDocTab === "forwarding"
-                                ? "ফরোয়ার্ডিং পত্রের বিবরণ লিখুন..."
-                                : "সাপ্লাই অর্ডারের বিবরণ লিখুন..."
+                              : activeDocTab === "sanctionnotesheet"
+                                ? "মঞ্জুরীর নোটশিটের বিবরণ লিখুন..."
+                                : activeDocTab === "forwarding"
+                                  ? "ফরোয়ার্ডিং পত্রের বিবরণ লিখুন..."
+                                  : activeDocTab === "sanctionletter"
+                                    ? "মঞ্জুরপত্রের বিবরণ লিখুন..."
+                                    : "সাপ্লাই অর্ডারের বিবরণ লিখুন..."
                             : "Enter document body...",
                         defaultActionOnPaste: "insert_as_html",
                         askBeforePasteHTML: false,
@@ -4207,11 +4374,12 @@ export function NoteSheetPreviewModal({
                   .preview-sheet-content table.forwarding-table {
                     table-layout: auto !important;
                     width: 100% !important;
-                    font-size: 0.95em !important;
+                    font-size: 1em !important;
                   }
                   .preview-sheet-content table.forwarding-table th,
                   .preview-sheet-content table.forwarding-table td {
-                    padding: 3px 4px !important;
+                    padding: 4px 6px !important;
+                    font-size: 1em !important;
                   }
                   .preview-sheet-content .watermark-container {
                     position: absolute !important;
@@ -4221,6 +4389,9 @@ export function NoteSheetPreviewModal({
                     pointer-events: none !important;
                     z-index: 0 !important;
                     user-select: none !important;
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
                   }
                 `}</style>
                   </div>

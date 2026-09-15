@@ -1,12 +1,5 @@
 import React from "react";
-import {
-  X,
-  Code,
-  Phone,
-  MapPin,
-  ShieldCheck,
-  Layers,
-} from "lucide-react";
+import { X, Code, Phone, MapPin, ShieldCheck, Layers } from "lucide-react";
 import { SystemSettings } from "../types";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";

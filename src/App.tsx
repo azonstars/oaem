@@ -20,10 +20,12 @@ import { Dashboard } from "./components/Dashboard";
 import { SettingsView } from "./components/SettingsView";
 import { AllocationsView } from "./components/AllocationsView";
 import { ExpensesView } from "./components/ExpensesView";
+import { PostFactoProposalsView } from "./components/PostFactoProposalsView";
 import { ReportsView } from "./components/ReportsView";
 import { NoteSheetsView } from "./components/NoteSheetsView";
 import { NoteTemplatesView } from "./components/NoteTemplatesView";
 import { AuditLogsView } from "./components/AuditLogsView";
+import { MiscellaneousView } from "./components/MiscellaneousView";
 
 import { AboutModal } from "./components/AboutModal";
 import { LoginView } from "./components/LoginView";
@@ -31,12 +33,13 @@ import { ChangePasswordModal } from "./components/ChangePasswordModal";
 import { ProposeUserModal } from "./components/ProposeUserModal";
 import { AppFooter } from "./components/AppFooter";
 import { useTheme } from "./context/ThemeContext";
+import { useLanguage } from "./i18n";
 
 export default function App() {
   const { theme, isCustom } = useTheme();
   const isDark = theme === "dark";
+  const { language } = useLanguage();
 
-  // Persistent currentTab and selectedFY across page reloads
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return localStorage.getItem("govt_app_tab") || "dashboard";
   });
@@ -48,7 +51,6 @@ export default function App() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isProposeUserOpen, setIsProposeUserOpen] = useState(false);
 
-  // Data states
   const [systemSettings, setSystemSettings] = useState<SystemSettings | null>(
     null,
   );
@@ -62,8 +64,8 @@ export default function App() {
   const [noteTemplates, setNoteTemplates] = useState<NoteTemplate[]>([]);
   const [openingBalances, setOpeningBalances] = useState<OpeningBalance[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Current user (restored from localStorage)
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem("govt_app_user");
@@ -73,9 +75,8 @@ export default function App() {
     }
   });
 
-  const [loading, setLoading] = useState(true);
+  
 
-  // Sync session and state to localStorage
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem("govt_app_user", JSON.stringify(currentUser));
@@ -150,7 +151,6 @@ export default function App() {
 
         let resolvedFy = "";
 
-        // Auto-determine current FY based on system setting if available
         let expectedFyName = "";
         if (set[0] && set[0].financialYearStartMonth) {
           const currentMonth = new Date().getMonth() + 1; // 1-12
@@ -496,6 +496,26 @@ export default function App() {
                 refreshData={fetchAllData}
               />
             )}
+            {currentTab === "postfacto-propose" && (
+              <PostFactoProposalsView
+                currentUser={currentUser}
+                mode="propose"
+                offices={offices}
+                categories={categories}
+                financialYears={financialYears}
+                selectedFY={selectedFY}
+              />
+            )}
+            {currentTab === "postfacto-sanction" && (
+              <PostFactoProposalsView
+                currentUser={currentUser}
+                mode="sanction"
+                offices={offices}
+                categories={categories}
+                financialYears={financialYears}
+                selectedFY={selectedFY}
+              />
+            )}
             {currentTab === "expenses" && (
               <ExpensesView
                 expenses={expenses}
@@ -530,6 +550,12 @@ export default function App() {
                 noteSheets={noteSheets}
                 systemSettings={systemSettings}
                 openingBalances={openingBalances}
+              />
+            )}
+            {currentTab === "miscellaneous" && (
+              <MiscellaneousView
+                currentUser={currentUser}
+                language={language as "bn" | "en"}
               />
             )}
             {currentTab === "notesheets" && (
@@ -578,6 +604,7 @@ export default function App() {
                   offices={offices}
                   categories={categories}
                   users={users}
+                  setUsers={setUsers}
                   currentUser={currentUser}
                   allocations={allocations}
                   expenses={expenses}

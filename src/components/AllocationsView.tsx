@@ -68,17 +68,14 @@ export function AllocationsView({
   );
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Selected office for floating buttons filter ("all" or specific officeId)
   const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
     isHeadOffice ? "all" : currentUser.officeId,
   );
 
-  // Floating Office Budget Modal state
   const [floatingOfficeId, setFloatingOfficeId] = useState<string | null>(null);
   const [isFloatingModalOpen, setIsFloatingModalOpen] =
     useState<boolean>(false);
 
-  // Collapsed / Expanded state for the category summary rows in the main page table
   const [expandedSummaryKeys, setExpandedSummaryKeys] = useState<
     Record<string, boolean>
   >({});
@@ -108,7 +105,6 @@ export function AllocationsView({
     setExpandedSummaryKeys({});
   };
 
-  // Add Form State
   const [modalMode, setModalMode] = useState<"Entry" | "Transfer">("Entry");
   const [officeId, setOfficeId] = useState(
     selectedOfficeId !== "all" && offices.some((o) => o.id === selectedOfficeId)
@@ -125,7 +121,6 @@ export function AllocationsView({
   const [referenceNo, setReferenceNo] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  // CSV Import State
   const [csvData, setCsvData] = useState<any[]>([]);
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -133,7 +128,6 @@ export function AllocationsView({
   const currentFYObj = financialYears.find((fy) => fy.id === selectedFY);
   const isFYClosed = !!currentFYObj?.isClosed;
 
-  // Compute office metrics for floating buttons (Name, Total Budget, Expense, Balance)
   const userAllowedOffices = offices.filter((o) =>
     isHeadOffice ? true : o.id === currentUser.officeId,
   );
@@ -184,7 +178,6 @@ export function AllocationsView({
     };
   });
 
-  // Grand total for "All Offices"
   const grandTotal = officeMetrics.reduce(
     (acc, item) => ({
       initial: acc.initial + item.initial,
@@ -208,7 +201,6 @@ export function AllocationsView({
     },
   );
 
-  // Filter allocations based on selected office filter
   const filteredAllocations = allocations.filter((a) => {
     const matchFY = a.financialYearId === selectedFY;
     const matchOffice = isHeadOffice
@@ -248,7 +240,7 @@ export function AllocationsView({
           return;
         }
       } else {
-        // Ensure Provision category exists
+
         const provCategory = categories.find(
           (c) =>
             c.budgetHead === `${sourceCategory.budgetHead}-P` ||
@@ -258,7 +250,7 @@ export function AllocationsView({
         finalToCategoryId = provCategory?.id;
 
         if (!provCategory) {
-          // Create new category via API
+
           try {
             const res = await apiFetch("/api/categories", {
               method: "POST",
@@ -284,7 +276,6 @@ export function AllocationsView({
 
       if (!finalToCategoryId) return;
 
-      // Source (Deduction)
       onAddAllocation({
         financialYearId: selectedFY,
         officeId,
@@ -301,7 +292,6 @@ export function AllocationsView({
             : `Provision transfer to auto-generated category`),
       });
 
-      // Destination (Addition)
       setTimeout(() => {
         onAddAllocation({
           financialYearId: selectedFY,
@@ -353,7 +343,6 @@ export function AllocationsView({
     setShowModal(false);
   };
 
-  // Group by office and category to show Total = Initial + Additional +- Adjustment
   const summaryMap: Record<
     string,
     {
@@ -425,7 +414,6 @@ export function AllocationsView({
           row[h] = values[idx];
         });
 
-        // Validations
         const office = offices.find((o) => o.code === row.officecode);
         if (!office)
           errors.push(`Row ${i}: Invalid office code "${row.officecode}"`);
@@ -447,7 +435,6 @@ export function AllocationsView({
         if (isNaN(amount) || amount === 0)
           errors.push(`Row ${i}: Invalid amount "${row.amount}"`);
 
-        // Duplicate Check
         const isDuplicate = allocations.some(
           (a) => a.referenceNo === row.referenceno && a.referenceNo !== "",
         );
@@ -1180,7 +1167,6 @@ export function AllocationsView({
                   const cat = categories.find((c) => c.id === alc.categoryId);
                   const isExpanded = !!expandedSummaryKeys[key];
 
-                  // Calculate category expense for this office & category
                   const catExps = expenses.filter(
                     (e) =>
                       e.financialYearId === selectedFY &&

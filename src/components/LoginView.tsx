@@ -19,15 +19,17 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
   const { language, setLanguage } = useLanguage();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
 
   const [publicSettings, setPublicSettings] = useState<Partial<SystemSettings>>(
     {},
   );
 
   useEffect(() => {
-    // Fetch public settings on mount
+
     apiFetch("/api/public/settings")
       .then((res) => res.json())
       .then((data) => {

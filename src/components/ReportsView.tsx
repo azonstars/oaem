@@ -61,7 +61,6 @@ export function ReportsView({
   const { t, formatCurrency, language } = useLanguage();
   const [reportType, setReportType] = useState<ReportType>("CONSOLIDATED");
 
-  // Filters
   const [filterFY, setFilterFY] = useState(selectedFY);
   const [filterOffice, setFilterOffice] = useState(
     isHeadOffice ? "" : currentUser.officeId,
@@ -72,7 +71,6 @@ export function ReportsView({
   const [filterApplicant, setFilterApplicant] = useState("");
   const [filterVoucher, setFilterVoucher] = useState("");
 
-  // For Combined PDF (multi-category)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const toggleCategory = (id: string) => {
@@ -84,7 +82,6 @@ export function ReportsView({
   const currentFYObj = financialYears.find((f) => f.id === filterFY);
   const effectiveOffice = isHeadOffice ? filterOffice : currentUser.officeId;
 
-  // Compute filtered Allocations & Expenses
   const filteredAllocations = useMemo(() => {
     return allocations.filter((a) => {
       if (filterFY && a.financialYearId !== filterFY) return false;
@@ -151,12 +148,10 @@ export function ReportsView({
     filterVoucher,
   ]);
 
-  // Compute Consolidated Summary
   const consolidatedData = useMemo(() => {
     const data: any[] = [];
     const grouped: Record<string, Record<string, any>> = {};
 
-    // Add opening balances first
     (openingBalances || []).forEach((ob) => {
       if (filterFY && ob.financialYearId !== filterFY) return;
       if (effectiveOffice && ob.officeId !== effectiveOffice) return;
@@ -289,7 +284,6 @@ export function ReportsView({
     URL.revokeObjectURL(url);
   };
 
-  // Rendering individual report tables
   const renderConsolidatedTable = () => {
     let displayData = consolidatedData;
     if (reportType === "CATEGORY_WISE") {
@@ -401,7 +395,10 @@ export function ReportsView({
               categories.find((c) => c.id === row.categoryId)?.name ||
               (row.categoryId === "ALL" ? t.allCategories : "");
             return (
-              <tr key={idx} className="hover:bg-slate-50 transition bg-white border-b border-slate-200">
+              <tr
+                key={idx}
+                className="hover:bg-slate-50 transition bg-white border-b border-slate-200"
+              >
                 {reportType !== "CATEGORY_WISE" && (
                   <td className="p-3 font-sans font-medium text-slate-800">
                     {off}

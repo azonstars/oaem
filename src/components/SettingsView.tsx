@@ -27,8 +27,6 @@ import {
   AlertTriangle,
   Edit2,
   UserPlus,
-  Mail,
-  Briefcase,
   ShieldCheck,
 } from "lucide-react";
 
@@ -46,6 +44,7 @@ interface SettingsViewProps {
   offices: Office[];
   categories: Category[];
   users: User[];
+  setUsers?: React.Dispatch<React.SetStateAction<User[]>>;
   currentUser: User;
   allocations?: any[];
   expenses?: any[];
@@ -59,6 +58,7 @@ export function SettingsView({
   offices,
   categories,
   users,
+  setUsers,
   currentUser,
   allocations = [],
   expenses = [],
@@ -69,19 +69,44 @@ export function SettingsView({
   const isOcean = theme === "ocean";
   const isDark = theme === "dark";
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmModalTitle, setConfirmModalTitle] = useState("");
+  const [confirmModalMessage, setConfirmModalMessage] = useState("");
+  const [onConfirmAction, setOnConfirmAction] = useState<(() => void) | null>(
+    null,
+  );
+
+  const triggerConfirm = (
+    title: string,
+    message: string,
+    action: () => void,
+  ) => {
+    setConfirmModalTitle(title);
+    setConfirmModalMessage(message);
+    setOnConfirmAction(() => action);
+    setShowConfirmModal(true);
+  };
+
   const [currentTab, setCurrentTab] = React.useState(activeTab);
 
   React.useEffect(() => {
     setCurrentTab(activeTab);
   }, [activeTab]);
 
-  // General Settings State
+  const [localUsers, setLocalUsers] = useState<User[]>(users);
+  const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(
+    new Set(),
+  );
+
+  React.useEffect(() => {
+    setLocalUsers(users);
+  }, [users]);
+
   const [settingsForm, setSettingsForm] = useState(systemSettings);
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Modal States
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showOfficeModal, setShowOfficeModal] = useState(false);
   const [showUserModal, setShowUserModal] = useState(false);
@@ -140,7 +165,6 @@ export function SettingsView({
   const [editingOffice, setEditingOffice] = useState<Office | null>(null);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
 
-  // Add Financial Year State
   const [showAddFyModal, setShowAddFyModal] = useState(false);
   const [newFyName, setNewFyName] = useState("");
   const [newFyStartDate, setNewFyStartDate] = useState("");
@@ -174,12 +198,11 @@ export function SettingsView({
         const err = await res.json();
         alert(err.error || "অর্থবছর তৈরি করতে ব্যর্থ হয়েছে।");
       }
-    } catch (err) {
+    } catch (_err) {
       alert("Error creating financial year");
     }
   };
 
-  // Close Financial Year State
   const [showCloseModal, setShowCloseModal] = useState(false);
   const [closingFy, setClosingFy] = useState<FinancialYear | null>(null);
   const [targetFyId, setTargetFyId] = useState<string>("");
@@ -262,7 +285,6 @@ export function SettingsView({
     }
   };
 
-  // Form States
   const [catCode, setCatCode] = useState("");
   const [catName, setCatName] = useState("");
   const [catHead, setCatHead] = useState("");
@@ -289,7 +311,6 @@ export function SettingsView({
   const [userStatus, setUserStatus] = useState<"Active" | "Inactive">("Active");
   const [editingUser, setEditingUser] = useState<any | null>(null);
 
-  // Handle Logo Upload via File
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -338,7 +359,7 @@ export function SettingsView({
         refreshData();
         setTimeout(() => setSaveSuccessMsg(""), 3000);
       }
-    } catch (err) {
+    } catch (_err) {
       alert("Error updating settings");
     } finally {
       setIsSaving(false);
@@ -379,7 +400,7 @@ export function SettingsView({
         body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
-    } catch (err) {
+    } catch (_err) {
       alert(`Error updating ${type} status`);
     }
   };
@@ -396,7 +417,7 @@ export function SettingsView({
         body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
-    } catch (err) {
+    } catch (_err) {
       alert("Error updating quotation status");
     }
   };
@@ -410,7 +431,7 @@ export function SettingsView({
         body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
-    } catch (err) {
+    } catch (_err) {
       alert("Error updating excess budget status");
     }
   };
@@ -427,7 +448,7 @@ export function SettingsView({
         body: JSON.stringify(updatedPayload),
       });
       if (res.ok) refreshData();
-    } catch (err) {
+    } catch (_err) {
       alert("Error updating approval status");
     }
   };
@@ -463,7 +484,7 @@ export function SettingsView({
         setCatAllowQuotation(true);
         refreshData();
       }
-    } catch (err) {}
+    } catch (_err) {}
   };
 
   const handleAddOffice = async (e: React.FormEvent) => {
@@ -495,7 +516,7 @@ export function SettingsView({
         setOffAddress("");
         refreshData();
       }
-    } catch (err) {}
+    } catch (_err) {}
   };
 
   const handleRestoreDefaults = async (target: "categories" | "offices") => {
@@ -508,37 +529,39 @@ export function SettingsView({
           ? "বাংলাদেশ কৃষি ব্যাংকের রাঙ্গামাটি অঞ্চলের সকল শাখা ও কার্যালয়"
           : "BKB Rangamati Region Offices & Branches";
 
+    const confirmTitle =
+      language === "bn" ? "রিস্টোর নিশ্চিত করুন" : "Confirm Restore";
     const confirmMsg =
       language === "bn"
         ? `আপনি কি নিশ্চিতভাবে ${targetLabel} রিকভার/রিসেট করতে চান?`
         : `Are you sure you want to restore/reset ${targetLabel}?`;
 
-    if (!window.confirm(confirmMsg)) return;
-
-    setIsRestoring(true);
-    try {
-      const res = await apiFetch("/api/settings/restore-defaults", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        alert(
-          data.message ||
-            (language === "bn"
-              ? "সফলভাবে রিকভার করা হয়েছে!"
-              : "Restored successfully!"),
-        );
-        refreshData();
-      } else {
-        alert(data.error || "Failed to restore defaults");
+    triggerConfirm(confirmTitle, confirmMsg, async () => {
+      setIsRestoring(true);
+      try {
+        const res = await apiFetch("/api/settings/restore-defaults", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ target }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(
+            data.message ||
+              (language === "bn"
+                ? "সফলভাবে রিকভার করা হয়েছে!"
+                : "Restored successfully!"),
+          );
+          refreshData();
+        } else {
+          alert(data.error || "Failed to restore defaults");
+        }
+      } catch (_err) {
+        alert("Error restoring defaults");
+      } finally {
+        setIsRestoring(false);
       }
-    } catch (err) {
-      alert("Error restoring defaults");
-    } finally {
-      setIsRestoring(false);
-    }
+    });
   };
 
   const openAddUser = () => {
@@ -587,13 +610,36 @@ export function SettingsView({
       if (userPassword && userPassword.trim()) {
         payload.password = userPassword;
       }
+
+      if (isEditing) {
+        setLocalUsers((prev) =>
+          prev.map((u) => (u.id === editingUser.id ? { ...u, ...payload } : u)),
+        );
+        if (setUsers) {
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === editingUser.id ? { ...u, ...payload } : u,
+            ),
+          );
+        }
+        setShowUserModal(false);
+        setEditingUser(null);
+      }
+
       const res = await apiFetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        setShowUserModal(false);
+        if (!isEditing) {
+          const createdUser = await res.json().catch(() => null);
+          if (createdUser && createdUser.id) {
+            setLocalUsers((prev) => [...prev, createdUser]);
+            if (setUsers) setUsers((prev) => [...prev, createdUser]);
+          }
+          setShowUserModal(false);
+        }
         setEditingUser(null);
         setUserIdVal("");
         setUserName("");
@@ -611,6 +657,7 @@ export function SettingsView({
               ? "ব্যবহারকারী সংরক্ষণ করতে সমস্যা হয়েছে।"
               : "Failed to save user."),
         );
+        refreshData();
       }
     } catch (err: any) {
       alert(err.message || "Error saving user");
@@ -633,7 +680,7 @@ export function SettingsView({
       } else {
         alert(data.error || "Failed to reset password");
       }
-    } catch (err) {
+    } catch (_err) {
       alert("Error resetting password");
     }
   };
@@ -647,69 +694,134 @@ export function SettingsView({
       );
       return;
     }
-    const confirmDelete = window.confirm(
+
+    const title = language === "bn" ? "ব্যবহারকারী ডিলিট" : "Delete User";
+    const msg =
       language === "bn"
         ? `আপনি কি সত্যিই "${user.name || user.userId}" ডিলিট করতে চান?`
-        : `Are you sure you want to delete "${user.name || user.userId}"?`,
-    );
-    if (!confirmDelete) return;
+        : `Are you sure you want to delete "${user.name || user.userId}"?`;
 
-    try {
-      const res = await apiFetch(`/api/users/${user.id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        refreshData();
-      } else {
-        alert(
-          language === "bn"
-            ? "ডিলিট করতে সমস্যা হয়েছে।"
-            : "Failed to delete user.",
-        );
+    triggerConfirm(title, msg, async () => {
+
+      setLocalUsers((prev) => prev.filter((u) => u.id !== user.id));
+      if (setUsers) setUsers((prev) => prev.filter((u) => u.id !== user.id));
+
+      try {
+        const res = await apiFetch(`/api/users/${user.id}`, {
+          method: "DELETE",
+        });
+        if (res.ok) {
+          refreshData();
+        } else {
+
+          setLocalUsers(users);
+          if (setUsers) setUsers(users);
+          const errData = await res.json();
+          alert(
+            (language === "bn"
+              ? "ডিলিট করতে সমস্যা হয়েছে: "
+              : "Failed to delete user: ") + (errData.error || res.statusText),
+          );
+        }
+      } catch (err: any) {
+        setLocalUsers(users);
+        if (setUsers) setUsers(users);
+        alert("Error deleting user: " + (err.message || err));
       }
-    } catch (err) {
-      alert("Error deleting user.");
-    }
+    });
   };
 
   const handleToggleUserStatus = async (user: User) => {
+    const nextStatus = user.status === "Active" ? "Inactive" : "Active";
+
+    setLocalUsers((prev) =>
+      prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)),
+    );
+    if (setUsers) {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: nextStatus } : u)),
+      );
+    }
+    setTogglingUserIds((prev) => new Set(prev).add(user.id));
+
     try {
       const res = await apiFetch(`/api/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...user,
-          status: user.status === "Active" ? "Inactive" : "Active",
+          status: nextStatus,
         }),
       });
-      if (res.ok) refreshData();
-    } catch (err) {
-      alert("Failed to toggle status");
+      if (!res.ok) {
+
+        setLocalUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id ? { ...u, status: user.status } : u,
+          ),
+        );
+        if (setUsers) {
+          setUsers((prev) =>
+            prev.map((u) =>
+              u.id === user.id ? { ...u, status: user.status } : u,
+            ),
+          );
+        }
+        const errData = await res.json().catch(() => ({}));
+        alert(
+          errData.error ||
+            (language === "bn"
+              ? "স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে।"
+              : "Failed to toggle status."),
+        );
+      } else {
+
+        refreshData();
+      }
+    } catch (err: any) {
+
+      setLocalUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, status: user.status } : u)),
+      );
+      if (setUsers) {
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === user.id ? { ...u, status: user.status } : u,
+          ),
+        );
+      }
+      alert("Failed to toggle status: " + (err.message || err));
+    } finally {
+      setTogglingUserIds((prev) => {
+        const next = new Set(prev);
+        next.delete(user.id);
+        return next;
+      });
     }
   };
 
   const roleStr = currentUser?.role as string | undefined;
   const isSuperAdmin = roleStr === "Super Admin";
+  const isSuperAdminOrAdmin = roleStr === "Super Admin" || roleStr === "Admin";
   const isAdmin =
     roleStr === "Super Admin" ||
     roleStr === "Admin" ||
-    roleStr === "Head Office Admin" ||
-    roleStr === "HeadOfficeAdmin";
-  const isModerator = roleStr === "Moderator";
+    roleStr === "Head Office Admin";
+  const _isModerator = roleStr === "Moderator";
 
-  const settingsTabs = [
+  const _settingsTabs = [
     {
       id: "general",
       label: language === "bn" ? "সাধারণ কনফিগারেশন" : "General",
     },
-    ...(isSuperAdmin
+    ...(isSuperAdminOrAdmin
       ? [
           {
             id: "welcome-msg",
             label:
               language === "bn"
-                ? "ওয়েলকাম ও নোটিশ কনফিগারেশন"
-                : "Welcome & Notices",
+                ? "ওয়েলকাম নোট ও নোটিশ"
+                : "Welcome Note & Notices",
           },
         ]
       : []),
@@ -724,13 +836,19 @@ export function SettingsView({
       label: language === "bn" ? "ব্যয়ের খাতসমূহ" : "Categories",
     },
     { id: "users", label: language === "bn" ? "ব্যবহারকারী তালিকা" : "Users" },
-    ...(isSuperAdmin
+    ...(isSuperAdminOrAdmin
       ? [
           {
             id: "database",
             label:
-              language === "bn" ? "ডাটাবেজ ও ব্যাকআপ" : "Database & Backup",
+              language === "bn"
+                ? "ডাটা ব্যাকআপ ও ডাটাবেজ"
+                : "Data Backup & Database",
           },
+        ]
+      : []),
+    ...(isSuperAdmin
+      ? [
           {
             id: "apps-script",
             label:
@@ -1153,7 +1271,7 @@ export function SettingsView({
         )}
 
         {/* Welcome Message Settings */}
-        {currentTab === "welcome-msg" && (
+        {currentTab === "welcome-msg" && isSuperAdminOrAdmin && (
           <WelcomeMessageSettings
             settingsForm={settingsForm}
             setSettingsForm={setSettingsForm}
@@ -1786,120 +1904,178 @@ export function SettingsView({
                 <tbody
                   className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}
                 >
-                  {users.map((u) => {
-                    const off = offices.find((o) => o.id === u.officeId);
-                    return (
-                      <tr
-                        key={u.id}
-                        className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}
-                      >
-                        <td className="p-3 font-medium">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                                isOcean
-                                  ? "bg-sky-500/20 text-sky-300"
-                                  : "bg-emerald-500/20 text-emerald-400"
+                  {localUsers
+                    .filter((u) => {
+                      if (
+                        currentUser.role !== "Super Admin" &&
+                        u.role === "Super Admin"
+                      ) {
+                        return false;
+                      }
+                      return true;
+                    })
+                    .map((u) => {
+                      const off = offices.find((o) => o.id === u.officeId);
+                      const isToggling = togglingUserIds.has(u.id);
+                      const isActive = u.status === "Active";
+                      return (
+                        <tr
+                          key={u.id}
+                          className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}
+                        >
+                          <td className="p-3 font-medium">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
+                                  isOcean
+                                    ? "bg-sky-500/20 text-sky-300"
+                                    : "bg-emerald-500/20 text-emerald-400"
+                                }`}
+                              >
+                                {u.name
+                                  ? u.name.charAt(0)
+                                  : u.userId
+                                    ? u.userId.charAt(0).toUpperCase()
+                                    : "U"}
+                              </div>
+                              <div>
+                                <div className="font-semibold">
+                                  {u.name || u.userId || "User"}
+                                </div>
+                                <div className="font-mono text-xs text-slate-400">
+                                  ID: {u.userId || u.email}
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3 opacity-80 text-xs">
+                            {u.designation || "N/A"}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`px-2 py-0.5 rounded text-xs font-semibold border ${
+                                u.role === "Super Admin"
+                                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
+                                  : u.role === "Admin" ||
+                                      u.role === "Head Office Admin"
+                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                                    : u.role === "Moderator"
+                                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                                      : "bg-sky-500/20 text-sky-300 border-sky-500/30"
                               }`}
                             >
-                              {u.name
-                                ? u.name.charAt(0)
-                                : u.userId
-                                  ? u.userId.charAt(0).toUpperCase()
-                                  : "U"}
+                              {u.role}
+                            </span>
+                          </td>
+                          <td className="p-3 opacity-70 text-xs">
+                            {off?.name || "N/A"}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+                                isActive
+                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
+                                  : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isActive
+                                    ? "bg-emerald-500 animate-pulse"
+                                    : "bg-rose-500"
+                                }`}
+                              />
+                              {isActive
+                                ? language === "bn"
+                                  ? "সক্রিয় (Active)"
+                                  : "Active"
+                                : language === "bn"
+                                  ? "নিষ্ক্রিয় (Inactive)"
+                                  : "Inactive"}
+                            </span>
+                          </td>
+
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {isAdmin && (
+                                <>
+                                  <button
+                                    onClick={() => openEditUser(u)}
+                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition flex items-center gap-1"
+                                    title={
+                                      language === "bn"
+                                        ? "রোল আপগ্রেড বা শাখা ট্রান্সফার (সম্পাদনা)"
+                                        : "Edit Role / Transfer Branch"
+                                    }
+                                  >
+                                    <Edit2 className="w-3 h-3" />
+                                    <span>
+                                      {language === "bn" ? "সম্পাদনা" : "Edit"}
+                                    </span>
+                                  </button>
+
+                                  <button
+                                    onClick={() =>
+                                      handleAdminResetPassword(u.id)
+                                    }
+                                    className="px-2 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20 transition flex items-center gap-1"
+                                    title="Reset Password"
+                                  >
+                                    <KeyRound className="w-3 h-3" /> Reset
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleToggleUserStatus(u)}
+                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all duration-150 flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer ${
+                                      !isActive
+                                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600 hover:border-emerald-500 shadow-emerald-950/20"
+                                        : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700"
+                                    }`}
+                                    title={
+                                      !isActive
+                                        ? language === "bn"
+                                          ? "ক্লিক করার সাথে সাথেই সক্রিয় করুন"
+                                          : "Click to activate immediately"
+                                        : language === "bn"
+                                          ? "ক্লিক করার সাথে সাথেই নিষ্ক্রিয় করুন"
+                                          : "Click to deactivate immediately"
+                                    }
+                                  >
+                                    {isToggling ? (
+                                      <RefreshCw className="w-3 h-3 animate-spin" />
+                                    ) : !isActive ? (
+                                      <Check className="w-3 h-3 text-white" />
+                                    ) : (
+                                      <X className="w-3 h-3 text-slate-400" />
+                                    )}
+                                    <span>
+                                      {!isActive
+                                        ? language === "bn"
+                                          ? "সক্রিয় করুন"
+                                          : "Activate"
+                                        : language === "bn"
+                                          ? "নিষ্ক্রিয় করুন"
+                                          : "Deactivate"}
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteUser(u)}
+                                    className="p-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/20 transition"
+                                    title={
+                                      language === "bn"
+                                        ? "ডিলিট করুন"
+                                        : "Delete"
+                                    }
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </>
+                              )}
                             </div>
-                            <div>
-                              <div className="font-semibold">
-                                {u.name || u.userId || "User"}
-                              </div>
-                              <div className="font-mono text-xs text-slate-400">
-                                ID: {u.userId || u.email}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-3 opacity-80 text-xs">
-                          {u.designation || "N/A"}
-                        </td>
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-semibold border ${
-                              u.role === "Super Admin"
-                                ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                                : u.role === "Admin" ||
-                                    u.role === "Head Office Admin"
-                                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                                  : u.role === "Moderator"
-                                    ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                    : "bg-sky-500/20 text-sky-300 border-sky-500/30"
-                            }`}
-                          >
-                            {u.role}
-                          </span>
-                        </td>
-                        <td className="p-3 opacity-70 text-xs">
-                          {off?.name || "N/A"}
-                        </td>
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs font-semibold ${u.status === "Active" ? "bg-emerald-500/20 text-emerald-400" : "bg-rose-500/20 text-rose-400"}`}
-                          >
-                            {u.status || "Active"}
-                          </span>
-                        </td>
-
-                        <td className="p-3 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {isAdmin && (
-                              <>
-                                <button
-                                  onClick={() => openEditUser(u)}
-                                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition flex items-center gap-1"
-                                  title={
-                                    language === "bn"
-                                      ? "রোল আপগ্রেড বা শাখা ট্রান্সফার (সম্পাদনা)"
-                                      : "Edit Role / Transfer Branch"
-                                  }
-                                >
-                                  <Edit2 className="w-3 h-3" />
-                                  <span>
-                                    {language === "bn" ? "সম্পাদনা" : "Edit"}
-                                  </span>
-                                </button>
-
-                                <button
-                                  onClick={() => handleAdminResetPassword(u.id)}
-                                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20 transition flex items-center gap-1"
-                                  title="Reset Password"
-                                >
-                                  <KeyRound className="w-3 h-3" /> Reset
-                                </button>
-
-                                <button
-                                  onClick={() => handleToggleUserStatus(u)}
-                                  className="px-2 py-1 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition"
-                                  title="Toggle Active/Inactive"
-                                >
-                                  {u.status === "Inactive"
-                                    ? "Activate"
-                                    : "Deactivate"}
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteUser(u)}
-                                  className="p-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/20 transition"
-                                  title={
-                                    language === "bn" ? "ডিলিট করুন" : "Delete"
-                                  }
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -1914,7 +2090,7 @@ export function SettingsView({
           </div>
         )}
 
-        {currentTab === "database" && (
+        {currentTab === "database" && isSuperAdminOrAdmin && (
           <DatabaseSettingsTab currentUser={currentUser} />
         )}
 
@@ -2955,6 +3131,48 @@ export function SettingsView({
                   ? "🔒 বছর ক্লোজ ও ওপেনিং ব্যালেন্স ট্রান্সফার নিশ্চিত করুন"
                   : "🔒 Confirm Close Financial Year"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirm Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+          <div
+            className={`w-full max-w-md rounded-2xl border ${isOcean ? "bg-sky-950 border-sky-850 text-sky-100" : isDark ? "bg-slate-900 border-slate-800 text-slate-100" : "bg-white border-slate-200 text-slate-900"} shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200`}
+          >
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full bg-amber-500/15 flex items-center justify-center text-amber-500">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-bold">{confirmModalTitle}</h3>
+              </div>
+              <p className="text-sm opacity-80 leading-relaxed mb-6">
+                {confirmModalMessage}
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmModal(false)}
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold border ${isOcean ? "border-sky-800 hover:bg-sky-900/30" : isDark ? "border-slate-850 hover:bg-slate-800/50" : "border-slate-200 hover:bg-slate-50"} transition`}
+                >
+                  {language === "bn" ? "বাতিল" : "Cancel"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onConfirmAction) {
+                      onConfirmAction();
+                    }
+                    setShowConfirmModal(false);
+                  }}
+                  className="px-5 py-2 rounded-xl text-xs bg-rose-600 hover:bg-rose-500 text-white font-bold transition shadow"
+                >
+                  {language === "bn" ? "নিশ্চিত করুন" : "Confirm"}
+                </button>
+              </div>
             </div>
           </div>
         </div>

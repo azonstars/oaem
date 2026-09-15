@@ -59,7 +59,6 @@ export function Header({
   const themeMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Dynamic Office & Parent Office Resolution
   const currentOffice = offices.find((o) => o.id === currentUser.officeId);
   const parentOffice = currentOffice?.parentOfficeId
     ? offices.find((o) => o.id === currentOffice.parentOfficeId)
@@ -89,7 +88,6 @@ export function Header({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Time-based Slot & Greeting Determination
   const getTimeSlotAndGreeting = (): {
     slot: "morning" | "afternoon" | "evening" | "night";
     greeting: string;
@@ -120,7 +118,6 @@ export function Header({
 
   const { greeting } = getTimeSlotAndGreeting();
 
-  // Helper to replace dynamic placeholders safely
   const replacePlaceholders = (template: string): string => {
     if (!template) return "";
     const systemName =
@@ -152,7 +149,6 @@ export function Header({
       .replace(/{institution}/g, institutionName);
   };
 
-  // Resolve active notices (admin-configured or default fallback)
   const rawNotices =
     systemSettings?.notices && systemSettings.notices.length > 0
       ? systemSettings.notices
@@ -173,14 +169,18 @@ export function Header({
 
   const processedNotices = rawNotices.map((n) => replacePlaceholders(n));
 
-  // Auto rotate notice every 6 seconds
   useEffect(() => {
-    if (processedNotices.length <= 1 || isNoticePaused) return;
+    if (
+      systemSettings?.showNoticeBar === false ||
+      processedNotices.length <= 1 ||
+      isNoticePaused
+    )
+      return;
     const timer = setInterval(() => {
       setCurrentNoticeIndex((prev) => (prev + 1) % processedNotices.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [processedNotices.length, isNoticePaused]);
+  }, [processedNotices.length, isNoticePaused, systemSettings?.showNoticeBar]);
 
   const handlePrevNotice = () => {
     setCurrentNoticeIndex(
@@ -196,7 +196,10 @@ export function Header({
     n.toString().replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[parseInt(d)]);
 
   return (
-    <div className="sticky top-0 z-30 shrink-0 w-full print:hidden" data-no-print="true">
+    <div
+      className="sticky top-0 z-30 shrink-0 w-full print:hidden"
+      data-no-print="true"
+    >
       {/* ========================================================================= */}
       {/* 1. MAIN PROFESSIONAL GOVERNMENT HEADER                                    */}
       {/* ========================================================================= */}
@@ -602,100 +605,102 @@ export function Header({
       {/* ========================================================================= */}
       {/* 2. DYNAMIC ROTATING NOTICE & ANNOUNCEMENT BAR                             */}
       {/* ========================================================================= */}
-      <div
-        onMouseEnter={() => setIsNoticePaused(true)}
-        onMouseLeave={() => setIsNoticePaused(false)}
-        className={`px-3 sm:px-6 py-2 border-b shrink-0 flex items-center justify-between gap-2.5 sm:gap-4 transition-colors ${
-          isCustom
-            ? "bg-[#140f29] border-[#312459] text-purple-100 shadow-inner"
-            : isDark
-              ? "bg-slate-900 border-slate-800 text-slate-100 shadow-inner"
-              : "bg-emerald-50/90 border-emerald-200 text-slate-900 shadow-2xs"
-        }`}
-      >
-        {/* Left Badge: Notice Indicator */}
-        <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-          <div
-            className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-xs shrink-0 border ${
-              isCustom
-                ? "bg-rose-500/25 border-rose-400/50 text-rose-300"
-                : isDark
-                  ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
-                  : "bg-rose-100 border-rose-300 text-rose-800"
-            }`}
-          >
-            <Megaphone className="w-3.5 h-3.5 animate-pulse" />
-            <span className="tracking-wide">
-              {language === "bn" ? "বিজ্ঞপ্তি" : "Notice"}
-            </span>
-          </div>
-
-          {/* Center Notice Text with smooth transition and explicit high-contrast theme classes */}
-          <div className="min-w-0 flex-1 overflow-hidden">
-            <p
-              key={currentNoticeIndex}
-              className={`text-xs sm:text-sm font-medium truncate transition-colors duration-200 ${
-                isCustom
-                  ? "text-purple-100"
-                  : isDark
-                    ? "text-slate-100"
-                    : "text-slate-900"
-              }`}
-              title={processedNotices[currentNoticeIndex]}
-            >
-              {processedNotices[currentNoticeIndex]}
-            </p>
-          </div>
-        </div>
-
-        {/* Right Controls: Navigation arrows & Counter */}
+      {systemSettings?.showNoticeBar !== false && (
         <div
-          className={`flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs ${
+          onMouseEnter={() => setIsNoticePaused(true)}
+          onMouseLeave={() => setIsNoticePaused(false)}
+          className={`px-3 sm:px-6 py-2 border-b shrink-0 flex items-center justify-between gap-2.5 sm:gap-4 transition-colors ${
             isCustom
-              ? "text-purple-200"
+              ? "bg-[#140f29] border-[#312459] text-purple-100 shadow-inner"
               : isDark
-                ? "text-slate-300"
-                : "text-slate-700"
+                ? "bg-slate-900 border-slate-800 text-slate-100 shadow-inner"
+                : "bg-emerald-50/90 border-emerald-200 text-slate-900 shadow-2xs"
           }`}
         >
-          <span className="text-xs font-mono font-medium opacity-80">
-            {language === "bn"
-              ? `(${toBnDigits(currentNoticeIndex + 1)}/${toBnDigits(processedNotices.length)})`
-              : `(${currentNoticeIndex + 1}/${processedNotices.length})`}
-          </span>
+          {/* Left Badge: Notice Indicator */}
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-xs shrink-0 border ${
+                isCustom
+                  ? "bg-rose-500/25 border-rose-400/50 text-rose-300"
+                  : isDark
+                    ? "bg-rose-500/20 border-rose-500/40 text-rose-300"
+                    : "bg-rose-100 border-rose-300 text-rose-800"
+              }`}
+            >
+              <Megaphone className="w-3.5 h-3.5 animate-pulse" />
+              <span className="tracking-wide">
+                {language === "bn" ? "বিজ্ঞপ্তি" : "Notice"}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-0.5">
-            <button
-              onClick={handlePrevNotice}
-              className={`p-1 rounded-lg transition border ${
-                isCustom
-                  ? "border-purple-500/30 text-purple-200 hover:bg-[#281e4d] hover:text-white"
-                  : isDark
-                    ? "border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                    : "border-emerald-200 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950"
-              }`}
-              title={
-                language === "bn" ? "পূর্ববর্তী বিজ্ঞপ্তি" : "Previous notice"
-              }
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={handleNextNotice}
-              className={`p-1 rounded-lg transition border ${
-                isCustom
-                  ? "border-purple-500/30 text-purple-200 hover:bg-[#281e4d] hover:text-white"
-                  : isDark
-                    ? "border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
-                    : "border-emerald-200 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950"
-              }`}
-              title={language === "bn" ? "পরবর্তী বিজ্ঞপ্তি" : "Next notice"}
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            {/* Center Notice Text with smooth transition and explicit high-contrast theme classes */}
+            <div className="min-w-0 flex-1 overflow-hidden">
+              <p
+                key={currentNoticeIndex}
+                className={`text-xs sm:text-sm font-medium truncate transition-colors duration-200 ${
+                  isCustom
+                    ? "text-purple-100"
+                    : isDark
+                      ? "text-slate-100"
+                      : "text-slate-900"
+                }`}
+                title={processedNotices[currentNoticeIndex]}
+              >
+                {processedNotices[currentNoticeIndex]}
+              </p>
+            </div>
+          </div>
+
+          {/* Right Controls: Navigation arrows & Counter */}
+          <div
+            className={`flex items-center gap-1.5 sm:gap-2 shrink-0 text-xs ${
+              isCustom
+                ? "text-purple-200"
+                : isDark
+                  ? "text-slate-300"
+                  : "text-slate-700"
+            }`}
+          >
+            <span className="text-xs font-mono font-medium opacity-80">
+              {language === "bn"
+                ? `(${toBnDigits(currentNoticeIndex + 1)}/${toBnDigits(processedNotices.length)})`
+                : `(${currentNoticeIndex + 1}/${processedNotices.length})`}
+            </span>
+
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={handlePrevNotice}
+                className={`p-1 rounded-lg transition border ${
+                  isCustom
+                    ? "border-purple-500/30 text-purple-200 hover:bg-[#281e4d] hover:text-white"
+                    : isDark
+                      ? "border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                      : "border-emerald-200 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950"
+                }`}
+                title={
+                  language === "bn" ? "পূর্ববর্তী বিজ্ঞপ্তি" : "Previous notice"
+                }
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={handleNextNotice}
+                className={`p-1 rounded-lg transition border ${
+                  isCustom
+                    ? "border-purple-500/30 text-purple-200 hover:bg-[#281e4d] hover:text-white"
+                    : isDark
+                      ? "border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white"
+                      : "border-emerald-200 text-emerald-900 hover:bg-emerald-100 hover:text-emerald-950"
+                }`}
+                title={language === "bn" ? "পরবর্তী বিজ্ঞপ্তি" : "Next notice"}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -18,9 +18,7 @@ import {
   FileSpreadsheet,
   Globe,
   Cloud,
-  Sparkles,
   HelpCircle,
-  Layers,
   CheckCircle,
 } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
@@ -49,11 +47,12 @@ export function DatabaseSettingsTab({ currentUser }: DatabaseSettingsTabProps) {
   const isDark = theme === "dark";
 
   const [dbStatus, setDbStatus] = useState<DbStatus | null>(null);
-  const [loading, setLoading] = useState(false);
+  
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
-  // Restore states
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedRestoreFile, setSelectedRestoreFile] = useState<File | null>(
     null,
@@ -62,7 +61,6 @@ export function DatabaseSettingsTab({ currentUser }: DatabaseSettingsTabProps) {
   const [restoring, setRestoring] = useState(false);
   const [checkpointing, setCheckpointing] = useState(false);
 
-  // SQL Console state
   const [sqlQuery, setSqlQuery] = useState(
     "SELECT id, name, code, budgetHead FROM Categories LIMIT 5",
   );
@@ -175,7 +173,7 @@ export function DatabaseSettingsTab({ currentUser }: DatabaseSettingsTabProps) {
     }
     setSelectedRestoreFile(file);
     setShowRestoreModal(true);
-    // Reset file input so user can pick same file again if desired
+
     e.target.value = "";
   };
 
@@ -282,6 +280,7 @@ export function DatabaseSettingsTab({ currentUser }: DatabaseSettingsTabProps) {
   const roleStr = currentUser?.role as string | undefined;
   const isAdmin =
     roleStr === "Super Admin" ||
+    roleStr === "Admin" ||
     roleStr === "Head Office Admin" ||
     roleStr === "HeadOfficeAdmin";
 

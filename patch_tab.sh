@@ -1,0 +1,4 @@
+#!/bin/bash
+sed -i 's/tab: "notesheet" | "forwarding" | "supplyorder",/tab: "notesheet" | "forwarding" | "supplyorder" | "sanctionletter",/g' src/components/NoteSheetPreviewModal.tsx
+sed -i 's/else if (activeDocTab === "supplyorder") setEditSupplyOrderContent(val);/else if (activeDocTab === "supplyorder") setEditSupplyOrderContent(val);\n    else if (activeDocTab === "sanctionletter") setEditSanctionLetterContent(val);/g' src/components/NoteSheetPreviewModal.tsx
+sed -i 's/else if (activeDocTab === "supplyorder")\n          setEditSupplyOrderContent(currentVal);/else if (activeDocTab === "supplyorder")\n          setEditSupplyOrderContent(currentVal);\n        else if (activeDocTab === "sanctionletter")\n          setEditSanctionLetterContent(currentVal);/g' src/components/NoteSheetPreviewModal.tsx

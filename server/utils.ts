@@ -169,9 +169,77 @@ export function formatDateToDDMMYYYY(dateStr: string): string {
   return dateStr;
 }
 
+export function isRepairWork(text?: string | null): boolean {
+  if (!text) return false;
+  const lower = String(text).toLowerCase();
+  return (
+    lower.includes("মেরামত") ||
+    lower.includes("সার্ভিসিং") ||
+    lower.includes("রক্ষণাবেক্ষণ") ||
+    lower.includes("সংস্কার")
+  );
+}
+
+export function isBranchOffice(office?: any): boolean {
+  if (!office) return true;
+  const name = String(office.name || "").trim().toLowerCase();
+  const type = String(office.type || "").trim();
+
+  if (name.includes("শাখা") || name.includes("branch")) return true;
+
+  if (
+    type === "HeadOffice" ||
+    name.includes("প্রধান কার্যালয়") ||
+    name.includes("প্রধান কার্যালয়") ||
+    name.includes("আঞ্চলিক কার্যালয়") ||
+    name.includes("আঞ্চলিক কার্যালয়") ||
+    name.includes("বিভাগীয় কার্যালয়") ||
+    name.includes("বিভাগীয় কার্যালয়") ||
+    name.includes("নিরীক্ষা কার্যালয়") ||
+    name.includes("নিরীক্ষা কার্যালয়")
+  ) {
+    return false;
+  }
+
+  if (type === "SubOffice" || type === "Branch" || type === "suboffice" || type === "branch") {
+    return true;
+  }
+
+  return true;
+}
+
 export function toBnDigits(val: any): string {
   if (val === null || val === undefined) return "";
   return convertToBengaliNumber(val);
+}
+
+export function isCategory134(category: any): boolean {
+  if (!category) return false;
+  const str = `${category.code || ""} ${category.budgetHead || ""} ${category.name || ""}`.toLowerCase();
+  return (
+    /134\s*\/\s*(?:0?[1-5])/i.test(str) ||
+    /১৩৪\s*\/\s*(?:০?[১-৫])/i.test(str) ||
+    str.includes("134/1") ||
+    str.includes("134/2") ||
+    str.includes("134/3") ||
+    str.includes("134/4") ||
+    str.includes("134/5") ||
+    str.includes("134/01") ||
+    str.includes("134/02") ||
+    str.includes("134/03") ||
+    str.includes("134/04") ||
+    str.includes("134/05") ||
+    str.includes("১৩৪/১") ||
+    str.includes("১৩৪/২") ||
+    str.includes("১৩৪/৩") ||
+    str.includes("১৩৪/৪") ||
+    str.includes("১৩৪/৫") ||
+    str.includes("১৩৪/০১") ||
+    str.includes("১৩৪/০২") ||
+    str.includes("১৩৪/০৩") ||
+    str.includes("১৩৪/০৪") ||
+    str.includes("১৩৪/০৫")
+  );
 }
 
 export function computeExpenseAmounts(baseAmount: number, vatRate: number = 0, taxRate: number = 0) {
@@ -212,6 +280,18 @@ export function detectFileTypeFromMagicBytes(buffer: Buffer): { ext: string; mim
   // JPEG/JPG check: 0xFF 0xD8 0xFF
   if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
     return { ext: "jpg", mime: "image/jpeg" };
+  }
+
+  // WebP check: RIFF....WEBP (0x52, 0x49, 0x46, 0x46 and 0x57, 0x45, 0x42, 0x50 at offset 8)
+  if (buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 && buffer.length >= 12) {
+    if (buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50) {
+      return { ext: "webp", mime: "image/webp" };
+    }
+  }
+
+  // GIF check: GIF (0x47, 0x49, 0x46)
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
+    return { ext: "gif", mime: "image/gif" };
   }
 
   // DOCX / PK zip check: 0x50 0x4B 0x03 0x04

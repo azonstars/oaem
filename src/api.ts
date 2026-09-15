@@ -17,7 +17,6 @@ export async function apiFetch(
     window.dispatchEvent(new CustomEvent("auth-unauthorized"));
   }
 
-  // Wrap res.json() to safely handle non-JSON / HTML responses without throwing SyntaxError
   const originalJson = res.json.bind(res);
   res.json = async () => {
     try {

@@ -1,5 +1,55 @@
 [
   {
+    "id": "al-1789364760415",
+    "timestamp": "2026-09-14 05:46:00",
+    "userId": "admin_user",
+    "action": "DELETE_USERS",
+    "tableName": "Users",
+    "recordId": "usr-2",
+    "details": "Deleted record usr-2 from Users",
+    "prevHash": "fe25f02058a758b4bde02b3bd5ff6afa6b43c6198e36966c7fd0917d5db30a1f"
+  },
+  {
+    "id": "al-1789364718148",
+    "timestamp": "2026-09-14 05:45:18",
+    "userId": "admin_user",
+    "action": "DELETE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789325704269",
+    "details": "Deleted record use-1789325704269 from Users",
+    "prevHash": "3c5a03f52cbee4ccc4e766fcdfa696bb971d6d65cf29b611f4413669e054ffcd"
+  },
+  {
+    "id": "al-1789364482485",
+    "timestamp": "2026-09-14 05:41:22",
+    "userId": "usr-1",
+    "action": "DELETE_USERS",
+    "tableName": "Users",
+    "recordId": "usr-3",
+    "details": "Deleted record usr-3 from Users",
+    "prevHash": "3e96bd805d00f876742c5fb02ea595df8d6b679edde98c8fe4362c9c302af5bd"
+  },
+  {
+    "id": "al-1789364444078",
+    "timestamp": "2026-09-14 05:40:44",
+    "userId": "usr-1",
+    "action": "DELETE_USERS",
+    "tableName": "Users",
+    "recordId": "use-1789325696168",
+    "details": "Deleted record use-1789325696168 from Users",
+    "prevHash": "0ad977b2ee1c072f1864ea7f5b40d8792e1553a6da50b57f1ae3bb6903e53631"
+  },
+  {
+    "id": "al-1789364340019",
+    "timestamp": "2026-09-14 05:39:00",
+    "userId": "admin_user",
+    "action": "LOGIN_FAILED",
+    "tableName": "Users",
+    "recordId": "use-1789325696168",
+    "details": "Failed login attempt from IP: 127.0.0.1",
+    "prevHash": "e1e8508fed627deb2e59211336b036b104d4eab69af828216dbfa1db6bc875b3"
+  },
+  {
     "id": "al-1789325705302",
     "timestamp": "2026-09-13 18:55:05",
     "userId": "usr-1",

@@ -85,6 +85,12 @@ export function ExpensesView({
 }: ExpensesViewProps) {
   const { t, formatCurrency, language } = useLanguage();
   const { isCustom, isDark } = useTheme();
+  const isSuperAdminOrAdminOrModerator =
+    currentUser?.role === "Super Admin" ||
+    currentUser?.role === "Admin" ||
+    currentUser?.role === "Head Office Admin" ||
+    currentUser?.role === "Moderator";
+
   const [internalStatusFilter, setInternalStatusFilter] = useState<
     "All" | "Pending" | "Approved" | "Rejected"
   >("All");
@@ -108,14 +114,12 @@ export function ExpensesView({
     setTimeout(() => setToastMsg(""), 3000);
   };
 
-  // Reject Modal State
   const [rejectingExpenseId, setRejectingExpenseId] = useState<string | null>(
     null,
   );
   const [rejectionReasonInput, setRejectionReasonInput] = useState("");
   const [rejectError, setRejectError] = useState("");
 
-  // Supporting Document Upload State
   const [supportingDocument, setSupportingDocument] = useState("");
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -158,7 +162,6 @@ export function ExpensesView({
   );
   const [noteSheetId, setNoteSheetId] = useState("");
 
-  // Form-2 Specific Recipient & Bidders State
   const defaultSupplierOrg1 = "কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি।";
   const defaultSupplierOrg2 = "কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি।";
   const defaultSupplierOrg3 = "ডাইনামিক কম্পিউটার, বনরূপা, রাঙ্গামাটি।";
@@ -177,7 +180,6 @@ export function ExpensesView({
   const [supplierOrg2, setSupplierOrg2] = useState(defaultSupplierOrg2);
   const [supplierOrg3, setSupplierOrg3] = useState(defaultSupplierOrg3);
 
-  // Form-2 Quotation Items State
   const [form2Items, setForm2Items] = useState<
     Array<{
       itemDescription: string;
@@ -251,10 +253,8 @@ export function ExpensesView({
     },
   ]);
 
-  // Branch Debit Entries for Form-1 (When filled, replaces office phrase with "অত্র অঞ্চলাধীন শাখাসমূহের জন্য")
   const [branchEntries, setBranchEntries] = useState<BranchDebitEntry[]>([]);
 
-  // Applicant Info
   const [applicantType, setApplicantType] = useState<
     "OwnOffice" | "PersonInstitution"
   >("OwnOffice");
@@ -283,7 +283,6 @@ export function ExpensesView({
 
     setUploadError("");
 
-    // Client-side file size check: max 5 MB
     const maxSizeBytes = 5 * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       setUploadError(
@@ -294,7 +293,6 @@ export function ExpensesView({
       return;
     }
 
-    // Client-side extension check
     const ext = file.name.split(".").pop()?.toLowerCase();
     const allowed = ["pdf", "jpg", "jpeg", "png", "docx"];
     if (!ext || !allowed.includes(ext)) {
@@ -341,7 +339,6 @@ export function ExpensesView({
     reader.readAsDataURL(file);
   };
 
-  // Reset modal fields
   const resetForm = () => {
     setEditingExpenseId(null);
     setOfficeId(isHeadOffice ? offices[0]?.id || "" : currentUser.officeId);
@@ -645,7 +642,6 @@ export function ExpensesView({
     setShowModal(true);
   };
 
-  // Helper to parse organization and address parts
   const parseOrgAddress = (raw: string) => {
     if (!raw) return { orgName: "", address1: "", address2: "" };
     const parts = raw
@@ -668,9 +664,8 @@ export function ExpensesView({
     }
   };
 
-  // Form-1 Lowest Bidder & Address parser
   const form1LowestBidder = useMemo(() => {
-    // Collect all unique suppliers across items with their total sum
+
     const supplierTotals: { [name: string]: number } = {};
     const firstSupplierNames: string[] = [];
 
@@ -696,7 +691,6 @@ export function ExpensesView({
       };
     }
 
-    // Lowest total across items
     const minEntry = entries.reduce(
       (min, cur) => (cur[1] < min[1] ? cur : min),
       entries[0],
@@ -708,18 +702,15 @@ export function ExpensesView({
     };
   }, [quotationItems]);
 
-  // Auto-suggestions for supplier/bidder organization names
   const suggestedSuppliers = useMemo(() => {
     const set = new Set<string>();
 
-    // Form 1 current items
     quotationItems.forEach((item) => {
       item.suppliers?.forEach((s) => {
         if (s.nameAndAddress?.trim()) set.add(s.nameAndAddress.trim());
       });
     });
 
-    // Form 2 current items and orgs
     if (supplierOrg1?.trim()) set.add(supplierOrg1.trim());
     if (supplierOrg2?.trim()) set.add(supplierOrg2.trim());
     if (supplierOrg3?.trim()) set.add(supplierOrg3.trim());
@@ -729,7 +720,6 @@ export function ExpensesView({
       });
     });
 
-    // Historical expenses
     expenses.forEach((exp) => {
       if (exp.supplierOrg1?.trim()) set.add(exp.supplierOrg1.trim());
       if (exp.supplierOrg2?.trim()) set.add(exp.supplierOrg2.trim());
@@ -744,7 +734,6 @@ export function ExpensesView({
       });
     });
 
-    // Common standard defaults
     const defaults = [
       "কম্পিউটার পার্ক, বনরুপা, রাঙ্গামাটি",
       "কম্পিউটার ভিলেজ, বনরুপা, রাঙ্গামাটি",
@@ -769,7 +758,6 @@ export function ExpensesView({
     form2Items,
   ]);
 
-  // Form-2 Lowest Bidder & Computed Totals
   const form2LowestBidder = useMemo(() => {
     const org1Total = form2Items.reduce(
       (acc, item) => acc + (Number(item.suppliers[0]?.totalPrice) || 0),
@@ -861,7 +849,6 @@ export function ExpensesView({
     amount,
   ]);
 
-  // Form-2 Handlers
   const handleForm2SupplierNameChange = (
     orgIdx: 1 | 2 | 3,
     newName: string,
@@ -896,7 +883,6 @@ export function ExpensesView({
         (price * targetItem.qty).toFixed(2),
       );
 
-      // Calculate remarks based on price ranking
       const prices = suppliers.map((s) => s.unitPrice || 0);
       const positivePrices = prices.filter((p) => p > 0);
       const minPrice =
@@ -904,7 +890,7 @@ export function ExpensesView({
       const maxPrice =
         positivePrices.length > 0 ? Math.max(...positivePrices) : 0;
 
-      suppliers.forEach((s, idx) => {
+      suppliers.forEach((s, _idx) => {
         if (s.unitPrice === minPrice && minPrice > 0) {
           s.remarks = "সর্বনিম্ন দরদাতা";
         } else if (
@@ -1001,7 +987,6 @@ export function ExpensesView({
     setForm2Items((prev) => prev.filter((_, i) => i !== itemIdx));
   };
 
-  // Filter expenses by FY, Office, and Status
   const filteredExpenses = expenses.filter((e) => {
     const matchFY = e.financialYearId === selectedFY;
     const matchOffice = isHeadOffice
@@ -1020,7 +1005,6 @@ export function ExpensesView({
     return matchFY && matchOffice && matchStatus;
   });
 
-  // Calculate Overall / Category Balances
   const editingExpenseObj = editingExpenseId
     ? expenses.find((e) => e.id === editingExpenseId)
     : null;
@@ -1069,7 +1053,6 @@ export function ExpensesView({
   const isNegativeBalance =
     !currentCategory?.allowExcess && effectiveCurrentAmount > availableBalance;
 
-  // Duplicate Voucher Check
   const isDuplicateVoucher = expenses.some(
     (e) =>
       e.id !== editingExpenseId &&
@@ -1099,7 +1082,7 @@ export function ExpensesView({
       } else {
         showToast(data.error || "Failed to generate Note Sheet.");
       }
-    } catch (err) {
+    } catch (_err) {
       showToast("An error occurred while generating.");
     } finally {
       setGeneratingIds((prev) => {
@@ -1134,8 +1117,8 @@ export function ExpensesView({
         );
         const data = await res.json();
         if (data.success) successCount++;
-      } catch (e) {
-        // ignore errors
+      } catch (_e) {
+
       }
     }
 
@@ -1191,7 +1174,6 @@ export function ExpensesView({
     e.preventDefault();
     setErrorMessage("");
 
-    // Date limit check
     if (currentFYObj?.startDate && currentFYObj?.endDate && expenseDate) {
       if (
         expenseDate < currentFYObj.startDate ||
@@ -1470,7 +1452,6 @@ export function ExpensesView({
           noteSheetId: noteSheetId || undefined,
         });
 
-        // Auto-generate note sheet workflow
         if (newExp && newExp.id && !noteSheetId) {
           await apiFetch(`/api/expenses/${newExp.id}/generate-notesheet`, {
             method: "POST",
@@ -1995,79 +1976,81 @@ export function ExpensesView({
                 ))}
               </datalist>
 
-              <div
-                className={`flex gap-2 mb-2 p-1 rounded-xl ${
-                  isCustom
-                    ? "bg-[#120d24]"
-                    : isDark
-                      ? "bg-slate-800"
-                      : "bg-slate-100"
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExpenseType("General");
-                    const valid = categories.filter(
-                      (c) => c.status === "Active",
-                    );
-                    if (
-                      valid.length > 0 &&
-                      !valid.some((c) => c.id === categoryId)
-                    ) {
-                      setCategoryId(valid[0].id);
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold flex-1 transition ${
-                    expenseType === "General"
-                      ? isCustom
-                        ? "bg-[#281e4b] text-amber-300 shadow-sm border border-[#48377e]"
-                        : isDark
-                          ? "bg-slate-700 text-emerald-400 shadow-sm"
-                          : "bg-white text-emerald-700 shadow-sm border border-emerald-100"
-                      : isCustom
-                        ? "text-purple-300 hover:bg-[#20183d]"
-                        : isDark
-                          ? "text-slate-400 hover:bg-slate-750"
-                          : "text-slate-600 hover:bg-slate-200"
+              {isSuperAdminOrAdminOrModerator && (
+                <div
+                  className={`flex gap-2 mb-2 p-1 rounded-xl ${
+                    isCustom
+                      ? "bg-[#120d24]"
+                      : isDark
+                        ? "bg-slate-800"
+                        : "bg-slate-100"
                   }`}
                 >
-                  {language === "bn" ? "নিয়মিত ব্যয়" : "General Expense"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExpenseType("Quotation");
-                    const valid = categories.filter(
-                      (c) =>
-                        c.status === "Active" && c.allowInQuotation !== false,
-                    );
-                    if (
-                      valid.length > 0 &&
-                      !valid.some((c) => c.id === categoryId)
-                    ) {
-                      setCategoryId(valid[0].id);
-                    }
-                  }}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold flex-1 transition ${
-                    expenseType === "Quotation"
-                      ? isCustom
-                        ? "bg-[#281e4b] text-amber-300 shadow-sm border border-[#48377e]"
-                        : isDark
-                          ? "bg-slate-700 text-emerald-400 shadow-sm"
-                          : "bg-white text-emerald-700 shadow-sm border border-emerald-100"
-                      : isCustom
-                        ? "text-purple-300 hover:bg-[#20183d]"
-                        : isDark
-                          ? "text-slate-400 hover:bg-slate-750"
-                          : "text-slate-600 hover:bg-slate-200"
-                  }`}
-                >
-                  {language === "bn"
-                    ? "কোটেশন প্রক্রিয়ায় ব্যয়"
-                    : "Quotation Expense"}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpenseType("General");
+                      const valid = categories.filter(
+                        (c) => c.status === "Active",
+                      );
+                      if (
+                        valid.length > 0 &&
+                        !valid.some((c) => c.id === categoryId)
+                      ) {
+                        setCategoryId(valid[0].id);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex-1 transition ${
+                      expenseType === "General"
+                        ? isCustom
+                          ? "bg-[#281e4b] text-amber-300 shadow-sm border border-[#48377e]"
+                          : isDark
+                            ? "bg-slate-700 text-emerald-400 shadow-sm"
+                            : "bg-white text-emerald-700 shadow-sm border border-emerald-100"
+                        : isCustom
+                          ? "text-purple-300 hover:bg-[#20183d]"
+                          : isDark
+                            ? "text-slate-400 hover:bg-slate-750"
+                            : "text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {language === "bn" ? "নিয়মিত ব্যয়" : "General Expense"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpenseType("Quotation");
+                      const valid = categories.filter(
+                        (c) =>
+                          c.status === "Active" && c.allowInQuotation !== false,
+                      );
+                      if (
+                        valid.length > 0 &&
+                        !valid.some((c) => c.id === categoryId)
+                      ) {
+                        setCategoryId(valid[0].id);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg text-xs font-semibold flex-1 transition ${
+                      expenseType === "Quotation"
+                        ? isCustom
+                          ? "bg-[#281e4b] text-amber-300 shadow-sm border border-[#48377e]"
+                          : isDark
+                            ? "bg-slate-700 text-emerald-400 shadow-sm"
+                            : "bg-white text-emerald-700 shadow-sm border border-emerald-100"
+                        : isCustom
+                          ? "text-purple-300 hover:bg-[#20183d]"
+                          : isDark
+                            ? "text-slate-400 hover:bg-slate-750"
+                            : "text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {language === "bn"
+                      ? "কোটেশন প্রক্রিয়ায় ব্যয়"
+                      : "Quotation Expense"}
+                  </button>
+                </div>
+              )}
 
               {/* Expense & Voucher Dates */}
               <div
@@ -3195,7 +3178,7 @@ export function ExpensesView({
                                   if (!updated[index].suppliers)
                                     updated[index].suppliers = [];
                                   const sLen = updated[index].suppliers.length;
-                                  // Suggest name from another item at this supplier index if available
+
                                   const suggestedName =
                                     quotationItems.find(
                                       (_, itmIdx) => itmIdx !== index,
@@ -3306,7 +3289,6 @@ export function ExpensesView({
                                         suppliers[sIndex].totalPrice =
                                           item.qty * price;
 
-                                        // Recalculate remarks and item unitPrice
                                         const prices = suppliers.map(
                                           (s) => s.unitPrice || 0,
                                         );
@@ -4941,6 +4923,7 @@ export function ExpensesView({
             )?.name
           }
           onClose={() => setPreviewNoteSheet(null)}
+          currentUser={currentUser}
           onUpdateNoteSheet={() => {
             if (refreshData) refreshData();
           }}

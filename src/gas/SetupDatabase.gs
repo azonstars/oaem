@@ -66,7 +66,7 @@ function migrateExistingDatabase() {
   var ui = SpreadsheetApp.getUi();
   
   var requiredSheets = {
-    "Settings": ["id", "institutionName", "logoUrl", "webAppName", "description", "customThemeColor", "welcomeMessages", "notices"],
+    "Settings": ["id", "institutionName", "logoUrl", "webAppName", "description", "customThemeColor", "welcomeMessages", "notices", "showNoticeBar"],
     "FinancialYears": ["id", "name", "startDate", "endDate", "isActive", "status", "openingBalance"],
     "Offices": ["id", "name", "type", "code", "address", "parentOfficeId", "status"],
     "Users": ["id", "userId", "name", "email", "passwordHash", "role", "officeId", "designation", "status"],

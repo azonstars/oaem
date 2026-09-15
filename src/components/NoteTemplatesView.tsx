@@ -12,7 +12,6 @@ import {
   Code,
   Sparkles,
   CheckCircle2,
-  AlertCircle,
   FileSpreadsheet,
   Plus,
   X,
@@ -22,7 +21,6 @@ import { useTheme } from "../context/ThemeContext";
 import { sanitizeHtml } from "../utils/sanitize";
 import JoditEditor from "jodit-react";
 
-// Available Bengali and English font list for Jodit
 const JODIT_FONT_LIST: Record<string, string> = {
   "'Hind Siliguri', 'Kalpurush', sans-serif": "হিন্দ শিলিগুড়ি (Hind Siliguri)",
   "'Kalpurush', 'Hind Siliguri', serif": "কালপুরুষ (Kalpurush)",
@@ -55,7 +53,6 @@ interface NoteTemplatesViewProps {
   onDeleteTemplate: (id: string) => void;
 }
 
-// Sample Table 1: প্রাপ্ত দরপত্র সমূহের বিবরণ (Comparative Quotation Table from image)
 export const SAMPLE_QUOTATION_TABLE_HTML = `<table style="width: 100%; border-collapse: collapse; margin: 12px 0; border: 1.5px solid #000; font-size: inherit;">
   <thead>
     <tr style="background-color: #f1f5f9; border-bottom: 1.5px solid #000;">
@@ -130,7 +127,6 @@ export const SAMPLE_QUOTATION_TABLE_HTML = `<table style="width: 100%; border-co
   </tbody>
 </table>`;
 
-// Sample Table 2: বাজেট ও প্রোভিশন হিসাব বিবরণী (Financial Provision & Calculation Summary Table from image)
 export const SAMPLE_PROVISION_TABLE_HTML = `<table style="width: 100%; border-collapse: collapse; margin: 14px 0; font-size: inherit;">
   <tbody>
     <tr>
@@ -205,7 +201,7 @@ export function NoteTemplatesView({
 
     try {
       if (fileName.endsWith(".docx") || fileName.endsWith(".doc")) {
-        // Read file as base64 and send to server parser with Mammoth
+
         const reader = new FileReader();
         reader.onload = async () => {
           try {
@@ -629,7 +625,6 @@ export function NoteTemplatesView({
   const getRenderedPreviewHtml = (htmlContent: string) => {
     let preview = htmlContent || "";
 
-    // Sample dynamic budget table for realistic preview
     const sampleDynamicBudgetTable = `
       <table style="width: 100%; border-collapse: collapse; margin-top: 14pt; margin-bottom: 14pt; font-size: inherit; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 6px 0;">
         <tbody>

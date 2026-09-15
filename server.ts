@@ -24,6 +24,9 @@ import {
   formatQtyWithBengaliWord,
   formatItemsListText,
   formatDateToDDMMYYYY,
+  isRepairWork,
+  isBranchOffice,
+  isCategory134,
   toBnDigits,
   computeExpenseAmounts,
   detectFileTypeFromMagicBytes,
@@ -71,7 +74,7 @@ function generateQuotationBiddersTableHtml(
   let totalBiddersCount = 3;
 
   if (isMultipleItems) {
-    // --- MULTIPLE ITEMS COMPARATIVE TABLE FORMAT ---
+
     const bidderMap: Map<string, { name: string; index: number }> = new Map();
     quotationItems.forEach((item: any) => {
       (item.suppliers || []).forEach((s: any, sIdx: number) => {
@@ -114,7 +117,6 @@ function generateQuotationBiddersTableHtml(
       };
     });
 
-    // Sort bidders from lowest price to highest
     biddersList.sort((a, b) => a.grandTotal - b.grandTotal);
     totalBiddersCount = biddersList.length || 3;
 
@@ -122,7 +124,6 @@ function generateQuotationBiddersTableHtml(
       lowestBidderName = biddersList[0].name;
     }
 
-    // Generate Multiple Items Table conforming to the uploaded layout
     const biddersCount = biddersList.length || 3;
     let slWidth = 4;
     let descWidth = 34;
@@ -283,7 +284,7 @@ function generateQuotationBiddersTableHtml(
       </table>
     `;
   } else {
-    // --- SINGLE ITEM FORMAT ---
+
     const supplierUnitTotals: Record<string, number> = {};
     const supplierTotals: Record<string, number> = {};
     let totalQty = 0;
@@ -631,7 +632,6 @@ function generateForm1ForwardingHtml(
   const amountWords = numberToBengaliWords(Math.round(currentBill));
   const netPayableWords = numberToBengaliWords(Math.round(netPayable));
 
-  // Natural items summary for paragraph 2: e.g. "৫টি লেজার প্রিন্টার ও ৬টি ইউপিএস (1200ভিএ)"
   const itemsListForParagraph = quotationItems.map((qi: any) => {
     const q = Number(qi.qty || qi.quantity || 1);
     const u = qi.unit || "টি";
@@ -709,7 +709,12 @@ function generateForm1ForwardingHtml(
     }),
   );
 
-  let paragraph2Text = `সরবরাহকারী প্রতিষ্ঠান "${supplierOrgName}" কর্তৃক অত্র অঞ্চলাধীন শাখাসমূহের জন্য ${itemsSummaryForParagraph} সরবরাহ করতঃ ৳=${currentBillStr} (${amountWords}) টাকার বিল অত্র কার্যালয়ে দাখিল করা হয়েছে।`;
+  const isRepair =
+    isRepairWork(formattedItems) || isRepairWork(expense.description);
+
+  let paragraph2Text = isRepair
+    ? `প্রতিষ্ঠান "${supplierOrgName}" কর্তৃক অত্র অঞ্চলাধীন শাখাসমূহের জন্য ${itemsSummaryForParagraph} কাজ সম্পাদন করতঃ ৳=${currentBillStr} (${amountWords}) টাকার বিল অত্র কার্যালয়ে দাখিল করা হয়েছে।`
+    : `সরবরাহকারী প্রতিষ্ঠান "${supplierOrgName}" কর্তৃক অত্র অঞ্চলাধীন শাখাসমূহের জন্য ${itemsSummaryForParagraph} সরবরাহ করতঃ ৳=${currentBillStr} (${amountWords}) টাকার বিল অত্র কার্যালয়ে দাখিল করা হয়েছে।`;
   if (vatChalanNo && vatChalanNo.trim() !== "" && (hasMusok || calcVat > 0)) {
     const vatRateDisplay = vatRate > 0 ? toBnDigits(vatRate) : "১০";
     paragraph2Text += ` উক্ত বিলের ${vatRateDisplay}% ভ্যাট বাবদ ৳=${calcVatStr}, যা ${toBnDigits(vatChalanNo)} নং চালানের মাধ্যমে সরবরাহকারী প্রতিষ্ঠানের বিলের বিপরীতে পরিশোধিত সর্বমোট ভ্যাট বাবদ ৳=${vatChalanTotalStr} এর অন্তর্ভুক্ত (কপি সংযুক্ত)।`;
@@ -723,11 +728,14 @@ function generateForm1ForwardingHtml(
         ? toBnDigits(expense.taxRate)
         : "৫";
 
+  const supplierOrgLabel = isRepair
+    ? `প্রতিষ্ঠান "${supplierOrgName}"`
+    : `সরবরাহকারী প্রতিষ্ঠান "${supplierOrgName}"`;
   let paragraph3Text = "";
   if (calcVat > 0 && !hasMusok && (!vatChalanNo || vatChalanNo.trim() === "")) {
-    paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${vatRateDisplay}% ভ্যাট বাবদ ৳=${calcVatStr} এবং ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে সরবরাহকারী প্রতিষ্ঠান "${supplierOrgName}" বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
+    paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${vatRateDisplay}% ভ্যাট বাবদ ৳=${calcVatStr} এবং ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
   } else {
-    paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে সরবরাহকারী প্রতিষ্ঠান "${supplierOrgName}" বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
+    paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
   }
 
   const itemsCount = quotationItems.length;
@@ -739,7 +747,6 @@ function generateForm1ForwardingHtml(
       ? expense.branchEntries
       : [];
 
-  // Calculate real items base sum
   const realItemsBaseSum = quotationItems.reduce((acc: number, item: any) => {
     return (
       acc +
@@ -749,7 +756,6 @@ function generateForm1ForwardingHtml(
     );
   }, 0);
 
-  // Calculate upper item gross amounts including VAT & Tax ensuring exact sync with branch allocations and currentBill
   const upperItemGrossAmounts: number[] = [];
   let allocatedGrossSum = 0;
 
@@ -761,7 +767,6 @@ function generateForm1ForwardingHtml(
         0,
     );
 
-    // Check if there are branch entries allocated for this item
     const branchEntriesForItem = effectiveBranchEntries.filter((b: any) => {
       if (
         b.itemIndex !== undefined &&
@@ -809,7 +814,6 @@ function generateForm1ForwardingHtml(
     upperItemGrossAmounts.push(gross);
   }
 
-  // Ensure total matches currentBill exactly
   const upperTotal = upperItemGrossAmounts.reduce((a, b) => a + b, 0);
   if (upperTotal !== currentBill && upperItemGrossAmounts.length > 0) {
     const diff = currentBill - upperTotal;
@@ -937,7 +941,6 @@ function generateForm1ForwardingHtml(
     debitCreditRowsHtml += `</tr>`;
   }
 
-  // Main block total row
   debitCreditRowsHtml += `
     <tr>
       <td style="border: 1px solid #000; padding: 5px;"></td>
@@ -1044,7 +1047,7 @@ function generateForm1ForwardingHtml(
         </div>
 
         <div style="font-weight: bold; margin-bottom: 12px; font-size: 11pt;">
-          বিষয় :- ${formattedItems} ক্রয়ের বিল সমন্বয়/পরিশোধ প্রসঙ্গে।
+          বিষয় :- ${formattedItems} ${isRepair ? "বিল" : "ক্রয়ের বিল"} সমন্বয়/পরিশোধ প্রসঙ্গে।
         </div>
 
         <p style="margin-bottom: 6pt; font-size: 11pt;">
@@ -1097,7 +1100,7 @@ function generateForm1ForwardingHtml(
 function generateForm1SupplyOrderHtml(
   expense: any,
   office: any,
-  category: any,
+  _category: any,
   _financialYear?: any,
   _balanceInfo?: any,
 ): string {
@@ -1107,7 +1110,7 @@ function generateForm1SupplyOrderHtml(
   const vatRate = Number(expense.vatRate || 0);
   const taxRate = hasMusok ? 0 : Number(expense.taxRate || 0);
 
-  let taxVatStr = "ভ্যাট ও ট্যাক্স";
+  let taxVatStr = "১০% ভ্যাট ও ৫% ট্যাক্স";
   if (vatRate > 0 && taxRate > 0) {
     taxVatStr = `${toBnDigits(vatRate)}% ভ্যাট ও ${toBnDigits(taxRate)}% ট্যাক্স`;
   } else if (vatRate > 0 && taxRate === 0) {
@@ -1118,6 +1121,8 @@ function generateForm1SupplyOrderHtml(
 
   const quotationItems = expense.quotationItems || [];
   const formattedItems = formatItemsListText(quotationItems);
+  const isRepair =
+    isRepairWork(formattedItems) || isRepairWork(expense.description);
 
   const supplyOrderNo = toBnDigits(
     expense.memoSupplyOrderNo || "সূত্র নং-প্রশ-১(৪০)/২০২৪-২০২৫/",
@@ -1136,6 +1141,26 @@ function generateForm1SupplyOrderHtml(
 
   const padHeader = getBankPadHeaderHtml(office?.name);
   const watermarkHtml = getBankWatermarkHtml();
+
+  const subjectText = isRepair
+    ? `বিষয়ঃ- ${formattedItems} কাজের কার্যাদেশ।`
+    : `বিষয়ঃ- ${formattedItems} সরবরাহের আদেশ।`;
+
+  const para2Text = isRepair
+    ? `০২। অত্র অঞ্চলাধীন শাখাসমূহের জন্য ${formattedItems} কার্য সম্পাদনের নিমিত্তে কোটেশন আহ্বান করা হলে আপনার প্রতিষ্ঠান কর্তৃক ${quotationDate} খ্রিঃ তারিখে দাখিলকৃত কোটেশনটি সর্বনিম্ন হিসেবে গণ্য হওয়ায় ${formattedItems} কাজ সম্পন্ন করার প্রয়োজনীয় ব্যবস্থা গ্রহণের জন্য আপনাকে অনুরোধ করা হলো।`
+    : `০২। অত্র অঞ্চলাধীন শাখাসমূহের জন্য ${formattedItems} সরবরাহের নিমিত্তে কোটেশন আহ্বান করা হলে আপনার প্রতিষ্ঠান কর্তৃক ${quotationDate} খ্রিঃ তারিখে দাখিলকৃত কোটেশনটি সর্বনিম্ন হিসেবে গণ্য হওয়ায় ${formattedItems} সরবরাহের প্রয়োজনীয় ব্যবস্থা গ্রহণের জন্য আপনাকে অনুরোধ করা হলো।`;
+
+  const term1Text = isRepair
+    ? `অত্র কার্যালয়ের চাহিদা ও স্পেসিফিকেশন অনুযায়ী ${formattedItems} যথাযথভাবে সম্পন্ন করতে হবে।`
+    : `অত্র কার্যালয় কর্তৃক সরবরাহকৃত নমুনা অনুযায়ী ${formattedItems} সরবরাহ করতে হবে।`;
+
+  const term2Text = isRepair
+    ? `কার্যাদেশ প্রদানের অনধিক ৫ (পাঁচ) কার্যদিবসের মধ্যে কাজ সম্পন্ন করতে হবে।`
+    : `কার্যাদেশ প্রদানের অনধিক ৫ (পাঁচ) কার্যদিবসের মধ্যে পণ্য সরবরাহ করতে হবে।`;
+
+  const term3Text = isRepair
+    ? `গুণগত মান ও যথাযথভাবে সম্পাদিত কাজ যাচাই করে বুঝে নেওয়ার পর বিল দাখিল সাপেক্ষে পেমেন্ট অর্ডার এর মাধ্যমে/নগদে বিল পরিশোধ করা হবে।`
+    : `গুণগত মান ও যথাযথভাবে সরবরাহের পরিমাণ যাচাই করে বুঝে নেওয়ার পর বিল দাখিল সাপেক্ষে পেমেন্ট অর্ডার এর মাধ্যমে/নগদে বিল পরিশোধ করা হবে।`;
 
   return `
     <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 11pt; line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%;">
@@ -1157,7 +1182,7 @@ function generateForm1SupplyOrderHtml(
         </div>
 
         <div style="font-weight: bold; margin-bottom: 12pt; font-size: 11pt;">
-          বিষয়ঃ- ${formattedItems} সরবরাহের আদেশ।
+          ${subjectText}
         </div>
 
         <p style="text-indent: 35px; margin-bottom: 8pt; font-size: 11pt;">
@@ -1166,14 +1191,14 @@ function generateForm1SupplyOrderHtml(
         </p>
 
         <p style="text-indent: 35px; margin-bottom: 12pt; line-height: 1.55; font-size: 11pt;">
-          ০২। অত্র অঞ্চলাধীন শাখাসমূহের জন্য ${formattedItems} সরবরাহের নিমিত্তে কোটেশন আহ্বান করা হলে আপনার প্রতিষ্ঠান কর্তৃক ${quotationDate} খ্রিঃ তারিখে দাখিলকৃত কোটেশনটি সর্বনিম্ন হিসেবে গণ্য হওয়ায় ${formattedItems} সরবরাহের প্রয়োজনীয় ব্যবস্থা গ্রহণের জন্য আপনাকে অনুরোধ করা হলো।
+          ${para2Text}
         </p>
 
         <div style="margin-bottom: 10pt; font-weight: bold; font-size: 11pt;">শর্তাবলী :</div>
         <div style="margin-top: 0; line-height: 1.7; font-size: 10.5pt;">
-          <div style="display: flex;"><span style="min-width: 25px;">১।</span><span>অত্র কার্যালয় কর্তৃক সরবরাহকৃত নমুনা অনুযায়ী ${formattedItems} সরবরাহ করতে হবে।</span></div>
-          <div style="display: flex;"><span style="min-width: 25px;">২।</span><span>কার্যাদেশ প্রদানের অনধিক ৫ (পাঁচ) কার্যদিবসের মধ্যে পণ্য সরবরাহ করতে হবে।</span></div>
-          <div style="display: flex;"><span style="min-width: 25px;">৩।</span><span>গুণগত মান ও যথাযথভাবে সরবরাহের পরিমাণ যাচাই করে বুঝে নেওয়ার পর বিল দাখিল সাপেক্ষে পেমেন্ট অর্ডার এর মাধ্যমে/নগদে বিল পরিশোধ করা হবে।</span></div>
+          <div style="display: flex;"><span style="min-width: 25px;">১।</span><span>${term1Text}</span></div>
+          <div style="display: flex;"><span style="min-width: 25px;">২।</span><span>${term2Text}</span></div>
+          <div style="display: flex;"><span style="min-width: 25px;">৩।</span><span>${term3Text}</span></div>
           <div style="display: flex;"><span style="min-width: 25px;">৪।</span><span>দাখিলকৃত মূল্য হতে ${taxVatStr} কর্তন করা হবে।</span></div>
         </div>
 
@@ -1238,7 +1263,6 @@ function generateForm2NoteSheetHtml(
 
   const amountWords = numberToBengaliWords(currentBill);
 
-  // For Form-2: Collective term for stationery printing
   const itemTypeWord = "মুদ্রিত মনিহারী দ্রব্য";
 
   const { biddersHtml, lowestBidderName, totalBiddersCount } =
@@ -1365,6 +1389,8 @@ function generateForm1NoteSheetHtml(
 
   const amountWords = numberToBengaliWords(currentBill);
   const formattedItems = formatItemsListText(quotationItems);
+  const isRepair =
+    isRepairWork(formattedItems) || isRepairWork(expense.description);
 
   const { biddersHtml, lowestBidderName, totalBiddersCount, isMultipleItems } =
     generateQuotationBiddersTableHtml(expense, vatTaxMultiplier, taxVatStr);
@@ -1398,14 +1424,34 @@ function generateForm1NoteSheetHtml(
     expense.createdBy ||
     "usr-1";
 
+  const subjectText = isRepair
+    ? `বিষয়ঃ- ${targetOfficeForText} ${formattedItems} বিল প্রদান প্রসঙ্গে।`
+    : `বিষয়ঃ- ${targetOfficeForText} ${formattedItems} ক্রয়ের বিল প্রদান প্রসঙ্গে।`;
+
+  const para1Text = isRepair
+    ? `${targetOfficeForText} ${formattedItems} কাজের নিমিত্তে স্থানীয় ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে উক্ত কাজ সম্পন্ন করা হয়।`
+    : `${targetOfficeForText} ${formattedItems} ক্রয়ের নিমিত্তে স্থানীয় ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে ${itemTextPhrase} ক্রয় করা হয়।`;
+
+  const para2Text = isRepair
+    ? `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${formattedItems} বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে ${descTextPhrase} মেরামত কাজ সম্পন্ন করা হয়।`
+    : `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${formattedItems} ক্রয় বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে ${descTextPhrase} ক্রয় করা হয়।`;
+
+  const para3Text = isRepair
+    ? `এমতাবস্থায়, ${targetOfficeForText} ${formattedItems} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি ${applicantDesignation}, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || ""} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের অনুমোদন দেয়া যেতে পারে।`
+    : `এমতাবস্থায়, ${targetOfficeForText} ${formattedItems} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি ${applicantDesignation}, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || ""} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের অনুমোদন দেয়া যেতে পারে।`;
+
+  const auditNoteText = isRepair
+    ? `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> ${targetOfficeForText} ${formattedItems} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`
+    : `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> ${targetOfficeForText} ${formattedItems} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`;
+
   return `
     <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 15px; line-height: 1.6; text-align: justify;">
       <div style="font-weight: bold; margin-bottom: 20pt; text-align: center;">
-        বিষয়ঃ- ${targetOfficeForText} ${formattedItems} ক্রয়ের বিল প্রদান প্রসঙ্গে।
+        ${subjectText}
       </div>
       
       <p style="text-indent: 40px; margin-bottom: 10pt;">
-        ${targetOfficeForText} ${formattedItems} ক্রয়ের নিমিত্তে স্থানীয় ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে ${itemTextPhrase} ক্রয় করা হয়।
+        ${para1Text}
       </p>
       
       <p style="margin-bottom: 5pt; font-weight: bold; text-decoration: underline;">প্রাপ্ত দরপত্র সমূহের বিবরণ নিম্নরূপ :-</p>
@@ -1413,11 +1459,11 @@ function generateForm1NoteSheetHtml(
       ${biddersHtml}
       
       <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 15pt;">
-        উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${formattedItems} ক্রয় বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে ${descTextPhrase} ক্রয় করা হয়।
+        ${para2Text}
       </p>
       
       <p style="text-indent: 40px; margin-bottom: 25pt;">
-        এমতাবস্থায়, ${targetOfficeForText} ${formattedItems} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি ${applicantDesignation}, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || ""} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের অনুমোদন দেয়া যেতে পারে।
+        ${para3Text}
       </p>
       
       ${budgetHtml}
@@ -1439,7 +1485,7 @@ function generateForm1NoteSheetHtml(
           <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || ""} বরাবরে প্রেরণ করুন।
         </div>
         <div style="margin-bottom: 56pt;">
-          <strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> ${targetOfficeForText} ${formattedItems} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।
+          ${auditNoteText}
         </div>
         <div style="margin-bottom: 45pt;">
           <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।
@@ -1468,12 +1514,10 @@ export function isFYClosed(financialYearId: string): boolean {
 
 app.use(express.json({ limit: "10mb" }));
 
-// Health check endpoint
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok" });
 });
 
-// Data storage path
 const DATA_DIR = path.join(process.cwd(), "data");
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -1551,9 +1595,9 @@ export function getAvailableBalance(
     if (e.status === "Pending") {
       totalPending += gross;
     } else if (e.status === "Rejected") {
-      // Rejected expenses do not deduct from spent or pending
+
     } else {
-      // Approved or default legacy expenses
+
       totalSpent += gross;
     }
   });
@@ -1575,7 +1619,6 @@ export function getAvailableBalance(
   };
 }
 
-// Load data from SQLite (with fast in-memory cache)
 function getSheetData(sheetName: string): any[] {
   return getDbSheetData(sheetName, initialData);
 }
@@ -1596,7 +1639,7 @@ function ensureDailyBackup() {
     if (!fs.existsSync(todayBackupDir)) {
       fs.mkdirSync(todayBackupDir, { recursive: true });
       if (fs.existsSync(DATA_DIR)) {
-        // Backup SQLite database file
+
         const sqliteFile = path.join(DATA_DIR, "database.sqlite");
         if (fs.existsSync(sqliteFile)) {
           try {
@@ -1604,11 +1647,11 @@ function ensureDailyBackup() {
               sqliteFile,
               path.join(todayBackupDir, "database.sqlite"),
             );
-          } catch (e) {
-            console.error(`Backup copy error for database.sqlite:`, e);
+          } catch (_e) {
+            console.error(`Backup copy error for database.sqlite:`, _e);
           }
         }
-        // Also copy json snapshots
+
         const files = fs
           .readdirSync(DATA_DIR)
           .filter((f) => f.endsWith(".json"));
@@ -1617,8 +1660,8 @@ function ensureDailyBackup() {
           const dest = path.join(todayBackupDir, f);
           try {
             fs.copyFileSync(src, dest);
-          } catch (e) {
-            console.error(`Backup copy error for ${f}:`, e);
+          } catch (_e) {
+            console.error(`Backup copy error for ${f}:`, _e);
           }
         }
       }
@@ -1626,7 +1669,6 @@ function ensureDailyBackup() {
 
     lastBackupDate = today;
 
-    // Cleanup backups older than retention period (default 30 days, or BACKUP_RETENTION_DAYS env)
     const retentionDays =
       parseInt(process.env.BACKUP_RETENTION_DAYS || "30", 10) || 30;
     const cutoffDate = new Date();
@@ -1660,10 +1702,8 @@ function ensureDailyBackup() {
 async function saveSheetData(sheetName: string, data: any[]): Promise<void> {
   ensureDailyBackup();
 
-  // Persist directly to SQLite database
   await saveDbSheetData(sheetName, data);
 
-  // Mirror JSON file for export and file-level inspection
   try {
     const filePath = path.join(DATA_DIR, `${sheetName}.json`);
     const tmpPath = path.join(
@@ -1672,8 +1712,8 @@ async function saveSheetData(sheetName: string, data: any[]): Promise<void> {
     );
     fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), "utf-8");
     fs.renameSync(tmpPath, filePath);
-  } catch (e) {
-    console.warn(`[JSON Mirror warning on ${sheetName}]:`, e);
+  } catch (_e) {
+    console.warn(`[JSON Mirror warning on ${sheetName}]:`, _e);
   }
 }
 
@@ -1716,7 +1756,6 @@ function renderExpenseNoteSheetContent(
     }
   }
 
-  // If no template is provided, select an appropriate default
   if (!template) {
     const defaultTemplate = {
       id: "tpl-default-regular",
@@ -1836,7 +1875,6 @@ function renderExpenseNoteSheetContent(
       itemsText || expense.description || "",
     );
 
-    // Form-1 & Universal Dynamic Tables and Text Phrases
     const {
       biddersHtml,
       lowestBidderName,
@@ -1852,10 +1890,9 @@ function renderExpenseNoteSheetContent(
       remainingBalance,
     );
 
-    // Conditional Approval Logic for Regular Expense Note Sheets:
-    // 1. ভ্যাট ও ট্যাক্স সহ মোট বিল 1500/- টাকার মধ্যে হলে বাজেট টেবিলের নিচের আঞ্চলিক ব্যবস্থাপক,
-    //    আঞ্চলিক নিরীক্ষা কর্মকর্তা ও আঞ্চলিক ব্যবস্থাপক অনুমোদনের প্যারাগুলো থাকবে না।
-    // 2. যদি ভ্যাট ও ট্যাক্স সহ মোট বিল 1500 টাকার অধিক হয় তাহলে সেগুলো প্রদর্শিত হবে।
+
+
+
     const isRegularExpense =
       template?.id === "tpl-regular-expense" ||
       template?.id === "tpl-default-regular" ||
@@ -1869,11 +1906,10 @@ function renderExpenseNoteSheetContent(
   </div>`;
 
     if (isBillUnder1500) {
-      // 1. Clear any placeholders
+
       content = content.replace(/{{AUDIT_APPROVAL_SECTION}}/g, "");
       content = content.replace(/{{AUDIT_APPROVAL_PARAGRAPHS}}/g, "");
 
-      // 2. Strip existing approval blocks/paragraphs from template content
       content = content.replace(
         /<div[^>]*class="[^"]*audit-approval-section[^"]*"[\s\S]*?<\/div>\s*<\/div>/gi,
         "",
@@ -1903,7 +1939,7 @@ function renderExpenseNoteSheetContent(
         "",
       );
     } else {
-      // If bill > 1500: Include approval section
+
       if (
         content.includes("{{AUDIT_APPROVAL_SECTION}}") ||
         content.includes("{{AUDIT_APPROVAL_PARAGRAPHS}}")
@@ -1926,8 +1962,7 @@ function renderExpenseNoteSheetContent(
       }
     }
 
-    // 3. Signature Layout Logic for Regular Expense Note Sheets:
-    // শুধুমাত্র নিয়মিত ব্যয় বিল পরিশোধ নোটশিটে 1500 টাকার মধ্যে বিলগুলোতে ডানপাশে প্রস্তুতকারী কর্মকর্তা এবং বামপাশে আঞ্চলিক ব্যবস্থাপক একলাইনে থাকবে।
+
 
     const singleLineDualSigHtml = `<div class="regular-signatures-single-line" style="margin-top: 25pt; margin-bottom: 0pt; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
     <div style="text-align: center; min-width: 170pt; display: inline-block;">
@@ -1964,7 +1999,7 @@ function renderExpenseNoteSheetContent(
 
     if (isRegularExpense) {
       if (isBillUnder1500) {
-        // Replace right-only signature block with single-line dual signature block (RM on left, Entry Officer on right)
+
         const rightSigPattern =
           /<div[^>]*style="[^"]*justify-content:\s*flex-end[^"]*"[\s\S]*?প্রস্তুতকারী কর্মকর্তা[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi;
         if (rightSigPattern.test(content)) {
@@ -1973,7 +2008,7 @@ function renderExpenseNoteSheetContent(
           content += "\n\n" + singleLineDualSigHtml;
         }
       } else {
-        // Bill > 1500: Revert to standard right-aligned signature before approval paragraphs
+
         if (content.includes("regular-signatures-single-line")) {
           content = content.replace(
             /<div[^>]*class="[^"]*regular-signatures-single-line[^"]*"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/gi,
@@ -2009,7 +2044,6 @@ function renderExpenseNoteSheetContent(
     content = content.replace(/{{ITEM_TEXT_PHRASE}}/g, itemTextPhrase);
     content = content.replace(/{{DESC_TEXT_PHRASE}}/g, descTextPhrase);
 
-    // Labels and rates
     content = content.replace(/{{VAT_LABEL}}/g, vatWord);
     content = content.replace(/{{VAT_WORD}}/g, vatWord);
     content = content.replace(/{{TAX_LABEL}}/g, taxWord);
@@ -2038,7 +2072,6 @@ function renderExpenseNoteSheetContent(
       `${convertToBengaliNumber(calcTax.toLocaleString("en-IN"))}/-`,
     );
 
-    // Page Number
     const pageNoStr = expense.pageNo
       ? convertToBengaliNumber(expense.pageNo)
       : "৪১৯";
@@ -2132,7 +2165,6 @@ function renderExpenseNoteSheetContent(
     content = content.replace(/{{EXPENSE_TITLE}}/g, expense.description || "");
     content = content.replace(/{{REMARKS}}/g, expense.remarks || "");
 
-    // Officers & Applicants
     const applicantName = expense.applicant?.name || expense.payeeName || "";
     const applicantDesig = expense.applicant?.designation || "";
     content = content.replace(/{{APPLICANT_NAME}}/g, applicantName);
@@ -2216,7 +2248,6 @@ function renderExpenseNoteSheetContent(
       expense.supplierOrg3 || "",
     );
 
-    // Supplier specific replacements
     let sup1UnitPrice = 0,
       sup1TotalPrice = 0;
     let sup2UnitPrice = 0,
@@ -2273,7 +2304,6 @@ function renderExpenseNoteSheetContent(
       convertToBengaliNumber(sup3TotalPrice.toLocaleString("en-IN")),
     );
 
-    // Smart row removal for 0 values before replacing
     if (balanceInfo.provisionAmount === 0) {
       content = content.replace(
         /<tr[^>]*>[\s\S]*?{{PROVISION_AMOUNT}}[\s\S]*?<\/tr>/gi,
@@ -2333,7 +2363,6 @@ function renderExpenseNoteSheetContent(
       `${convertToBengaliNumber(Number(remainingBalance).toLocaleString("en-IN"))}/-`,
     );
 
-    // Fix double commas if created by template replacement
     content = content.replace(/,\s*,/g, ",");
 
     return sanitizeHtmlServer(content);
@@ -2432,7 +2461,6 @@ async function syncNoteSheetForExpense(
     );
   }
 
-  // Look for existing note sheet
   const nsIndex = noteSheets.findIndex(
     (ns: any) =>
       (expense.noteSheetId && ns.id === expense.noteSheetId) ||
@@ -2497,6 +2525,764 @@ async function syncNoteSheetForExpense(
   }
 }
 
+function generatePostFactoNoteSheetHtml(
+  proposal: any,
+  office: any,
+  category: any,
+  financialYear: any,
+  balanceInfo: any,
+): string {
+  const bidders = proposal.bidders || [];
+  const validBidders = bidders.filter(
+    (b: any) => b.name && Number(b.price || 0) > 0,
+  );
+  const sortedBidders = [...validBidders].sort(
+    (a: any, b: any) => Number(a.price || 0) - Number(b.price || 0),
+  );
+  const lowestBidder = sortedBidders[0] || {
+    name: "সর্বনিম্ন দরদাতা",
+    address: "",
+    price: proposal.totalAmount,
+  };
+
+  const currentBill = Number(proposal.totalAmount || 0);
+  const previousExpense = Math.max(
+    0,
+    balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+  );
+  const remainingBalance =
+    balanceInfo.totalAllocated - (previousExpense + currentBill);
+
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(
+    currentBill.toLocaleString("en-IN"),
+  );
+
+  let biddersHtml = "";
+  bidders.forEach((b: any, idx: number) => {
+    biddersHtml += `
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px; text-align: center;">${convertToBengaliNumber(idx + 1)}</td>
+        <td style="border: 1px solid #000; padding: 6px;">${b.name || "-"}</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: center;">${idx === 0 ? proposal.description || "-" : ""}</td>
+        <td style="border: 1px solid #000; padding: 6px; text-align: right;">${convertToBengaliNumber((b.price || 0).toLocaleString("en-IN"))}/-</td>
+      </tr>
+    `;
+  });
+
+  const budgetHtml = generateBudgetProvisionTableHtml(
+    balanceInfo,
+    category,
+    financialYear,
+    currentBill,
+    previousExpense,
+    remainingBalance,
+  );
+
+  const isRepair = isRepairWork(proposal.description);
+  const isBranch = isBranchOffice(office);
+
+  const officeOrgGen = isBranch ? "অত্র শাখার" : "অত্র কার্যালয়ের";
+  const officeLoc = isBranch ? "অত্র শাখায়" : "অত্র কার্যালয়ে";
+
+  const tenderDateBn = proposal.tenderDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.tenderDate))
+    : ".../.../......";
+
+  const subjectText = isRepair
+    ? `<strong>বিষয়:</strong> ${proposal.description} বিলের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`
+    : `<strong>বিষয়:</strong> ${proposal.description} ক্রয়ের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`;
+
+  const para1Text = isRepair
+    ? `বাংলাদেশ কৃষি ব্যাংক, ${office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়")} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সুচারুরূপে সম্পাদনের নিমিত্তে অতীব জরুরি বিবেচনায় ${proposal.description} কাজ সম্পন্ন করা হয়েছে। উক্ত কাজের বিস্তারিত বিবরণ নিম্নে উপস্থাপন করা হলো:`
+    : `বাংলাদেশ কৃষি ব্যাংক, ${office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়")} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সুচারুরূপে সম্পাদনের নিমিত্তে অতীব জরুরি বিবেচনায় স্থানীয় বাজার হতে ${proposal.description} ক্রয় করা হয়েছে। উক্ত কাজের বিস্তারিত বিবরণ নিম্নে উপস্থাপন করা হলো:`;
+
+  const para2Text = isRepair
+    ? `০২। তদালক্ষ্যে ${officeOrgGen} জন্য জরুরি ভিত্তিতে উক্ত মেরামত কার্য সম্পাদনের নিমিত্তে গত ${tenderDateBn} ইং তারিখে স্থানীয় দরপত্র আহ্বান করা হয়। উক্ত আহ্বানের প্রেক্ষিতে নিম্নলিখিত দরদাতা প্রতিষ্ঠানসমূহ তাদের সিলমোহরকৃত দরপত্র দাখিল করেন:`
+    : `০২। তদালক্ষ্যে ${officeOrgGen} জন্য জরুরি ভিত্তিতে উক্ত মালামাল সরবরাহ করার নিমিত্তে গত ${tenderDateBn} ইং তারিখে স্থানীয় দরপত্র আহ্বান করা হয়। উক্ত আহ্বানের প্রেক্ষিতে নিম্নলিখিত দরদাতা প্রতিষ্ঠানসমূহ তাদের সিলমোহরকৃত দরপত্র দাখিল করেন:`;
+
+  const tableHeaderItemDesc = isRepair ? "কাজের বিবরণ" : "মালামালের বিবরণ";
+
+  const para5Text = isRepair
+    ? `০৫। এমতাবস্থায়, ${officeOrgGen} কার্যক্রমের ধারাবাহিকতা রক্ষার্থে জরুরি ভিত্তিতে কৃত উক্ত মেরামতের বিপরীতে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান <strong>'${lowestBidder.name}'</strong>-কে সর্বমোট ৳=${formattedAmount}/- (ভ্যাটসহ) টাকা পরিশোধ করাসহ বাজেট বরাদ্দ প্রদানপূর্বক খরচোত্তর অনুমোদনের জন্য বিনীত অনুরোধ পেশ করা হলো।`
+    : `০৫। এমতাবস্থায়, ${officeLoc} কার্যক্রমের ধারাবাহিকতা রক্ষার্থে জরুরি ভিত্তিতে কৃত উক্ত ক্রয়ের বিপরীতে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান <strong>'${lowestBidder.name}'</strong>-কে সর্বমোট ৳=${formattedAmount}/- (ভ্যাটসহ) টাকা পরিশোধ করাসহ বাজেট বরাদ্দ প্রদানপূর্বক খরচোত্তর অনুমোদনের জন্য বিনীত অনুরোধ পেশ করা হলো।`;
+
+  return `
+    <div style="font-family: 'SolaimanLipi', 'Nikosh', sans-serif; font-size: 15px; line-height: 1.6; color: #000; padding: 10px;">
+      <h2 style="text-align: center; margin-bottom: 20px; font-size: 18px; font-weight: bold; text-decoration: underline;">খরচোত্তর অনুমোদন প্রস্তাব ও বরাদ্দ অনুরোধ</h2>
+      
+      <p style="margin-bottom: 12px; text-align: justify;">
+        ${subjectText}
+      </p>
+
+      <p style="margin-bottom: 12px; text-align: justify;">
+        মহোদয়,<br>
+        ${para1Text}
+      </p>
+
+      <p style="margin-bottom: 12px; text-align: justify;">
+        ${para2Text}
+      </p>
+
+      <table style="width: 100%; border-collapse: collapse; margin: 15px 0; border: 1.5px solid #000; font-size: 14px;">
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="border: 1px solid #000; padding: 8px; text-align: center; width: 8%;">ক্রমিক নং</th>
+            <th style="border: 1px solid #000; padding: 8px; text-align: left; width: 45%;">প্রতিষ্ঠানের নাম</th>
+            <th style="border: 1px solid #000; padding: 8px; text-align: center; width: 27%;">${tableHeaderItemDesc}</th>
+            <th style="border: 1px solid #000; padding: 8px; text-align: right; width: 20%;">দর (ভ্যাটসহ)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${biddersHtml || '<tr><td colspan="4" style="text-align: center; padding: 8px;">কোনো দরপত্র পাওয়া যায়নি</td></tr>'}
+        </tbody>
+      </table>
+
+      <p style="margin-bottom: 12px; text-align: justify;">
+        ০৩। পর্যালোচনা করে দেখা যায় যে, দরদাতা প্রতিষ্ঠানসমূহ বা আবেদনকারীদের মধ্যে <strong>'${lowestBidder.name}'</strong> সর্বনিম্ন দরদাতা হিসেবে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) দর প্রস্তাব করেছে, যা বাজার দরের সাথে সামঞ্জস্যপূর্ণ ও গ্রহণযোগ্য বিবেচিত হয়।
+      </p>
+
+      <p style="margin-bottom: 12px; text-align: justify;">
+        ০৪। বর্ণিত কাজের বিপরীতে বাজেট বরাদ্দ ও আর্থিক সংস্থানের বিবরণ নিম্নরূপ:
+      </p>
+
+      <div style="margin: 15px 0;">
+        ${budgetHtml}
+      </div>
+
+      <p style="margin-bottom: 12px; text-align: justify;">
+        ${para5Text}
+      </p>
+    </div>
+  `;
+}
+
+function generatePostFactoForwardingHtml(
+  proposal: any,
+  office: any,
+  category: any,
+  financialYear: any,
+): string {
+  const bidders = proposal.bidders || [];
+  const validBidders = bidders.filter(
+    (b: any) => b.name && Number(b.price || 0) > 0,
+  );
+  const sortedBidders = [...validBidders].sort(
+    (a: any, b: any) => Number(a.price || 0) - Number(b.price || 0),
+  );
+  const lowestBidder = sortedBidders[0] || {
+    name: "সর্বনিম্ন দরদাতা",
+    address: "",
+    price: proposal.totalAmount,
+  };
+
+  const currentBill = Number(proposal.totalAmount || 0);
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(
+    currentBill.toLocaleString("en-IN"),
+  );
+  const isRepair = isRepairWork(proposal.description);
+  const isBranch = isBranchOffice(office);
+
+  const officeOrgGen = isBranch ? "অত্র শাখার" : "অত্র কার্যালয়ের";
+  const officeLoc = isBranch ? "অত্র শাখায়" : "অত্র কার্যালয়ে";
+
+  let biddersHtml = "";
+  bidders.forEach((b: any, idx: number) => {
+    biddersHtml += `
+      <tr>
+        <td style="border: 1px solid #000; padding: 5px 6px; text-align: center; font-size: inherit;">${convertToBengaliNumber(idx + 1)}</td>
+        <td style="border: 1px solid #000; padding: 5px 6px; font-size: inherit;">${b.name || "-"}</td>
+        <td style="border: 1px solid #000; padding: 5px 6px; text-align: center; font-size: inherit;">${idx === 0 ? proposal.description || "-" : ""}</td>
+        <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-size: inherit;">${convertToBengaliNumber((b.price || 0).toLocaleString("en-IN"))}/-</td>
+      </tr>
+    `;
+  });
+
+  const letterNo =
+    proposal.letterNo ||
+    `বকেবি/${office?.code || "শাখা"}/কম্পিউটার/${financialYear?.name || "২০২৫-২০২৬"}/...`;
+  const letterDateBn = proposal.letterDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.letterDate))
+    : ".../.../......";
+  const tenderDateBn = proposal.tenderDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.tenderDate))
+    : ".../.../......";
+
+  const padHeader = getBankPadHeaderHtml(office?.name);
+  const watermarkHtml = getBankWatermarkHtml();
+
+  const subjectText = isRepair
+    ? `বিষয়: ${proposal.description} বিলের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`
+    : `বিষয়: ${proposal.description} ক্রয়ের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`;
+
+  const para2Text = isRepair
+    ? `০২। বাংলাদেশ কৃষি ব্যাংক, ${office?.name || "শাখা কার্যালয়"} এর কার্যকারিতা সচল রাখার নিমিত্তে জরুরি ভিত্তিতে ${proposal.description} কাজ সম্পাদন করা হয়েছে।`
+    : `০২। বাংলাদেশ কৃষি ব্যাংক, ${office?.name || "শাখা কার্যালয়"} এর কার্যকারিতা সচল রাখার নিমিত্তে জরুরি ভিত্তিতে স্থানীয় বাজার হতে ${proposal.description} ক্রয় করা হয়েছে।`;
+
+  const para3Text = isRepair
+    ? `০৩। তদালক্ষ্যে উক্ত মেরামত কাজ সম্পাদনের জন্য গত ${tenderDateBn} ইং তারিখে দরপত্র আহ্বান করা হয় এবং নিম্নে উল্লেখিত প্রতিষ্ঠানের নিকট হতে সিলমোহরকৃত দরপত্র সংগ্রহপূর্বক উপস্থাপন করা হলো:`
+    : `০৩। তদালক্ষ্যে স্থানীয় বাজার হতে উক্ত মালামাল ক্রয় করার জন্য গত ${tenderDateBn} ইং তারিখে দরপত্র আহ্বান করা হয় এবং নিম্নে উল্লেখিত প্রতিষ্ঠানের নিকট হতে সিলমোহরকৃত দরপত্র সংগ্রহপূর্বক উপস্থাপন করা হলো:`;
+
+  const tableHeaderItemDesc = isRepair
+    ? "চাহিতব্য কাজের বিবরণ"
+    : "চাহিতব্য মালামালের বিবরণ";
+
+  const para4Text = isRepair
+    ? `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান হতে উক্ত মেরামত কার্য সম্পাদনের সিদ্ধান্ত গৃহীত হয়।`
+    : `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান হতে উক্ত মালামাল ক্রয়ের সিদ্ধান্ত গৃহীত হয়।`;
+
+  const para5Text = isRepair
+    ? `০৫। এমতাবস্থায়, ${officeOrgGen} কার্যক্রমের ধারাবাহিকতা রক্ষার্থে কৃত উক্ত মেরামত বাবদ সর্বনিম্ন দরপত্রদাতা প্রতিষ্ঠান <strong>'${lowestBidder.name}'</strong>-এর অনুকূলে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বাজেট বরাদ্দ প্রদানপূর্বক খরচোত্তর অনুমোদনের জন্য মহোদয়ের নিকট বিনীত অনুরোধ করা গেল।`
+    : `০৫। এমতাবস্থায়, ${officeLoc} মালামাল-এর অপ্রতুলতার জন্য কৃত উক্ত ক্রয় বাবদ সর্বনিম্ন দরপত্রদাতা প্রতিষ্ঠান <strong>'${lowestBidder.name}'</strong>-এর অনুকূলে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বাজেট বরাদ্দ প্রদানপূর্বক খরচোত্তর অনুমোদনের জন্য মহোদয়ের নিকট বিনীত অনুরোধ করা গেল।`;
+
+  return `
+    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 11pt; line-height: 1.45; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%;">
+      ${watermarkHtml}
+      <div style="position: relative; z-index: 1;">
+        ${padHeader}
+
+        <!-- Letter Metadata Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 11pt;">
+          <div><strong>পত্র নং:</strong> ${letterNo}</div>
+          <div><strong>তারিখ:</strong> ${letterDateBn} খ্রিঃ</div>
+        </div>
+
+        <!-- To Recipient -->
+        <div style="margin-bottom: 20px; line-height: 1.5; font-size: 11pt;">
+          <p style="margin: 0;">বরাবর,</p>
+          <p style="margin: 0; font-weight: bold;">আঞ্চলিক ব্যবস্থাপক</p>
+          <p style="margin: 0;">বাংলাদেশ কৃষি ব্যাংক</p>
+          <p style="margin: 0;">আঞ্চলিক কার্যালয়</p>
+          <p style="margin: 0;">রাঙ্গামাটি।</p>
+        </div>
+
+        <!-- Subject -->
+        <div style="margin-bottom: 20px; font-size: 11pt;">
+          <p style="margin: 0; text-align: justify;"><strong>${subjectText}</strong></p>
+        </div>
+
+        <p style="margin-bottom: 15px; font-size: 11pt;">প্রিয় মহোদয়,</p>
+
+        <p style="margin-bottom: 15px; text-align: justify; text-indent: 15mm; font-size: 11pt;">
+          শিরোনামে বর্ণিত বিষয়ে মহোদয়ের সদয় দৃষ্টি আকর্ষণ করা হলো।
+        </p>
+
+        <p style="margin-bottom: 15px; text-align: justify; text-indent: 15mm; font-size: 11pt;">
+          ${para2Text}
+        </p>
+
+        <p style="margin-bottom: 15px; text-align: justify; text-indent: 15mm; font-size: 11pt;">
+          ${para3Text}
+        </p>
+
+        <!-- Bidders Table -->
+        <table class="forwarding-table" style="width: 100%; border-collapse: collapse; margin: 15px 0; border: 1.5px solid #000; font-size: 11pt;">
+          <thead>
+            <tr style="background-color: #f8fafc;">
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 10%; font-size: inherit;">ক্রমিক নং</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; width: 45%; font-size: inherit;">প্রতিষ্ঠানের নাম</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 25%; font-size: inherit;">${tableHeaderItemDesc}</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; width: 20%; font-size: inherit;">দর (ভ্যাটসহ)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${biddersHtml || '<tr><td colspan="4" style="text-align: center; padding: 6px; font-size: inherit;">কোনো দরপত্র পাওয়া যায়নি</td></tr>'}
+          </tbody>
+        </table>
+
+        <p style="margin-bottom: 15px; text-align: justify; text-indent: 15mm; font-size: 11pt;">
+          ${para4Text}
+        </p>
+
+        <p style="margin-bottom: 30px; text-align: justify; text-indent: 15mm; font-size: 11pt;">
+          ${para5Text}
+        </p>
+
+        <!-- Signature Section -->
+        <div style="float: right; text-align: center; width: 200px; margin-top: 25px; font-size: 11pt;">
+          <p style="margin-bottom: 50px;">আপনার বিশ্বস্ত,</p>
+          <p style="margin: 0; font-weight: bold; border-top: 1px dashed #000; padding-top: 5px;">${proposal.managerName || "ব্যবস্থাপক"}</p>
+          <p style="margin: 0; font-size: 11pt;">ব্যবস্থাপক</p>
+        </div>
+        <div style="clear: both;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function generatePostFactoSupplyOrderHtml(
+  proposal: any,
+  office: any,
+  category: any,
+  financialYear: any,
+): string {
+  const bidders = proposal.bidders || [];
+  const validBidders = bidders.filter(
+    (b: any) => b.name && Number(b.price || 0) > 0,
+  );
+  const sortedBidders = [...validBidders].sort(
+    (a: any, b: any) => Number(a.price || 0) - Number(b.price || 0),
+  );
+  const lowestBidder = sortedBidders[0] || {
+    name: "সর্বনিম্ন দরদাতা",
+    address: "চন্দ্রঘোনা",
+    price: proposal.totalAmount,
+  };
+
+  const currentBill = Number(proposal.totalAmount || 0);
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(
+    currentBill.toLocaleString("en-IN"),
+  );
+  const isRepair = isRepairWork(proposal.description);
+  const isBranch = isBranchOffice(office);
+
+  const officeLoc = isBranch ? "অত্র শাখায়" : "আমাদের কার্যালয়ে";
+  const officeOrg = isBranch ? "অত্র শাখা" : "অত্র কার্যালয়";
+  const officeOrgGen = isBranch ? "অত্র শাখার" : "অত্র কার্যালয়ের";
+
+  const vatRate = Number(proposal.vatRate ?? 10);
+  const taxRate = Number(proposal.taxRate ?? 5);
+
+  let taxVatStr = "১০% ভ্যাট ও ৫% ট্যাক্স";
+  if (vatRate > 0 && taxRate > 0) {
+    taxVatStr = `${toBnDigits(vatRate)}% ভ্যাট ও ${toBnDigits(taxRate)}% ট্যাক্স`;
+  } else if (vatRate > 0 && taxRate === 0) {
+    taxVatStr = `${toBnDigits(vatRate)}% ভ্যাট`;
+  } else if (vatRate === 0 && taxRate > 0) {
+    taxVatStr = `${toBnDigits(taxRate)}% ট্যাক্স`;
+  }
+
+  const workOrderNo =
+    proposal.workOrderNo ||
+    `বকেবি/${office?.code || "শাখা"}/কম্পিউটার/কার্যাদেশ/${financialYear?.name || "২০২৫-২০২৬"}/...`;
+  const workOrderDateBn = proposal.workOrderDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.workOrderDate))
+    : ".../.../......";
+  const tenderDateBn = proposal.tenderDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.tenderDate))
+    : ".../.../......";
+
+  const padHeader = getBankPadHeaderHtml(office?.name);
+  const watermarkHtml = getBankWatermarkHtml();
+
+  const subjectText = isRepair
+    ? `বিষয়: ${proposal.description} কাজের কার্যাদেশ।`
+    : `বিষয়: ${proposal.description} সরবরাহের কার্যাদেশ।`;
+
+  const para1Text = isRepair
+    ? `আপনার বিজ্ঞপ্তির প্রেক্ষিতে গত ${tenderDateBn} ইং তারিখে দাখিলকৃত দরপত্র সন্তোষজনক বিবেচিত হওয়ায় আপনাকে ${officeLoc} অনতিবিলম্বে নিচে বর্ণিত বিবরণ অনুযায়ী ${proposal.description} কার্য সম্পাদনের জন্য কার্যাদেশ প্রদান করা হলো।`
+    : `আপনার বিজ্ঞপ্তির প্রেক্ষিতে গত ${tenderDateBn} ইং তারিখে দাখিলকৃত দরপত্র সন্তোষজনক বিবেচিত হওয়ায় আপনাকে ${officeLoc} ব্যবহারের নিমিত্তে অনতিবিলম্বে নিচে বর্ণিত বিবরণ অনুযায়ী ${proposal.description} সরবরাহের জন্য কার্যাদেশ প্রদান করা হলো।`;
+
+  const tableHeaderCol2 = isRepair ? "কাজের বিবরণ" : "পণ্য ও বিবরণ";
+
+  const term1Text = isRepair
+    ? `${officeOrgGen} চাহিদা ও বিবরণ অনুযায়ী ${proposal.description || "মেরামত কাজ"} যথাযথভাবে সম্পন্ন করতে হবে।`
+    : `${officeOrg} কর্তৃক সরবরাহকৃত নমুনা অনুযায়ী ${proposal.description || "মালামাল"} সরবরাহ করতে হবে।`;
+
+  const term2Text = isRepair
+    ? `কার্যাদেশ প্রদানের অনধিক ৫ (পাঁচ) কার্যদিবসের মধ্যে মেরামত কাজ সম্পন্ন করতে হবে।`
+    : `কার্যাদেশ প্রদানের অনধিক ৫ (পাঁচ) কার্যদিবসের মধ্যে পণ্য সরবরাহ করতে হবে।`;
+
+  const term3Text = isRepair
+    ? `গুণগত মান ও যথাযথভাবে সম্পাদিত কাজ যাচাই করে বুঝে নেওয়ার পর বিল দাখিল সাপেক্ষে পেমেন্ট অর্ডার এর মাধ্যমে/নগদে বিল পরিশোধ করা হবে।`
+    : `গুণগত মান ও যথাযথভাবে সরবরাহের পরিমাণ যাচাই করে বুঝে নেওয়ার পর বিল দাখিল সাপেক্ষে পেমেন্ট অর্ডার এর মাধ্যমে/নগদে বিল পরিশোধ করা হবে।`;
+
+  return `
+    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 11pt; line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%;">
+      ${watermarkHtml}
+      <div style="position: relative; z-index: 1;">
+        ${padHeader}
+
+        <!-- Letter Metadata Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14pt; font-size: 11pt;">
+          <div><strong>সূত্র নং:</strong> ${workOrderNo}</div>
+          <div><strong>তারিখ:</strong> ${workOrderDateBn} খ্রিঃ</div>
+        </div>
+
+        <!-- Supplier Address -->
+        <div style="margin-bottom: 20px; line-height: 1.5; font-size: 11pt;">
+          <p style="margin: 0;">প্রতি,</p>
+          <p style="margin: 0; font-weight: bold;">${lowestBidder.name}</p>
+          <p style="margin: 0;">${lowestBidder.address || "লিচুবাগান, চন্দ্রঘোনা।"}</p>
+        </div>
+
+        <!-- Subject -->
+        <div style="margin-bottom: 20px; font-size: 11pt;">
+          <p style="margin: 0; text-align: justify;"><strong>${subjectText}</strong></p>
+        </div>
+
+        <p style="margin-bottom: 15px; font-size: 11pt;">প্রিয় মহোদয়,</p>
+
+        <p style="margin-bottom: 15px; text-align: justify; text-indent: 15mm; font-size: 11pt;">
+          ${para1Text}
+        </p>
+
+        <!-- Work Order Items Table -->
+        <table class="forwarding-table" style="width: 100%; border-collapse: collapse; margin: 15px 0; border: 1.5px solid #000; font-size: 11pt;">
+          <thead>
+            <tr style="background-color: #f8fafc;">
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: center; width: 15%; font-size: inherit;">ক্রমিক নং</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: left; width: 55%; font-size: inherit;">${tableHeaderCol2}</th>
+              <th style="border: 1px solid #000; padding: 5px 6px; text-align: right; width: 30%; font-size: inherit;">সর্বমোট মূল্য</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="border: 1px solid #000; padding: 5px 6px; text-align: center; font-size: inherit;">০১</td>
+              <td style="border: 1px solid #000; padding: 5px 6px; font-size: inherit;">${proposal.description}</td>
+              <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold; font-size: inherit;">৳=${formattedAmount}/- (ভ্যাটসহ)</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold; font-size: inherit;">সর্বমোট মূল্য:</td>
+              <td style="border: 1px solid #000; padding: 5px 6px; text-align: right; font-weight: bold; font-size: inherit;">৳=${formattedAmount}/-</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Terms and Conditions -->
+        <div style="margin-bottom: 8pt; font-weight: bold; font-size: 11pt;">শর্তাবলী :</div>
+        <div style="margin-top: 0; line-height: 1.7; font-size: 11pt;">
+          <div style="display: flex;"><span style="min-width: 25px;">১।</span><span>${term1Text}</span></div>
+          <div style="display: flex;"><span style="min-width: 25px;">২।</span><span>${term2Text}</span></div>
+          <div style="display: flex;"><span style="min-width: 25px;">৩।</span><span>${term3Text}</span></div>
+          <div style="display: flex;"><span style="min-width: 25px;">৪।</span><span>দাখিলকৃত মূল্য হতে ${taxVatStr} কর্তন করা হবে।</span></div>
+        </div>
+
+        <!-- Signature Section -->
+        <div style="float: right; text-align: center; width: 200px; margin-top: 25px; font-size: 11pt;">
+          <p style="margin-bottom: 50px;">আপনার বিশ্বস্ত,</p>
+          <p style="margin: 0; font-weight: bold; border-top: 1px dashed #000; padding-top: 5px;">${proposal.managerName || "ব্যবস্থাপক"}</p>
+          <p style="margin: 0; font-size: 11pt;">ব্যবস্থাপক</p>
+        </div>
+        <div style="clear: both;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function generatePostFactoSanctionNoteSheetHtml(
+  proposal: any,
+  office: any,
+  regionalOffice: any,
+  category: any,
+  financialYear: any,
+  balanceInfo: any,
+  is134: boolean,
+): string {
+  const vatRate = Number(proposal.vatRate ?? 10);
+  const taxRate = Number(proposal.taxRate ?? 5);
+
+  let taxVatStr = "ভ্যাট ও ট্যাক্স ব্যতীত";
+  if (vatRate > 0 && taxRate > 0) {
+    taxVatStr = `${toBnDigits(vatRate)}% ভ্যাট ও ${toBnDigits(taxRate)}% ট্যাক্সসহ`;
+  } else if (vatRate > 0 && taxRate === 0) {
+    taxVatStr = `${toBnDigits(vatRate)}% ভ্যাটসহ`;
+  } else if (vatRate === 0 && taxRate > 0) {
+    taxVatStr = `${toBnDigits(taxRate)}% ট্যাক্সসহ`;
+  }
+
+  const bidders = proposal.bidders || [];
+  const validBidders = bidders.filter(
+    (b: any) => b.name && Number(b.price || 0) > 0,
+  );
+  const sortedBidders = [...validBidders].sort(
+    (a: any, b: any) => Number(a.price || 0) - Number(b.price || 0),
+  );
+  const lowestBidder = sortedBidders[0] || {
+    name: "সর্বনিম্ন দরদাতা",
+    address: "",
+    price: proposal.totalAmount,
+  };
+
+  const currentBill = Number(proposal.totalAmount || 0);
+  const previousExpense = Math.max(
+    0,
+    balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+  );
+  const remainingBalance =
+    balanceInfo.totalAllocated - (previousExpense + currentBill);
+
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(
+    currentBill.toLocaleString("en-IN"),
+  );
+  const isRepair = isRepairWork(proposal.description);
+  const isBranch = isBranchOffice(office);
+
+  const branchOfficeName =
+    office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়");
+  const regOfficeName = regionalOffice?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি";
+
+  const totalBiddersCount =
+    validBidders.length > 0 ? validBidders.length : bidders.length || 3;
+  const lowestBidderName = lowestBidder.name || "সর্বনিম্ন দরদাতা";
+
+  let biddersHtml = "";
+  if (sortedBidders.length > 0) {
+    biddersHtml = `
+      <table class="quotation-bidders-table" style="width: 100%; border-collapse: collapse; margin-top: 8pt; margin-bottom: 8pt; font-size: inherit; border: 1.5px solid #000;">
+        <thead>
+          <tr style="background-color: #f1f5f9;">
+            <th style="border: 1px solid #000; padding: 6px 8px; text-align: center; width: 8%;">ক্রমিক</th>
+            <th style="border: 1px solid #000; padding: 6px 8px; text-align: left; width: 42%;">দরদাতার নাম ও ঠিকানা</th>
+            <th style="border: 1px solid #000; padding: 6px 8px; text-align: center; width: 25%;">কাজের/মালামালের বিবরণ</th>
+            <th style="border: 1px solid #000; padding: 6px 8px; text-align: right; width: 25%;">মোট দর (${taxVatStr})</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    sortedBidders.forEach((b: any, idx: number) => {
+      const sl = convertToBengaliNumber(idx + 1);
+      const isLowest = idx === 0;
+      biddersHtml += `
+        <tr>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: middle;">${sl}</td>
+          <td style="border: 1px solid #000; padding: 6px 8px; vertical-align: middle;">
+            ${b.name || "-"}${b.address ? `<br><span style="font-size: 0.85em; color: #555;">${b.address}</span>` : ""}
+          </td>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: middle;">
+            ${proposal.description || "-"}
+          </td>
+          <td style="border: 1px solid #000; padding: 6px 8px; text-align: right; vertical-align: middle; ${isLowest ? "font-weight: bold;" : ""}">
+            = ${convertToBengaliNumber(Number(b.price || 0).toLocaleString("en-IN"))}/-
+            ${isLowest ? `<br><span style="font-size: 0.8em; color: #047857; font-weight: bold;">(সর্বনিম্ন দরদাতা)</span>` : ""}
+          </td>
+        </tr>
+      `;
+    });
+    biddersHtml += `</tbody></table>`;
+  }
+
+  const budgetHtml = generateBudgetProvisionTableHtml(
+    balanceInfo,
+    category,
+    financialYear,
+    currentBill,
+    previousExpense,
+    remainingBalance,
+  );
+
+  const subjectText = isRepair
+    ? `বিষয়ঃ- বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} বিল খরচোত্তর অনুমোদন ও প্রদান প্রসঙ্গে।`
+    : `বিষয়ঃ- বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} ক্রয়ের বিল খরচোত্তর অনুমোদন ও প্রদান প্রসঙ্গে।`;
+
+  const para1Text = isRepair
+    ? `বিকেবি, ${branchOfficeName} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সচল রাখার নিমিত্তে জরুরি বিবেচনায় ${proposal.description} কাজ সম্পাদনের লক্ষ্যে স্থানীয়ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে উক্ত কাজ সম্পন্ন করা হয় এবং বিল খরচোত্তর অনুমোদনের নিমিত্তে অত্র কার্যালয়ে প্রস্তাব পেশ করা হয়।`
+    : `বিকেবি, ${branchOfficeName} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সচল রাখার নিমিত্তে জরুরি বিবেচনায় স্থানীয় বাজার হতে ${proposal.description} ক্রয়ের নিমিত্তে স্থানীয়ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে উক্ত মালামাল ক্রয়/সরবরাহ করা হয় এবং বিল খরচোত্তর অনুমোদনের নিমিত্তে অত্র কার্যালয়ে প্রস্তাব পেশ করা হয়।`;
+
+  const para2Text = isRepair
+    ? `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${proposal.description} বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে উক্ত কাজ সম্পন্ন করা হয়।`
+    : `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${proposal.description} ক্রয় বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে বর্ণিত মালামাল ক্রয়/সরবরাহ করা হয়।`;
+
+  const para3Text = isRepair
+    ? `এমতাবস্থায়, বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি শাখা প্রধান, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের খরচোত্তর অনুমোদন দেয়া যেতে পারে।`
+    : `এমতাবস্থায়, বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি শাখা প্রধান, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের খরচোত্তর অনুমোদন দেয়া যেতে পারে।`;
+
+  const auditNoteText = isRepair
+    ? `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`
+    : `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`;
+
+  const budgetScopeNote = is134
+    ? `<div style="margin-top: 4pt; margin-bottom: 8pt; font-size: 0.9em; color: #1e293b; font-style: italic; text-align: right;">(নোট: ১৩৪/০১ হতে ১৩৪/০৫ খাতের ব্যয় বিধায় আঞ্চলিক কার্যালয়ের মূল বাজেট হতে সংস্থান করা হয়েছে)</div>`
+    : `<div style="margin-top: 4pt; margin-bottom: 8pt; font-size: 0.9em; color: #1e293b; font-style: italic; text-align: right;">(নোট: সংশ্লিষ্ট শাখার নিজস্ব বাজেট হতে সংস্থান করা হয়েছে)</div>`;
+
+  return `
+    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 15px; line-height: 1.6; text-align: justify; color: #000;">
+      <div style="font-weight: bold; margin-bottom: 18pt; text-align: center; font-size: 16px;">
+        ${subjectText}
+      </div>
+      
+      <p style="text-indent: 40px; margin-bottom: 10pt;">
+        ${para1Text}
+      </p>
+      
+      <p style="margin-bottom: 5pt; font-weight: bold; text-decoration: underline;">প্রাপ্ত দরপত্র সমূহের বিবরণ নিম্নরূপ :-</p>
+      
+      ${biddersHtml}
+      
+      <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 15pt;">
+        ${para2Text}
+      </p>
+      
+      <p style="text-indent: 40px; margin-bottom: 20pt;">
+        ${para3Text}
+      </p>
+      
+      ${budgetHtml}
+      ${budgetScopeNote}
+      
+      <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+        <div style="text-align: center; min-width: 170pt; display: inline-block;">
+          <div style="height: 35pt;"></div>
+          <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+            প্রস্তুতকারী কর্মকর্তা
+          </div>
+          <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+            প্রশাসনিক বিভাগ, ${regOfficeName}
+          </div>
+        </div>
+      </div>
+      
+      <div class="form1-approval-chain" style="margin-top: 25pt; line-height: 1.6;">
+        <div style="margin-bottom: 56pt;">
+          <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} বরাবরে প্রেরণ করুন।
+        </div>
+        <div style="margin-bottom: 56pt;">
+          ${auditNoteText}
+        </div>
+        <div style="margin-bottom: 45pt;">
+          <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function syncNoteSheetForPostFactoProposal(
+  proposal: any,
+  userId: string,
+  force: boolean = false,
+): Promise<any> {
+  const noteSheets = getSheetData("NoteSheets");
+  const offices = getSheetData("Offices");
+  const categories = getSheetData("Categories");
+  const financialYears = getSheetData("FinancialYears");
+
+  const office = offices.find((o: any) => o.id === proposal.officeId);
+  const category = categories.find((c: any) => c.id === proposal.categoryId);
+  const financialYear = financialYears.find(
+    (f: any) => f.id === proposal.financialYearId,
+  );
+
+  const is134 = isCategory134(category);
+  const regionalOffice =
+    offices.find(
+      (o: any) =>
+        o.type === "HeadOffice" ||
+        o.id === "off-ho" ||
+        (o.name && o.name.includes("আঞ্চলিক কার্যালয়")),
+    ) || office;
+
+  const branchBalanceInfo = getAvailableBalance(
+    proposal.financialYearId,
+    proposal.officeId,
+    proposal.categoryId,
+  );
+
+  const sanctionBalanceInfo = is134
+    ? getAvailableBalance(
+        proposal.financialYearId,
+        regionalOffice.id,
+        proposal.categoryId,
+      )
+    : branchBalanceInfo;
+
+  const content = generatePostFactoNoteSheetHtml(
+    proposal,
+    office,
+    category,
+    financialYear,
+    branchBalanceInfo,
+  );
+  const forwardingContent = generatePostFactoForwardingHtml(
+    proposal,
+    office,
+    category,
+    financialYear,
+  );
+  const supplyOrderContent = generatePostFactoSupplyOrderHtml(
+    proposal,
+    office,
+    category,
+    financialYear,
+  );
+
+  let sanctionNoteSheetContent = "";
+  let sanctionLetterContent = "";
+  if (proposal.status === "Sanctioned") {
+    sanctionNoteSheetContent = generatePostFactoSanctionNoteSheetHtml(
+      proposal,
+      office,
+      regionalOffice,
+      category,
+      financialYear,
+      sanctionBalanceInfo,
+      is134,
+    );
+    sanctionLetterContent = generatePostFactoSanctionLetterHtml(
+      proposal,
+      office,
+      category,
+      financialYear,
+    );
+  }
+
+  const nsIndex = noteSheets.findIndex(
+    (ns: any) =>
+      (proposal.noteSheetId && ns.id === proposal.noteSheetId) ||
+      (proposal.id && ns.expenseId === proposal.id),
+  );
+
+  if (nsIndex !== -1) {
+    if (noteSheets[nsIndex].isCustomEdited && !force) {
+      proposal.noteSheetId = noteSheets[nsIndex].id;
+      return noteSheets[nsIndex];
+    }
+    noteSheets[nsIndex] = {
+      ...noteSheets[nsIndex],
+      financialYearId: proposal.financialYearId,
+      officeId: proposal.officeId,
+      expenseId: proposal.id,
+      title: `${category ? category.name : "Post-Facto"} - ${proposal.description}`,
+      content: content,
+      forwardingContent: forwardingContent,
+      supplyOrderContent: supplyOrderContent,
+      sanctionNoteSheetContent:
+        sanctionNoteSheetContent ||
+        noteSheets[nsIndex].sanctionNoteSheetContent ||
+        "",
+      sanctionLetterContent:
+        sanctionLetterContent ||
+        noteSheets[nsIndex].sanctionLetterContent ||
+        "",
+      expenseType: "Post-Facto",
+      expenseGrossAmount: proposal.totalAmount || 0,
+      isUnder1500: false,
+      isCustomEdited: false,
+      updatedAt: new Date().toISOString(),
+    };
+    await saveSheetData("NoteSheets", noteSheets);
+    proposal.noteSheetId = noteSheets[nsIndex].id;
+    return noteSheets[nsIndex];
+  } else {
+    const newNoteSheetId = `ns-${Date.now()}`;
+    const newNoteSheet = {
+      id: newNoteSheetId,
+      financialYearId: proposal.financialYearId,
+      officeId: proposal.officeId,
+      expenseId: proposal.id,
+      title: `${category ? category.name : "Post-Facto"} - ${proposal.description}`,
+      content: content,
+      forwardingContent: forwardingContent,
+      supplyOrderContent: supplyOrderContent,
+      sanctionNoteSheetContent: sanctionNoteSheetContent,
+      sanctionLetterContent: sanctionLetterContent,
+      expenseType: "Post-Facto",
+      expenseGrossAmount: proposal.totalAmount || 0,
+      isUnder1500: false,
+      isCustomEdited: false,
+      createdBy: userId,
+      createdAt: new Date().toISOString().split("T")[0],
+    };
+    noteSheets.push(newNoteSheet);
+    await saveSheetData("NoteSheets", noteSheets);
+    proposal.noteSheetId = newNoteSheetId;
+    return newNoteSheet;
+  }
+}
+
 function checkReferentialIntegrityOnDelete(
   sheet: string,
   id: string,
@@ -2504,7 +3290,6 @@ function checkReferentialIntegrityOnDelete(
   return checkReferentialIntegrityOnDeleteSchema(sheet, id, getSheetData);
 }
 
-// Manual Note Sheet Generation
 app.post(
   "/api/expenses/:id/generate-notesheet",
   requireAuth,
@@ -2527,15 +3312,42 @@ app.post(
         "FinancialYears",
         "Allocations",
         "NoteTemplates",
+        "PostFactoProposals",
       ];
       const result = await withSheetLock(lockedSheets, async () => {
         const expenses = getSheetData("Expenses");
         const expense = expenses.find((e: any) => e.id === id);
 
         if (!expense) {
-          const err: any = new Error("Expense not found");
-          err.statusCode = 404;
-          throw err;
+
+          const proposals = getSheetData("PostFactoProposals");
+          const proposal = proposals.find((p: any) => p.id === id);
+          if (!proposal) {
+            const err: any = new Error("Expense or Proposal not found");
+            err.statusCode = 404;
+            throw err;
+          }
+
+          if (
+            user.role === "Sub-office User" &&
+            proposal.officeId !== user.officeId
+          ) {
+            const err: any = new Error(
+              "Forbidden: Cannot modify records for other offices",
+            );
+            err.statusCode = 403;
+            throw err;
+          }
+
+          const generatedNoteSheet = await syncNoteSheetForPostFactoProposal(
+            proposal,
+            userId || user.userId || "system",
+            true,
+          );
+
+          await saveSheetData("PostFactoProposals", proposals);
+
+          return { success: true, noteSheet: generatedNoteSheet, proposal };
         }
 
         if (
@@ -2573,7 +3385,6 @@ app.post(
   },
 );
 
-// Authentication Routes
 
 app.post("/api/users/propose", requireAuth, async (req, res) => {
   try {
@@ -2601,11 +3412,8 @@ app.post("/api/users/propose", requireAuth, async (req, res) => {
 
       const newId = `u_${Date.now()}`;
       const randomSalt = crypto.randomBytes(16).toString("hex");
-      const randomHash = hashPassword(
-        crypto.randomBytes(8).toString("hex"),
-        randomSalt,
-        60000,
-      );
+      const defaultPassword = "password123";
+      const initialHash = hashPassword(defaultPassword, randomSalt, 60000);
 
       const newUser = {
         id: newId,
@@ -2615,7 +3423,7 @@ app.post("/api/users/propose", requireAuth, async (req, res) => {
         role: "Sub-office User",
         officeId: proposer.officeId, // Inherit office ID from proposer
         designation: designation || "",
-        passwordHash: randomHash,
+        passwordHash: initialHash,
         passwordSalt: randomSalt,
         status: "Pending", // Admin must approve
         mustChangePassword: true,
@@ -2703,7 +3511,7 @@ app.post("/api/auth/login", async (req, res) => {
           Buffer.from(hashed, "hex"),
           Buffer.from(user.passwordHash || "", "hex"),
         );
-      } catch (e) {
+      } catch (_e) {
         isValidPass = false;
       }
     } else {
@@ -2713,7 +3521,7 @@ app.post("/api/auth/login", async (req, res) => {
           Buffer.from(hashedLegacy, "hex"),
           Buffer.from(user.passwordHash || "", "hex"),
         );
-      } catch (e) {
+      } catch (_e) {
         isValidPass = false;
       }
       if (isValidPass) needsUpgrade = true;
@@ -2779,7 +3587,7 @@ app.post("/api/auth/change-password", requireAuth, async (req, res) => {
             Buffer.from(hashedOld, "hex"),
             Buffer.from(user.passwordHash || "", "hex"),
           );
-        } catch (e) {
+        } catch (_e) {
           isValidOld = false;
         }
       } else {
@@ -2793,7 +3601,7 @@ app.post("/api/auth/change-password", requireAuth, async (req, res) => {
             Buffer.from(hashedOld, "hex"),
             Buffer.from(user.passwordHash || "", "hex"),
           );
-        } catch (e) {
+        } catch (_e) {
           isValidOld = false;
         }
       }
@@ -2810,7 +3618,11 @@ app.post("/api/auth/change-password", requireAuth, async (req, res) => {
       delete users[index].mustChangePassword;
       await saveSheetData("Users", users);
 
-      const { passwordHash: _hash, passwordSalt: _salt, ...safeUser } = users[index];
+      const {
+        passwordHash: _hash,
+        passwordSalt: _salt,
+        ...safeUser
+      } = users[index];
       return {
         success: true,
         message: "Password updated successfully",
@@ -2887,7 +3699,6 @@ app.post(
   },
 );
 
-// API Routes for all sheets
 const sheetsList = [
   "Settings",
   "FinancialYears",
@@ -2900,6 +3711,7 @@ const sheetsList = [
   "NoteTemplates",
   "OpeningBalances",
   "AuditLogs",
+  "PostFactoProposals",
 ];
 
 const checkWriteAccess = (
@@ -2942,7 +3754,7 @@ const checkWriteAccess = (
 };
 
 sheetsList.forEach((sheet) => {
-  // GET all
+
   app.get(`/api/${sheet.toLowerCase()}`, requireAuth, (req, res) => {
     try {
       let data = getSheetData(sheet);
@@ -2957,9 +3769,13 @@ sheetsList.forEach((sheet) => {
 
       if (
         !isStaff &&
-        ["Allocations", "Expenses", "NoteSheets", "OpeningBalances"].includes(
-          sheet,
-        )
+        [
+          "Allocations",
+          "Expenses",
+          "NoteSheets",
+          "OpeningBalances",
+          "PostFactoProposals",
+        ].includes(sheet)
       ) {
         data = data.filter((item: any) => item.officeId === user.officeId);
       }
@@ -2980,7 +3796,6 @@ sheetsList.forEach((sheet) => {
     }
   });
 
-  // Inject sheetName for middleware
   const injectSheetName = (
     req: express.Request,
     res: express.Response,
@@ -2990,7 +3805,6 @@ sheetsList.forEach((sheet) => {
     next();
   };
 
-  // POST create
   app.post(
     `/api/${sheet.toLowerCase()}`,
     requireAuth,
@@ -2999,11 +3813,9 @@ sheetsList.forEach((sheet) => {
     async (req, res) => {
       try {
         if (sheet === "AuditLogs") {
-          return res
-            .status(405)
-            .json({
-              error: "Method Not Allowed: Audit logs cannot be created via API",
-            });
+          return res.status(405).json({
+            error: "Method Not Allowed: Audit logs cannot be created via API",
+          });
         }
 
         const user = (req as any).user;
@@ -3014,17 +3826,17 @@ sheetsList.forEach((sheet) => {
           "HeadOfficeAdmin",
           "Moderator",
         ].includes(user.role);
-        if (["Expenses", "NoteSheets"].includes(sheet) && !isStaff) {
+        if (
+          ["Expenses", "NoteSheets", "PostFactoProposals"].includes(sheet) &&
+          !isStaff
+        ) {
           if (req.body.officeId && req.body.officeId !== user.officeId) {
-            return res
-              .status(403)
-              .json({
-                error: "Forbidden: Cannot create records for other offices",
-              });
+            return res.status(403).json({
+              error: "Forbidden: Cannot create records for other offices",
+            });
           }
         }
 
-        // 1. Zod Schema Validation
         const schema = SheetSchemas[sheet];
         let validatedBody = req.body;
         if (schema) {
@@ -3041,13 +3853,11 @@ sheetsList.forEach((sheet) => {
           validatedBody = parseResult.data;
         }
 
-        // 2. Referential Integrity Check
         const refCheck = validateReferentialIntegrity(sheet, validatedBody);
         if (!refCheck.valid) {
           return res.status(422).json({ error: refCheck.error });
         }
 
-        // 3. Check if financial year is closed
         if (
           ["Allocations", "Expenses", "NoteSheets", "OpeningBalances"].includes(
             sheet,
@@ -3064,7 +3874,6 @@ sheetsList.forEach((sheet) => {
           }
         }
 
-        // Lock sheets that will be read/written
         const lockedSheets =
           sheet === "Expenses"
             ? [
@@ -3104,7 +3913,6 @@ sheetsList.forEach((sheet) => {
               ...computed,
             };
 
-            // Expense Date Validation against Financial Year
             const financialYears = getSheetData("FinancialYears");
             const fy = financialYears.find(
               (f: any) => f.id === newItem.financialYearId,
@@ -3122,7 +3930,6 @@ sheetsList.forEach((sheet) => {
               }
             }
 
-            // Duplicate Voucher Check
             if (newItem.voucherNo && newItem.voucherNo.trim() !== "") {
               const duplicate = data.find(
                 (e: any) =>
@@ -3158,7 +3965,6 @@ sheetsList.forEach((sheet) => {
             }
           }
 
-          // Expense specific logic: auto-generate note sheet if template or quotation exists
           if (sheet === "Expenses") {
             const syncedNs = await syncNoteSheetForExpense(
               newItem,
@@ -3178,6 +3984,26 @@ sheetsList.forEach((sheet) => {
           if (sheet === "NoteSheets") {
             if (newItem.content) {
               newItem.content = sanitizeHtmlServer(newItem.content);
+            }
+            if (newItem.forwardingContent) {
+              newItem.forwardingContent = sanitizeHtmlServer(
+                newItem.forwardingContent,
+              );
+            }
+            if (newItem.supplyOrderContent) {
+              newItem.supplyOrderContent = sanitizeHtmlServer(
+                newItem.supplyOrderContent,
+              );
+            }
+            if (newItem.sanctionNoteSheetContent) {
+              newItem.sanctionNoteSheetContent = sanitizeHtmlServer(
+                newItem.sanctionNoteSheetContent,
+              );
+            }
+            if (newItem.sanctionLetterContent) {
+              newItem.sanctionLetterContent = sanitizeHtmlServer(
+                newItem.sanctionLetterContent,
+              );
             }
           }
 
@@ -3202,10 +4028,28 @@ sheetsList.forEach((sheet) => {
             if (!newItem.status) newItem.status = "Active";
           }
 
+          if (sheet === "PostFactoProposals") {
+            if (!newItem.status) newItem.status = "Pending";
+            newItem.submittedBy = user.name || user.userId;
+            newItem.submittedAt = new Date().toISOString();
+            if (!isStaff) {
+              newItem.officeId = user.officeId;
+              newItem.status = "Pending";
+            }
+
+            const syncedNs = await syncNoteSheetForPostFactoProposal(
+              newItem,
+              user.userId,
+              true,
+            );
+            if (syncedNs) {
+              newItem.noteSheetId = syncedNs.id;
+            }
+          }
+
           data.push(newItem);
           await saveSheetData(sheet, data);
 
-          // Add audit log
           await addAuditLog(
             user.userId,
             `CREATE_${sheet.toUpperCase()}`,
@@ -3216,7 +4060,11 @@ sheetsList.forEach((sheet) => {
 
           let responseItem = newItem;
           if (sheet === "Users") {
-            const { passwordHash: _hash, passwordSalt: _salt, ...rest } = newItem;
+            const {
+              passwordHash: _hash,
+              passwordSalt: _salt,
+              ...rest
+            } = newItem;
             responseItem = rest;
           }
 
@@ -3231,7 +4079,6 @@ sheetsList.forEach((sheet) => {
     },
   );
 
-  // PUT update
   app.put(
     `/api/${sheet.toLowerCase()}/:id`,
     requireAuth,
@@ -3240,16 +4087,13 @@ sheetsList.forEach((sheet) => {
     async (req, res) => {
       try {
         if (sheet === "AuditLogs") {
-          return res
-            .status(405)
-            .json({
-              error: "Method Not Allowed: Audit logs cannot be modified",
-            });
+          return res.status(405).json({
+            error: "Method Not Allowed: Audit logs cannot be modified",
+          });
         }
 
         const { id } = req.params;
 
-        // 1. Zod Schema Validation (Partial schema for updates)
         const updateSchema = SheetUpdateSchemas[sheet];
         let validatedBody = req.body;
         if (updateSchema) {
@@ -3266,7 +4110,6 @@ sheetsList.forEach((sheet) => {
           validatedBody = parseResult.data;
         }
 
-        // 2. Referential Integrity Check
         const refCheck = validateReferentialIntegrity(sheet, validatedBody);
         if (!refCheck.valid) {
           return res.status(422).json({ error: refCheck.error });
@@ -3301,7 +4144,10 @@ sheetsList.forEach((sheet) => {
             "HeadOfficeAdmin",
             "Moderator",
           ].includes(user.role);
-          if (["Expenses", "NoteSheets"].includes(sheet) && !isStaff) {
+          if (
+            ["Expenses", "NoteSheets", "PostFactoProposals"].includes(sheet) &&
+            !isStaff
+          ) {
             const existingItem = data[index];
             if (
               existingItem.officeId !== user.officeId ||
@@ -3462,7 +4308,6 @@ sheetsList.forEach((sheet) => {
             );
             const allowExcess = category?.allowExcess === true;
 
-            // Temporarily adjust spent for balance check
             const availableBalance = getAvailableBalance(
               updatePayload.financialYearId,
               updatePayload.officeId,
@@ -3505,6 +4350,16 @@ sheetsList.forEach((sheet) => {
                 updatePayload.supplyOrderContent,
               );
             }
+            if (updatePayload.sanctionNoteSheetContent) {
+              updatePayload.sanctionNoteSheetContent = sanitizeHtmlServer(
+                updatePayload.sanctionNoteSheetContent,
+              );
+            }
+            if (updatePayload.sanctionLetterContent) {
+              updatePayload.sanctionLetterContent = sanitizeHtmlServer(
+                updatePayload.sanctionLetterContent,
+              );
+            }
           }
 
           if (sheet === "Users") {
@@ -3534,10 +4389,20 @@ sheetsList.forEach((sheet) => {
             }
           }
 
+          if (sheet === "PostFactoProposals") {
+            const syncedNs = await syncNoteSheetForPostFactoProposal(
+              data[index],
+              user.userId,
+              true,
+            );
+            if (syncedNs) {
+              data[index].noteSheetId = syncedNs.id;
+            }
+          }
+
           const newJson = JSON.stringify(data[index]);
           await saveSheetData(sheet, data);
 
-          // Audit log
           const auditDetails =
             sheet === "Expenses"
               ? `Updated expense ${id}. Old: ${oldJson}, New: ${newJson}`
@@ -3552,7 +4417,11 @@ sheetsList.forEach((sheet) => {
 
           let responseItem = data[index];
           if (sheet === "Users") {
-            const { passwordHash: _hash, passwordSalt: _salt, ...rest } = data[index];
+            const {
+              passwordHash: _hash,
+              passwordSalt: _salt,
+              ...rest
+            } = data[index];
             responseItem = rest;
           }
 
@@ -3567,7 +4436,6 @@ sheetsList.forEach((sheet) => {
     },
   );
 
-  // DELETE
   app.delete(
     `/api/${sheet.toLowerCase()}/:id`,
     requireAuth,
@@ -3576,16 +4444,13 @@ sheetsList.forEach((sheet) => {
     async (req, res) => {
       try {
         if (sheet === "AuditLogs") {
-          return res
-            .status(405)
-            .json({
-              error: "Method Not Allowed: Audit logs cannot be deleted",
-            });
+          return res.status(405).json({
+            error: "Method Not Allowed: Audit logs cannot be deleted",
+          });
         }
 
         const { id } = req.params;
 
-        // 1. Referential Integrity check on delete
         const deleteCheck = checkReferentialIntegrityOnDelete(sheet, id);
         if (!deleteCheck.allowed) {
           return res.status(409).json({ error: deleteCheck.error });
@@ -3723,7 +4588,154 @@ sheetsList.forEach((sheet) => {
   );
 });
 
-// Google Apps Script Code Generator endpoint
+app.post(
+  "/api/postfactoproposals/:id/sanction",
+  requireAuth,
+  requireRole(
+    "Super Admin",
+    "Admin",
+    "Head Office Admin",
+    "HeadOfficeAdmin",
+    "Moderator",
+  ),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        sanctionType,
+        sanctionMemoNo,
+        sanctionDate,
+        sanctionedAmount,
+        sanctionRemarks,
+        sanctionDocument,
+        letterNo,
+        letterDate,
+      } = req.body;
+      const user = (req as any).user;
+
+      const result = await withSheetLock(
+        [
+          "PostFactoProposals",
+          "NoteSheets",
+          "Offices",
+          "Categories",
+          "FinancialYears",
+        ],
+        async () => {
+          const proposals = getSheetData("PostFactoProposals");
+          const idx = proposals.findIndex((p: any) => p.id === id);
+          if (idx === -1) {
+            const err: any = new Error(
+              "প্রস্তাবটি পাওয়া যায়নি। / Proposal not found",
+            );
+            err.statusCode = 404;
+            throw err;
+          }
+
+          proposals[idx].status = "Sanctioned";
+          if (sanctionType !== undefined)
+            proposals[idx].sanctionType = sanctionType;
+          if (sanctionMemoNo !== undefined)
+            proposals[idx].sanctionMemoNo = sanctionMemoNo;
+          if (sanctionDate !== undefined)
+            proposals[idx].sanctionDate = sanctionDate;
+          if (letterNo !== undefined) proposals[idx].letterNo = letterNo;
+          if (letterDate !== undefined) proposals[idx].letterDate = letterDate;
+          if (sanctionedAmount !== undefined) {
+            proposals[idx].sanctionedAmount = Number(sanctionedAmount);
+          }
+          if (sanctionRemarks !== undefined) {
+            proposals[idx].sanctionRemarks = sanctionRemarks;
+          }
+          if (sanctionDocument !== undefined) {
+            proposals[idx].sanctionDocument = sanctionDocument;
+          }
+          proposals[idx].sanctionedBy = user.name || user.userId;
+          proposals[idx].sanctionedAt = new Date().toISOString();
+
+          await saveSheetData("PostFactoProposals", proposals);
+
+          try {
+            await syncNoteSheetForPostFactoProposal(
+              proposals[idx],
+              user.userId,
+              true,
+            );
+          } catch (_e) {
+            console.error("Failed to sync note sheet on sanction:", _e);
+          }
+
+          await addAuditLog(
+            user.userId,
+            "SANCTION_POST_FACTO_PROPOSAL",
+            "PostFactoProposals",
+            id,
+            `Sanctioned post-facto proposal ${id} with memo ${sanctionMemoNo || "N/A"}`,
+          );
+
+          return proposals[idx];
+        },
+      );
+
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      const statusCode = err.statusCode || 500;
+      res.status(statusCode).json({ error: err.message });
+    }
+  },
+);
+
+app.post(
+  "/api/postfactoproposals/:id/upload-sanction-document",
+  requireAuth,
+  requireRole(
+    "Super Admin",
+    "Admin",
+    "Head Office Admin",
+    "HeadOfficeAdmin",
+    "Moderator",
+  ),
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { sanctionDocument } = req.body;
+      if (!sanctionDocument) {
+        return res.status(400).json({ error: "No document URL provided" });
+      }
+
+      const result = await withSheetLock(["PostFactoProposals"], async () => {
+        const proposals = getSheetData("PostFactoProposals");
+        const idx = proposals.findIndex((p: any) => p.id === id);
+        if (idx === -1) {
+          const err: any = new Error(
+            "প্রস্তাবটি পাওয়া যায়নি। / Proposal not found",
+          );
+          err.statusCode = 404;
+          throw err;
+        }
+
+        proposals[idx].sanctionDocument = sanctionDocument;
+        await saveSheetData("PostFactoProposals", proposals);
+
+        await addAuditLog(
+          (req as any).user.userId,
+          "UPLOAD_SANCTION_DOCUMENT",
+          "PostFactoProposals",
+          id,
+          `Uploaded sanction document for proposal ${id}`,
+        );
+
+        return proposals[idx];
+      });
+
+      res.json({ success: true, data: result });
+    } catch (err: any) {
+      const statusCode = err.statusCode || 500;
+      res.status(statusCode).json({ error: err.message });
+    }
+  },
+);
+
 app.get("/api/apps-script-code", requireAuth, (req, res) => {
   try {
     const codeGsPath = path.join(process.cwd(), "src", "gas", "Code.gs");
@@ -3756,7 +4768,6 @@ app.get("/api/apps-script-code", requireAuth, (req, res) => {
   }
 });
 
-// Gemini AI Note Sheet generator
 app.post("/api/ai/generate-notesheet", requireAuth, async (req, res) => {
   try {
     const { categoryName, amount, description, officeName, financialYear } =
@@ -3785,7 +4796,6 @@ app.post("/api/ai/generate-notesheet", requireAuth, async (req, res) => {
   }
 });
 
-// Parse Word Document (.docx / .doc) to HTML with tables & formatting
 app.post("/api/parse-word-doc", requireAuth, async (req, res) => {
   try {
     let rawBase64 =
@@ -3817,7 +4827,7 @@ app.post("/api/parse-word-doc", requireAuth, async (req, res) => {
         "Mammoth parse failed, checking text fallback:",
         mammothErr.message,
       );
-      // Attempt fallback: if it's UTF-8 / plain text / HTML disguised as doc
+
       const textCandidate = buffer.toString("utf-8");
       const sample = textCandidate.substring(0, 100);
       const hasControlChars = Array.from(sample).some((c) => {
@@ -3845,7 +4855,6 @@ app.post("/api/parse-word-doc", requireAuth, async (req, res) => {
       }
     }
 
-    // Clean up HTML: Enhance table styles for Bangla/English Govt Note Sheets
     if (html.includes("<table")) {
       html = html.replace(
         /<table/g,
@@ -3861,7 +4870,6 @@ app.post("/api/parse-word-doc", requireAuth, async (req, res) => {
       );
     }
 
-    // Sanitize with DOMPurify before sending response
     const cleanHtml = sanitizeHtmlServer(html);
 
     res.json({
@@ -3877,7 +4885,6 @@ app.post("/api/parse-word-doc", requireAuth, async (req, res) => {
   }
 });
 
-// Approve Expense
 app.post(
   "/api/expenses/:id/approve",
   requireAuth,
@@ -3923,7 +4930,6 @@ app.post(
   },
 );
 
-// Reject Expense
 app.post(
   "/api/expenses/:id/reject",
   requireAuth,
@@ -3933,12 +4939,9 @@ app.post(
       const { id } = req.params;
       const { reason } = req.body;
       if (!reason || typeof reason !== "string" || !reason.trim()) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "প্রত্যাখ্যানের কারণ আবশ্যক। / Rejection reason is required.",
-          });
+        return res.status(400).json({
+          error: "প্রত্যাখ্যানের কারণ আবশ্যক। / Rejection reason is required.",
+        });
       }
       const user = (req as any).user;
 
@@ -3979,13 +4982,11 @@ app.post(
   },
 );
 
-// Supporting Documents Upload & Serve API
 const UPLOADS_DIR = path.join(process.cwd(), "data", "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// POST /api/upload
 app.post("/api/upload", requireAuth, (req, res) => {
   try {
     const { base64Data, expenseId, originalName } = req.body;
@@ -3995,11 +4996,9 @@ app.post("/api/upload", requireAuth, (req, res) => {
         .json({ error: "ফাইল ডাটা আবশ্যক। / File data is required." });
     }
 
-    // Clean data URI prefix if present
     const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
     const buffer = Buffer.from(cleanBase64, "base64");
 
-    // Max 5 MB check (5 * 1024 * 1024 bytes)
     const maxSizeBytes = 5 * 1024 * 1024;
     if (buffer.length > maxSizeBytes) {
       return res.status(400).json({
@@ -4008,16 +5007,14 @@ app.post("/api/upload", requireAuth, (req, res) => {
       });
     }
 
-    // Magic Bytes verification
     const detected = detectFileTypeFromMagicBytes(buffer);
     if (!detected) {
       return res.status(400).json({
         error:
-          "অনুমোদিত ফাইল ফরম্যাট: pdf, jpg, jpeg, png, docx। / Allowed file formats: pdf, jpg, jpeg, png, docx.",
+          "অনুমোদিত ফাইল ফরম্যাট: pdf, jpg, jpeg, png, webp, gif, docx। / Allowed file formats: pdf, jpg, jpeg, png, webp, gif, docx.",
       });
     }
 
-    // Extension check: preserve jpeg if original ended with .jpeg, else use detected ext
     let ext = detected.ext;
     if (originalName && typeof originalName === "string") {
       const origExt = path.extname(originalName).toLowerCase().replace(".", "");
@@ -4051,7 +5048,6 @@ app.post("/api/upload", requireAuth, (req, res) => {
   }
 });
 
-// GET /api/upload/:filename
 app.get("/api/upload/:filename", requireAuth, (req, res) => {
   try {
     const filename = path.basename(req.params.filename);
@@ -4065,14 +5061,29 @@ app.get("/api/upload/:filename", requireAuth, (req, res) => {
 
     const user = (req as any).user;
 
-    // RBAC check: Sub-office users can only view attachments of their office's expenses
-    if (user.role !== "Super Admin" && user.role !== "Head Office Admin") {
+    if (
+      user.role !== "Super Admin" &&
+      user.role !== "Head Office Admin" &&
+      user.role !== "Admin" &&
+      user.role !== "Moderator"
+    ) {
       const expenses = getSheetData("Expenses");
       const matchedExpense = expenses.find(
         (e: any) =>
           e.supportingDocument && e.supportingDocument.includes(filename),
       );
+      const proposals = getSheetData("PostFactoProposals");
+      const matchedProposal = proposals.find(
+        (p: any) => p.sanctionDocument && p.sanctionDocument.includes(filename),
+      );
+
       if (matchedExpense && matchedExpense.officeId !== user.officeId) {
+        return res.status(403).json({
+          error:
+            "আপনার এই অফিসের সংযুক্তি দেখার অনুমতি নেই। / You do not have permission to view attachments for this office.",
+        });
+      }
+      if (matchedProposal && matchedProposal.officeId !== user.officeId) {
         return res.status(403).json({
           error:
             "আপনার এই অফিসের সংযুক্তি দেখার অনুমতি নেই। / You do not have permission to view attachments for this office.",
@@ -4096,7 +5107,6 @@ app.get("/api/upload/:filename", requireAuth, (req, res) => {
   }
 });
 
-// POST /api/financialyears/:id/close
 app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
@@ -4138,7 +5148,6 @@ app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
           throw err;
         }
 
-        // Check for pending expenses in this FY
         const expenses = getSheetData("Expenses");
         const pendingInFY = expenses.filter(
           (e: any) => e.financialYearId === id && e.status === "Pending",
@@ -4153,7 +5162,6 @@ app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
           throw err;
         }
 
-        // Determine target financial year (targetFinancialYearId or next available)
         let nextFY = null;
         if (targetFinancialYearId) {
           nextFY = fys.find((f: any) => f.id === targetFinancialYearId);
@@ -4183,7 +5191,7 @@ app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
               }
 
               if (carryAmount > 0) {
-                // Remove existing opening balance for same nextFY, off, cat if present
+
                 openingBalances = openingBalances.filter(
                   (ob: any) =>
                     !(
@@ -4211,14 +5219,12 @@ app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
           await saveSheetData("OpeningBalances", openingBalances);
         }
 
-        // Mark current FY as closed
         currentFY.isClosed = true;
         currentFY.closedAt = new Date().toISOString();
         currentFY.closedBy = user.userId;
         fys[fyIndex] = currentFY;
         await saveSheetData("FinancialYears", fys);
 
-        // Write audit log
         await addAuditLog(
           user.userId,
           "CLOSE_FINANCIAL_YEAR",
@@ -4245,7 +5251,6 @@ app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
   }
 });
 
-// POST /api/settings/restore-defaults
 app.post("/api/settings/restore-defaults", requireAuth, async (req, res) => {
   try {
     const user = (req as any).user;
@@ -4254,11 +5259,9 @@ app.post("/api/settings/restore-defaults", requireAuth, async (req, res) => {
       user.role === "Head Office Admin" ||
       user.role === "HeadOfficeAdmin";
     if (!isAdmin) {
-      return res
-        .status(403)
-        .json({
-          error: "Forbidden: Only Admin can restore default configurations",
-        });
+      return res.status(403).json({
+        error: "Forbidden: Only Admin can restore default configurations",
+      });
     }
 
     const { target } = req.body || {}; // "offices" | "categories" | "all"
@@ -4292,9 +5295,8 @@ app.post("/api/settings/restore-defaults", requireAuth, async (req, res) => {
   }
 });
 
-// ----------------------------------------------------
-// SQLite Database Management & Diagnostics Endpoints
-// ----------------------------------------------------
+
+
 app.get("/api/database/status", requireAuth, async (req, res) => {
   try {
     const stats = await getSqliteStats();
@@ -4319,13 +5321,16 @@ app.get("/api/database/status", requireAuth, async (req, res) => {
 
 app.get("/api/database/download", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (user.role !== "Super Admin" && user.role !== "Head Office Admin") {
+  if (
+    user.role !== "Super Admin" &&
+    user.role !== "Admin" &&
+    user.role !== "Head Office Admin"
+  ) {
     return res
       .status(403)
       .json({ error: "Forbidden: Only Admin can download raw database" });
   }
 
-  // Ensure WAL is committed into database.sqlite before download
   await checkpointWal();
 
   const sqliteFile = path.join(DATA_DIR, "database.sqlite");
@@ -4340,7 +5345,11 @@ app.get("/api/database/download", requireAuth, async (req, res) => {
 
 app.get("/api/database/export-json", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (user.role !== "Super Admin" && user.role !== "Head Office Admin") {
+  if (
+    user.role !== "Super Admin" &&
+    user.role !== "Admin" &&
+    user.role !== "Head Office Admin"
+  ) {
     return res
       .status(403)
       .json({ error: "Forbidden: Only Admin can export database JSON" });
@@ -4363,7 +5372,11 @@ app.get("/api/database/export-json", requireAuth, async (req, res) => {
 
 app.post("/api/database/restore", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (user.role !== "Super Admin" && user.role !== "Head Office Admin") {
+  if (
+    user.role !== "Super Admin" &&
+    user.role !== "Admin" &&
+    user.role !== "Head Office Admin"
+  ) {
     return res
       .status(403)
       .json({ error: "Forbidden: Only Admin can restore database" });
@@ -4441,7 +5454,11 @@ app.post("/api/database/restore", requireAuth, async (req, res) => {
 
 app.post("/api/database/checkpoint", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (user.role !== "Super Admin" && user.role !== "Head Office Admin") {
+  if (
+    user.role !== "Super Admin" &&
+    user.role !== "Admin" &&
+    user.role !== "Head Office Admin"
+  ) {
     return res
       .status(403)
       .json({ error: "Forbidden: Admin privilege required" });
@@ -4459,7 +5476,11 @@ app.post("/api/database/checkpoint", requireAuth, async (req, res) => {
 
 app.post("/api/database/query", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (user.role !== "Super Admin" && user.role !== "Head Office Admin") {
+  if (
+    user.role !== "Super Admin" &&
+    user.role !== "Admin" &&
+    user.role !== "Head Office Admin"
+  ) {
     return res
       .status(403)
       .json({ error: "Forbidden: Admin privilege required for direct SQL" });
@@ -4476,19 +5497,15 @@ app.post("/api/database/query", requireAuth, async (req, res) => {
   }
 });
 
-// Fallback handler for unmatched API routes - guarantees a JSON response and prevents returning HTML
 app.all("/api/*", (req, res) => {
-  res
-    .status(404)
-    .json({
-      error: `API route not found: ${req.method} ${req.originalUrl || req.url}`,
-    });
+  res.status(404).json({
+    error: `API route not found: ${req.method} ${req.originalUrl || req.url}`,
+  });
 });
 
 async function startServer() {
   await initSqlite(DATA_DIR, initialData);
 
-  // Ensure note sheets are synchronized according to current templates and rules
   try {
     const expenses = getSheetData("Expenses");
     const noteSheets = getSheetData("NoteSheets");
@@ -4502,11 +5519,30 @@ async function startServer() {
         await syncNoteSheetForExpense(exp, "system", true);
       }
     }
-  } catch (e) {
-    console.warn("NoteSheet startup sync warning:", e);
+
+    const proposals = getSheetData("PostFactoProposals");
+    for (const prop of proposals) {
+      const existingNs = noteSheets.find(
+        (ns: any) => ns.expenseId === prop.id || ns.id === prop.noteSheetId,
+      );
+      if (
+        !existingNs ||
+        !existingNs.isCustomEdited ||
+        !existingNs.forwardingContent?.includes("watermark-container") ||
+        !existingNs.forwardingContent?.includes("pad-header") ||
+        !existingNs.supplyOrderContent?.includes("watermark-container") ||
+        !existingNs.supplyOrderContent?.includes("শর্তাবলী") ||
+        (prop.status === "Sanctioned" &&
+          (!existingNs.sanctionNoteSheetContent ||
+            !existingNs.sanctionLetterContent))
+      ) {
+        await syncNoteSheetForPostFactoProposal(prop, "system", true);
+      }
+    }
+  } catch (_e) {
+    console.warn("NoteSheet startup sync warning:", _e);
   }
 
-  // Vite middleware setup for development
   if (
     process.env.NODE_ENV !== "production" &&
     process.env.NODE_ENV !== "test"
@@ -4535,4 +5571,109 @@ async function startServer() {
 
 if (process.env.NODE_ENV !== "test" && !process.env.VITEST) {
   startServer();
+}
+function generatePostFactoSanctionLetterHtml(
+  proposal: any,
+  office: any,
+  category: any,
+  _financialYear: any,
+): string {
+  const isBudget =
+    proposal.sanctionType === "budget_allocation" || !proposal.sanctionType;
+  const currentBill = Number(proposal.totalAmount || 0);
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(
+    currentBill.toLocaleString("en-IN"),
+  );
+  const letterNo = proposal.letterNo || "...";
+  const letterDateBn = proposal.letterDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.letterDate))
+    : ".../.../......";
+
+  const sanctionMemoNo = proposal.sanctionMemoNo || "প্রশা-১(১৪)/২০২৫-২০২৬/";
+  const sanctionDate = proposal.sanctionDate
+    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.sanctionDate))
+    : convertToBengaliNumber(
+        formatDateToDDMMYYYY(new Date().toISOString().split("T")[0]),
+      );
+
+  const bidders = proposal.bidders || [];
+  const validBidders = bidders.filter(
+    (b: any) => b.name && Number(b.price || 0) > 0,
+  );
+  const sortedBidders = [...validBidders].sort(
+    (a: any, b: any) => Number(a.price || 0) - Number(b.price || 0),
+  );
+  const lowestBidder = sortedBidders[0] || {
+    name: "সর্বনিম্ন দরদাতা",
+    address: "",
+    price: proposal.totalAmount,
+  };
+
+  const isRepair = isRepairWork(proposal.description);
+  const vendorType = isRepair ? "মেরামতকারী" : "সরবরাহকারী";
+
+  const subjectText = isBudget
+    ? `বিষয়: বিকেবি, ${office?.name || "শাখা"} শাখায় ব্যবহৃত ${proposal.description || "-"} বিল খরচোত্তর বাজেট বরাদ্দসহ অনুমোদন প্রসংগে।`
+    : `বিষয়: বিকেবি, ${office?.name || "শাখা"} শাখায় ব্যবহৃত ${proposal.description || "-"} বিল খরচোত্তর অনুমোদন প্রসংগে।`;
+
+  const sanctionText = isBudget
+    ? `বাজেট বরাদ্দসহ বিলের খরচোত্তর অনুমোদন দেয়া হলো।`
+    : `বিলের খরচোত্তর অনুমোদন দেয়া হলো।`;
+
+  const padHeader = getBankPadHeaderHtml("আঞ্চলিক কার্যালয়, রাঙ্গামাটি"); // Always from RM
+  const watermarkHtml = getBankWatermarkHtml();
+
+  return `
+    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 11pt; line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%;">
+      ${watermarkHtml}
+      <div style="position: relative; z-index: 1;">
+        ${padHeader}
+
+        <!-- Letter Metadata Row -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; font-size: 11pt;">
+          <div><strong>সূত্র নং:</strong> ${sanctionMemoNo}</div>
+          <div><strong>তারিখ:</strong> ${sanctionDate} খ্রিঃ</div>
+        </div>
+
+        <!-- To Recipient -->
+        <div style="margin-bottom: 20px; line-height: 1.5; font-size: 11pt;">
+          <p style="margin: 0;">ব্যবস্থাপক</p>
+          <p style="margin: 0;">বাংলাদেশ কৃষি ব্যাংক</p>
+          <p style="margin: 0;">${office?.name || "শাখা"}</p>
+          <p style="margin: 0;">রাঙ্গামাটি।</p>
+        </div>
+
+        <!-- Subject -->
+        <div style="margin-bottom: 20px; font-weight: bold; font-size: 11pt;">
+          ${subjectText}
+        </div>
+
+        <p>প্রিয় মহোদয়,</p>
+        <p style="text-align: justify;">
+          শিরোনামে বর্ণিত বিষয়ে আপনার শাখার ${letterDateBn} ইং তারিখের পত্র নং- ${letterNo} এর প্রতি দৃষ্টি আকর্ষণ করা যাচ্ছে।
+        </p>
+        
+        <p style="text-align: justify;">
+          ০২। উক্ত পত্রের মাধ্যমে বিকেবি, ${office?.name || "শাখা"} শাখা এর জন্য ${proposal.description || "-"} করতে: ${vendorType} প্রতিষ্ঠান ${lowestBidder.name}, ${lowestBidder.address} হতে ${proposal.vatRate || 10}% ভ্যাটসহ ৳=${formattedAmount}/- (${amountWords}) টাকা মূল্যের একখানা বিল খরচোত্তর অনুমোদনের জন্যে সংযুক্তি সহকারে অত্র কার্যালয়ে প্রেরণ করা হয়।
+        </p>
+
+        <p style="text-align: justify;">
+          ০৩। উক্ত পত্রের প্রেক্ষিতে বিকেবি, ${office?.name || "শাখা"} শাখা এর জন্য ${proposal.description || "-"} বাবদ ${proposal.vatRate || 10}% ভ্যাটসহ মোট ৳=${formattedAmount}/- (${amountWords}) টাকা শাখার ${category?.name || "-"} খাতে ${sanctionText}
+        </p>
+
+        <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+          <div>
+            <p>সংযুক্তি: বর্ণনামতে।</p>
+          </div>
+          <div style="text-align: center;">
+            <p style="margin: 0;">আপনার বিশ্বস্ত,</p>
+            <br /><br />
+            <p style="margin: 0;">(মোহাম্মদ কামরুল হাসান)</p>
+            <p style="margin: 0;">আঞ্চলিক ব্যবস্থাপক</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
 }

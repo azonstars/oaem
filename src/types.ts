@@ -102,6 +102,7 @@ export interface SystemSettings {
   customThemeColor?: string;
   welcomeMessages?: WelcomeMessageConfig;
   notices?: string[];
+  showNoticeBar?: boolean;
   requireExpenseApproval?: boolean;
   financialYearStartMonth?: number;
   financialYearEndMonth?: number;
@@ -227,6 +228,8 @@ export interface NoteSheet {
   content: string;
   forwardingContent?: string;
   supplyOrderContent?: string;
+  sanctionNoteSheetContent?: string;
+  sanctionLetterContent?: string;
   status?: string;
   createdBy: string;
   createdAt: string;
@@ -299,4 +302,41 @@ export interface OpeningBalance {
   sourceFYId?: string;
   createdAt?: string;
   createdBy?: string;
+}
+
+export interface BidderOrganization {
+  name: string;
+  address: string;
+  price?: number;
+}
+
+export interface PostFactoProposal {
+  id: string;
+  financialYearId: string;
+  officeId: string;
+  categoryId: string;
+  description: string;
+  vatRate: number;
+  taxRate: number;
+  bidders: BidderOrganization[];
+  unitPrice: number;
+  totalAmount: number;
+  managerName: string;
+  status: "Pending" | "Sanctioned" | "Rejected";
+  submittedBy?: string;
+  submittedAt?: string;
+  sanctionType?: "budget_allocation" | "only_sanction";
+  sanctionMemoNo?: string;
+  sanctionDate?: string;
+  sanctionedAmount?: number;
+  sanctionRemarks?: string;
+  sanctionDocument?: string;
+  sanctionedBy?: string;
+  sanctionedAt?: string;
+  tenderDate?: string;
+  workOrderNo?: string;
+  workOrderDate?: string;
+  letterNo?: string;
+  letterDate?: string;
+  noteSheetId?: string;
 }

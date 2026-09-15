@@ -61,7 +61,6 @@ export function Dashboard({
 
   const isDark = theme === "dark";
 
-  // Filter by selected Financial Year and Office
   const filteredAllocations = allocations.filter((a) => {
     const matchFY = a.financialYearId === selectedFY;
     const matchOffice = isHeadOffice
@@ -78,8 +77,7 @@ export function Dashboard({
     return matchFY && matchOffice;
   });
 
-  // Calculate standard formula components:
-  // Initial Allocation + Additional Allocation + Adjustments - Expense = Available Balance
+
   const initialAllocation = filteredAllocations
     .filter((a) => a.type === "Initial" || (!a.type as any))
     .reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
@@ -116,7 +114,6 @@ export function Dashboard({
       ? Math.min(100, Math.round((totalSpent / totalAllocated) * 100))
       : 0;
 
-  // Category breakdown
   const categorySummary = categories
     .map((cat) => {
       const allocated = filteredAllocations
@@ -131,7 +128,6 @@ export function Dashboard({
     })
     .filter((c) => c.allocated > 0 || c.spent > 0);
 
-  // Office breakdown (for Head Office)
   const officeSummary = isHeadOffice
     ? offices
         .map((off) => {
@@ -148,7 +144,6 @@ export function Dashboard({
         .filter((o) => o.allocated > 0 || o.spent > 0)
     : [];
 
-  // Time-based Slot & Greeting Determination for Hero Banner
   const getTimeSlotAndGreeting = (): {
     slot: "morning" | "afternoon" | "evening" | "night";
     greeting: string;
@@ -179,7 +174,6 @@ export function Dashboard({
 
   const { slot, greeting } = getTimeSlotAndGreeting();
 
-  // Helper to replace dynamic placeholders safely
   const replacePlaceholders = (template: string): string => {
     if (!template) return "";
     const systemName =
@@ -211,7 +205,6 @@ export function Dashboard({
       .replace(/{institution}/g, institutionName);
   };
 
-  // Get Default or Admin Configured Welcome Message
   const getWelcomeLines = (): { line1: string; line2: string } => {
     const customConfig = systemSettings?.welcomeMessages?.[slot];
 
@@ -275,7 +268,6 @@ export function Dashboard({
 
   const welcomeLines = getWelcomeLines();
 
-  // Format current date in Bengali/English for display above action buttons
   const getCurrentFormattedDate = () => {
     const now = new Date();
     if (language === "bn") {
