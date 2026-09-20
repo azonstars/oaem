@@ -239,7 +239,7 @@ export function Header({
       {/* ========================================================================= */}
       <header
         data-no-print="true"
-        className={`min-h-[4.25rem] py-2 px-3 sm:px-5 shrink-0 transition-colors border-b flex items-center justify-between gap-2 sm:gap-3.5 print:hidden ${
+        className={`h-16 px-3 sm:px-5 shrink-0 transition-colors border-b flex items-center justify-between gap-2 sm:gap-3.5 print:hidden ${
           isCustom
             ? "bg-[#161226] border-[#2e244d] text-purple-100 shadow-sm"
             : isDark
@@ -290,7 +290,7 @@ export function Header({
             </div>
           </div>
         ) : isOfficeAllocationMode ? (
-          /* Office Allocation & Expense Management Suite Branding */
+          /* Office Allocation & Expense Management Suite Header - Streamlined & Context-Focused */
           <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             {/* Mobile Menu Toggle */}
             <button
@@ -311,87 +311,46 @@ export function Header({
             {onOpenHub && (
               <button
                 onClick={onOpenHub}
-                title="Return to FlowBoard Enterprise Hub"
-                className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300"
+                title={language === "bn" ? "ফ্লোবোর্ড হাবে ফিরে যান" : "Return to FlowBoard Enterprise Hub"}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 bg-slate-100/90 dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border-slate-200/90 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 shadow-2xs cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5 text-emerald-500" />
-                <span>FlowBoard Hub</span>
+                <span className="hidden sm:inline">FlowBoard Hub</span>
               </button>
             )}
 
-            {/* Logo */}
-            <div className="shrink-0">
-              {systemSettings?.logoUrl ? (
-                <img
-                  src={systemSettings.logoUrl}
-                  alt="Emblem / System Logo"
-                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain bg-white p-1 border border-slate-200/90 shadow-sm ring-1 ring-slate-900/5"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div
-                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ring-1 ring-emerald-500/20 shrink-0 ${
-                    isCustom
-                      ? "bg-gradient-to-br from-purple-700 to-amber-600"
-                      : "bg-gradient-to-br from-emerald-600 to-emerald-800"
-                  }`}
-                >
-                  <div className="text-center leading-none">
-                    <span className="text-xs sm:text-xs font-extrabold tracking-wider block">
-                      {language === "bn" ? "ফ্লো" : "FB"}
-                    </span>
-                    <span className="text-[7px] sm:text-[8px] font-semibold opacity-90 block">
-                      FLOW
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
+            <div className="h-4 w-px bg-slate-200 dark:bg-slate-800 hidden sm:block shrink-0" />
 
-            {/* System & Office Identity */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h1 className="text-xs sm:text-sm lg:text-base font-bold tracking-tight leading-tight truncate">
-                  {systemSettings?.webAppName ||
+            {/* Active Office / Jurisdiction Context Badge */}
+            <div className="flex items-center gap-2 min-w-0">
+              <div
+                className={`inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold border shadow-2xs min-w-0 ${
+                  isCustom
+                    ? "bg-[#251d45] border-[#4b3b7a] text-amber-300"
+                    : isDark
+                      ? "bg-emerald-950/60 border-emerald-800/70 text-emerald-300"
+                      : "bg-emerald-50/90 border-emerald-200/90 text-emerald-900"
+                }`}
+              >
+                <Building2 className="w-3.5 h-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span className="font-bold truncate max-w-[140px] sm:max-w-[200px] md:max-w-[300px]">
+                  {currentOffice?.name ||
                     (language === "bn"
-                      ? "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম"
-                      : "Office Allocation & Expense Management System")}
-                </h1>
-              </div>
-
-              <p className="text-xs sm:text-xs opacity-70 font-medium leading-tight truncate hidden sm:block">
-                {systemSettings?.institutionName ||
-                  (language === "bn"
-                    ? "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম"
-                    : "FlowBoard Enterprise Platform")}
-              </p>
-
-              {/* Dynamic Office Identity from existing logged-in user / master */}
-              <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-                <div
-                  className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-xs font-semibold border max-w-full truncate ${
-                    isCustom
-                      ? "bg-[#251d45] border-[#4b3b7a] text-amber-300"
-                      : isDark
-                        ? "bg-emerald-950/60 border-emerald-800/70 text-emerald-300"
-                        : "bg-emerald-50/90 border-emerald-200 text-emerald-800"
-                  }`}
-                >
-                  <Building2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 opacity-80" />
-                  <span className="truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
-                    {currentOffice?.name ||
-                      (language === "bn"
-                        ? "প্রধান কার্যালয়, ঢাকা"
-                        : "Head Office, Dhaka")}
-                  </span>
-                </div>
-
-                {parentOffice && (
-                  <span className="text-xs sm:text-xs opacity-50 hidden xl:inline truncate max-w-[120px]">
-                    ({parentOffice?.name || ""})
+                      ? "প্রধান কার্যালয়, ঢাকা"
+                      : "Head Office, Dhaka")}
+                </span>
+                {currentOffice?.code && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-100/80 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 font-mono font-bold shrink-0">
+                    {currentOffice.code}
                   </span>
                 )}
               </div>
+
+              {parentOffice && (
+                <span className="text-xs opacity-60 hidden 2xl:inline truncate max-w-[140px]">
+                  ({parentOffice?.name || ""})
+                </span>
+              )}
             </div>
           </div>
         ) : (
@@ -434,8 +393,8 @@ export function Header({
             </div>
           )}
 
-          {/* FlowBoard Hub Launcher Button (when inside a tool) */}
-          {!isHubMode && onOpenHub && (
+          {/* FlowBoard Hub Launcher Button (when inside independent tool) */}
+          {!isHubMode && !isOfficeAllocationMode && onOpenHub && (
             <button
               id="header-flowboard-hub-btn"
               onClick={onOpenHub}
@@ -453,8 +412,8 @@ export function Header({
             </button>
           )}
 
-          {/* Active Tool Switcher Dropdown */}
-          {activeTool && accessibleTools.length > 0 && onSwitchTool && (
+          {/* Active Tool Switcher Dropdown - Only shown in independent tools, not inside the full budget-expense suite */}
+          {!isOfficeAllocationMode && activeTool && accessibleTools.length > 0 && onSwitchTool && (
             <div className="relative" ref={toolMenuRef}>
               <button
                 id="header-tool-switcher-btn"
@@ -523,15 +482,14 @@ export function Header({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder={
-                  t.searchPlaceholder ||
-                  (language === "bn" ? "অনুসন্ধান করুন..." : "Search anything...")
+                  language === "bn" ? "রেকর্ড বা ভাউচার খুঁজুন..." : (t.searchPlaceholder || "Search records...")
                 }
-                className={`w-32 2xl:w-44 text-xs rounded-xl pl-8.5 pr-3 py-1.5 focus:outline-none transition-all ${
+                className={`w-36 lg:w-44 2xl:w-56 text-xs rounded-xl pl-8.5 pr-3 py-1.5 focus:outline-none transition-all ${
                   isCustom
-                    ? "bg-[#231a40] border border-[#43356e] text-purple-100 placeholder-purple-300/40 focus:border-amber-400 focus:w-48"
+                    ? "bg-[#231a40] border border-[#43356e] text-purple-100 placeholder-purple-300/40 focus:border-amber-400 focus:w-60"
                     : isDark
-                      ? "bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 focus:border-emerald-500 focus:w-48"
-                      : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:w-48"
+                      ? "bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 focus:border-emerald-500 focus:w-60"
+                      : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:w-60"
                 }`}
               />
             </div>
@@ -720,10 +678,10 @@ export function Header({
               </div>
 
               <div className="text-left hidden xl:block">
-                <span className="text-xs font-bold leading-none block truncate max-w-[85px] 2xl:max-w-[120px]">
+                <span className="text-xs font-bold leading-none block truncate max-w-[110px] 2xl:max-w-[160px]">
                   {currentUser?.name || "User"}
                 </span>
-                <span className="text-xs opacity-60 leading-none block mt-0.5 truncate max-w-[85px] 2xl:max-w-[120px]">
+                <span className="text-xs opacity-60 leading-none block mt-0.5 truncate max-w-[110px] 2xl:max-w-[160px]">
                   {currentUser?.role || ""}
                 </span>
               </div>
