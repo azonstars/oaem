@@ -9,7 +9,7 @@ interface ConferenceNoteToolProps {
   offices?: Office[];
   financialYears?: FinancialYear[];
   selectedFY?: string;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const BN = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
@@ -59,7 +59,7 @@ interface ExpenseRow {
   a: string;
 }
 
-export function ConferenceNoteTool({ currentUser, systemSettings, offices, financialYears, selectedFY, onBack }: ConferenceNoteToolProps) {
+export function ConferenceNoteTool({ currentUser, systemSettings, offices, financialYears, selectedFY, onBack: _onBack }: ConferenceNoteToolProps) {
   const activeFY = financialYears?.find((f) => f.id === selectedFY)?.name || "2024-25";
   const userOffice = offices?.find((o) => o.id === currentUser.officeId)?.name;
 
@@ -339,14 +339,6 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-200 gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              {onBack && (
-                <button
-                  onClick={onBack}
-                  className="px-3 py-1 rounded-lg border border-slate-200 bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-all mr-1"
-                >
-                  <span>← FlowBoard Hub</span>
-                </button>
-              )}
               {currentUser?.role === "Super Admin" && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                   <Database size={12} /> SQLite সেন্ট্রাল ডাটাবেজ

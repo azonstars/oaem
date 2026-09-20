@@ -23,7 +23,7 @@ interface StockProToolProps {
   offices?: Office[];
   financialYears?: FinancialYear[];
   selectedFY?: string;
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export interface StockProduct {
@@ -104,7 +104,7 @@ export interface StockInvoice {
 
 const STORAGE_PREFIX = "flowboard_stockpro_";
 
-export function StockProTool({ currentUser, systemSettings, offices, onBack }: StockProToolProps) {
+export function StockProTool({ currentUser, systemSettings, offices, onBack: _onBack }: StockProToolProps) {
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "products" | "agents" | "stockout" | "invoices" | "reports" | "settings"
   >("dashboard");
@@ -846,12 +846,6 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
         {/* Top bar with quick buttons */}
         <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-slate-700 flex items-center gap-1.5 transition-all"
-            >
-              <span>← FlowBoard Hub</span>
-            </button>
             <span className="text-sm font-bold text-slate-700 capitalize">
               {activeTab === "dashboard"
                 ? "ড্যাশবোর্ড ও ওভারভিউ"

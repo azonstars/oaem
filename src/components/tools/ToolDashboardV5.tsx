@@ -12,7 +12,7 @@ interface ToolDashboardV5Props {
   financialYears?: FinancialYear[];
   selectedFY?: string;
   initialTab?: string;
-  onBackToFlowBoard: () => void;
+  onBackToFlowBoard?: () => void;
 }
 
 export function ToolDashboardV5({
@@ -22,7 +22,7 @@ export function ToolDashboardV5({
   financialYears,
   selectedFY,
   initialTab,
-  onBackToFlowBoard,
+  onBackToFlowBoard: _onBackToFlowBoard,
 }: ToolDashboardV5Props) {
   // Map initialTab prop (from submodules or tabs) to subtool index
   // 0 = StockPro, 1 = Conference Note, 2 = Multi-Item Bill, 3 = Stationery Bill
@@ -109,17 +109,9 @@ export function ToolDashboardV5({
       {/* ── HOME VIEW ── */}
       {activeSubTool === null ? (
         <div className="max-w-6xl mx-auto w-full px-4 sm:px-8 py-8 flex-1">
-          <div className="flex items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl font-black text-slate-800 font-serif">টুলসমূহ</h1>
-              <p className="text-xs sm:text-sm text-slate-500 mt-1">নিচের যেকোনো টুলে ক্লিক করে কাজ শুরু করুন</p>
-            </div>
-            <button
-              onClick={onBackToFlowBoard}
-              className="px-4 py-2 rounded-xl border border-indigo-200 bg-white hover:bg-indigo-50 text-indigo-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
-            >
-              <span>🏛️ FlowBoard Hub-এ ফিরুন</span>
-            </button>
+          <div className="mb-8">
+            <h1 className="text-2xl font-black text-slate-800 font-serif">টুলসমূহ</h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1">নিচের যেকোনো টুলে ক্লিক করে কাজ শুরু করুন</p>
           </div>
 
           {/* Section 1: StockPro */}

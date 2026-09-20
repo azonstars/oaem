@@ -163,25 +163,7 @@ export function IndependentToolRunner({
   // If Miscellaneous View / Form Overlay Studio is requested directly
   if (tool.id === "miscellaneous") {
     return (
-      <div className="w-full min-h-full flex-1 bg-slate-50 dark:bg-slate-950 p-4 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBackToHub}
-              className="px-3.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{language === "bn" ? "ফ্লোবোর্ড হাবে ফিরুন" : "Back to FlowBoard"}</span>
-            </button>
-            <div className="h-4 w-px bg-slate-200 dark:border-slate-700 hidden sm:block" />
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-              <Layers className="w-3.5 h-3.5 text-indigo-500" />
-              <span className="font-semibold text-slate-700 dark:text-slate-200">
-                {language === "bn" ? "বিবিধ ও ফর্ম ওভারলে স্টুডিও" : "Miscellaneous & Form Studio"}
-              </span>
-            </div>
-          </div>
-        </div>
+      <div className="w-full min-h-full flex-1 bg-slate-50 dark:bg-slate-950 p-4 sm:p-6">
         <MiscellaneousView
           currentUser={currentUser}
           language={language}
