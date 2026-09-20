@@ -179,7 +179,8 @@ export const AuthProvider = ({ children, centralUser = null }) => {
   return (
     <AuthContext.Provider value={{
       user, profile, menuForms, menuItems, allMenuItems, appSettings, loading,
-      signOut, fetchProfile, fetchMenuForms, fetchMenuItems, fetchAllMenuData
+      signOut, fetchProfile, fetchMenuForms, fetchMenuItems, fetchAllMenuData,
+      isIntegrated: Boolean(centralUser)
     }}>
       {children}
     </AuthContext.Provider>
