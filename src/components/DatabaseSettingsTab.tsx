@@ -46,6 +46,10 @@ export function DatabaseSettingsTab({ currentUser }: DatabaseSettingsTabProps) {
   const isOcean = theme === "ocean";
   const isDark = theme === "dark";
 
+  if (currentUser?.role !== "Super Admin") {
+    return null;
+  }
+
   const [dbStatus, setDbStatus] = useState<DbStatus | null>(null);
   
   const [error, setError] = useState<string | null>(null);

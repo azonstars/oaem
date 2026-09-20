@@ -176,7 +176,7 @@ export function Sidebar({
       label: language === "bn" ? "ব্যয়ের খাতসমূহ" : "Categories",
       icon: Folder,
     },
-    ...(isSuperAdminOrAdmin
+    ...(isSuperAdmin
       ? [
           {
             id: "database",

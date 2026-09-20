@@ -5350,6 +5350,13 @@ app.post("/api/settings/restore-defaults", requireAuth, async (req, res) => {
 
 
 app.get("/api/database/status", requireAuth, async (req, res) => {
+  const user = (req as any).user;
+  if (user?.role !== "Super Admin") {
+    return res
+      .status(403)
+      .json({ error: "Forbidden: Only Super Admin can access Central SQLite Database" });
+  }
+
   try {
     const stats = await getSqliteStats();
     res.json({
@@ -5373,14 +5380,10 @@ app.get("/api/database/status", requireAuth, async (req, res) => {
 
 app.get("/api/database/download", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (
-    user.role !== "Super Admin" &&
-    user.role !== "Admin" &&
-    user.role !== "Head Office Admin"
-  ) {
+  if (user?.role !== "Super Admin") {
     return res
       .status(403)
-      .json({ error: "Forbidden: Only Admin can download raw database" });
+      .json({ error: "Forbidden: Only Super Admin can download raw database" });
   }
 
   await checkpointWal();
@@ -5397,14 +5400,10 @@ app.get("/api/database/download", requireAuth, async (req, res) => {
 
 app.get("/api/database/export-json", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (
-    user.role !== "Super Admin" &&
-    user.role !== "Admin" &&
-    user.role !== "Head Office Admin"
-  ) {
+  if (user?.role !== "Super Admin") {
     return res
       .status(403)
-      .json({ error: "Forbidden: Only Admin can export database JSON" });
+      .json({ error: "Forbidden: Only Super Admin can export database JSON" });
   }
 
   await checkpointWal();
@@ -5424,14 +5423,10 @@ app.get("/api/database/export-json", requireAuth, async (req, res) => {
 
 app.post("/api/database/restore", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (
-    user.role !== "Super Admin" &&
-    user.role !== "Admin" &&
-    user.role !== "Head Office Admin"
-  ) {
+  if (user?.role !== "Super Admin") {
     return res
       .status(403)
-      .json({ error: "Forbidden: Only Admin can restore database" });
+      .json({ error: "Forbidden: Only Super Admin can restore database" });
   }
 
   try {
@@ -5506,14 +5501,10 @@ app.post("/api/database/restore", requireAuth, async (req, res) => {
 
 app.post("/api/database/checkpoint", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (
-    user.role !== "Super Admin" &&
-    user.role !== "Admin" &&
-    user.role !== "Head Office Admin"
-  ) {
+  if (user?.role !== "Super Admin") {
     return res
       .status(403)
-      .json({ error: "Forbidden: Admin privilege required" });
+      .json({ error: "Forbidden: Only Super Admin can access Central SQLite Database checkpoint" });
   }
   try {
     await checkpointWal();
@@ -5528,14 +5519,10 @@ app.post("/api/database/checkpoint", requireAuth, async (req, res) => {
 
 app.post("/api/database/query", requireAuth, async (req, res) => {
   const user = (req as any).user;
-  if (
-    user.role !== "Super Admin" &&
-    user.role !== "Admin" &&
-    user.role !== "Head Office Admin"
-  ) {
+  if (user?.role !== "Super Admin") {
     return res
       .status(403)
-      .json({ error: "Forbidden: Admin privilege required for direct SQL" });
+      .json({ error: "Forbidden: Only Super Admin can query Central SQLite Database" });
   }
   try {
     const { sql, args } = req.body;

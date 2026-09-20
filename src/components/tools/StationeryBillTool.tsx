@@ -272,7 +272,11 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
       });
 
       if (res.ok) {
-        setDbSuccessMsg("সেন্ট্রাল SQLite ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!");
+        setDbSuccessMsg(
+          currentUser?.role === "Super Admin"
+            ? "সেন্ট্রাল SQLite ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!"
+            : "সফলভাবে সংরক্ষিত হয়েছে!"
+        );
         setTimeout(() => setDbSuccessMsg(""), 4000);
         loadSavedDocs();
       }
@@ -350,9 +354,11 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                   <span>← FlowBoard Hub</span>
                 </button>
               )}
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                <Database size={12} /> SQLite সেন্ট্রাল ডাটাবেজ
-              </span>
+              {currentUser?.role === "Super Admin" && (
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                  <Database size={12} /> SQLite সেন্ট্রাল ডাটাবেজ
+                </span>
+              )}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-800 font-serif">
               মুদ্রিত স্টেশনারী ও ভাউচার চালান জেনারেটর (Stationery &amp; Print Order)
@@ -379,7 +385,13 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
               className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
             >
               <Save size={15} />
-              <span>{isSavingDb ? "সংরক্ষণ হচ্ছে..." : "SQLite-এ সংরক্ষণ"}</span>
+              <span>
+                {isSavingDb
+                  ? "সংরক্ষণ হচ্ছে..."
+                  : currentUser?.role === "Super Admin"
+                    ? "SQLite-এ সংরক্ষণ"
+                    : "সংরক্ষণ করুন"}
+              </span>
             </button>
 
             <button
@@ -941,7 +953,11 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
             <div className="p-4 px-6 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <Database className="text-blue-400" size={18} />
-                <h3 className="font-bold text-sm">SQLite সেন্ট্রাল ডাটাবেজে সংরক্ষিত স্টেশনারী চালান তালিকা</h3>
+                <h3 className="font-bold text-sm">
+                  {currentUser?.role === "Super Admin"
+                    ? "SQLite সেন্ট্রাল ডাটাবেজে সংরক্ষিত স্টেশনারী চালান তালিকা"
+                    : "সংরক্ষিত স্টেশনারী চালান তালিকা"}
+                </h3>
               </div>
               <button
                 onClick={() => setShowSavedModal(false)}
@@ -957,7 +973,9 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                   <Database size={40} className="mx-auto mb-2 opacity-30" />
                   <p className="text-sm font-semibold">কোনো সংরক্ষিত চালান পাওয়া যায়নি।</p>
                   <p className="text-xs text-slate-400 mt-1">
-                    "SQLite-এ সংরক্ষণ" বাটনে ক্লিক করে বর্তমান চালানটি সেন্ট্রাল ডাটাবেজে সংরক্ষণ করতে পারেন।
+                    {currentUser?.role === "Super Admin"
+                      ? '"SQLite-এ সংরক্ষণ" বাটনে ক্লিক করে বর্তমান চালানটি সেন্ট্রাল ডাটাবেজে সংরক্ষণ করতে পারেন।'
+                      : 'সংরক্ষণ বাটনে ক্লিক করে বর্তমান চালানটি সংরক্ষণ করতে পারেন।'}
                   </p>
                 </div>
               ) : (

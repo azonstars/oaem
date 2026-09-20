@@ -2004,7 +2004,7 @@ export function SettingsView({
           </div>
         )}
 
-        {currentTab === "database" && isSuperAdminOrAdmin && (
+        {currentTab === "database" && isSuperAdmin && (
           <DatabaseSettingsTab currentUser={currentUser} />
         )}
 

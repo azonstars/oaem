@@ -868,21 +868,25 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
           </div>
 
           <div className="flex items-center gap-3">
-            {/* SQLite Connection Status */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold">
-              <Database size={14} className="text-emerald-600" />
-              <span>সেন্ট্রাল SQLite ডাটাবেজ</span>
-              <span className={`w-2 h-2 rounded-full ${dbSyncStatus === "syncing" ? "bg-amber-500 animate-spin" : "bg-emerald-500 animate-pulse"}`}></span>
-            </div>
+            {/* SQLite Connection Status - Only for Super Admin */}
+            {currentUser?.role === "Super Admin" && (
+              <>
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold">
+                  <Database size={14} className="text-emerald-600" />
+                  <span>সেন্ট্রাল SQLite ডাটাবেজ</span>
+                  <span className={`w-2 h-2 rounded-full ${dbSyncStatus === "syncing" ? "bg-amber-500 animate-spin" : "bg-emerald-500 animate-pulse"}`}></span>
+                </div>
 
-            <button
-              onClick={fetchDbData}
-              disabled={isDbLoading}
-              title="SQLite ডাটাবেজ রিফ্রেশ করুন"
-              className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-all border border-slate-200 bg-white"
-            >
-              <RefreshCw size={15} className={isDbLoading ? "animate-spin text-blue-600" : ""} />
-            </button>
+                <button
+                  onClick={fetchDbData}
+                  disabled={isDbLoading}
+                  title="SQLite ডাটাবেজ রিফ্রেশ করুন"
+                  className="p-1.5 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-all border border-slate-200 bg-white"
+                >
+                  <RefreshCw size={15} className={isDbLoading ? "animate-spin text-blue-600" : ""} />
+                </button>
+              </>
+            )}
 
             {activeTab === "products" && (
               <button
