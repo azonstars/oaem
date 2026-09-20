@@ -43,8 +43,8 @@ export function AppFooter({ onOpenAbout }: AppFooterProps) {
           <span className="opacity-40 hidden md:inline">•</span>
           <span className="opacity-65 text-xs hidden md:inline truncate">
             {language === "bn"
-              ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"
-              : "Government of Bangladesh"}
+              ? "ফ্লোবোর্ড এন্টারপ্রাইজ ওয়ার্কস্পেস"
+              : "FlowBoard Enterprise Workspace"}
           </span>
         </div>
 

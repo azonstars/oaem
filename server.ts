@@ -513,7 +513,7 @@ function getBankPadHeaderHtml(officeName?: string): string {
         ${logoElement}
       </div>
       <div style="flex: 1; text-align: center; padding: 0 10px;">
-        <div style="font-size: 20pt; font-weight: bold; color: #000; line-height: 1.1;">বাংলাদেশ কৃষি ব্যাংক</div>
+        <div style="font-size: 20pt; font-weight: bold; color: #000; line-height: 1.1;">${appSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক"}</div>
         <div style="font-size: 12.5pt; font-weight: bold; color: #000; margin-top: 2px;">${displayOffice}</div>
       </div>
       <div style="width: 125px; text-align: right; line-height: 1.2;">
@@ -1042,8 +1042,8 @@ function generateForm1ForwardingHtml(
         <div style="margin-bottom: 12px; line-height: 1.4; font-size: 11pt;">
           ব্যবস্থাপক<br/>
           বাংলাদেশ কৃষি ব্যাংক<br/>
-          ${expense.branchName || "রাঙ্গামাটি শাখা"}<br/>
-          ${expense.branchAddress || "রাঙ্গামাটি।"}
+          ${expense.branchName || "প্রধান শাখা"}<br/>
+          ${expense.branchAddress || "প্রধান কার্যালয়।"}
         </div>
 
         <div style="font-weight: bold; margin-bottom: 12px; font-size: 11pt;">
@@ -1971,7 +1971,7 @@ function renderExpenseNoteSheetContent(
         আঞ্চলিক ব্যবস্থাপক
       </div>
       <div style="font-size: 0.85em; color: #444;">
-        বাংলাদেশ কৃষি ব্যাংক
+        {{INSTITUTION_NAME}}
       </div>
     </div>
     <div style="text-align: center; min-width: 170pt; display: inline-block;">
@@ -2593,9 +2593,11 @@ function generatePostFactoNoteSheetHtml(
     ? `<strong>বিষয়:</strong> ${proposal.description} বিলের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`
     : `<strong>বিষয়:</strong> ${proposal.description} ক্রয়ের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`;
 
+  const instName = "বাংলাদেশ কৃষি ব্যাংক";
+
   const para1Text = isRepair
-    ? `বাংলাদেশ কৃষি ব্যাংক, ${office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়")} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সুচারুরূপে সম্পাদনের নিমিত্তে অতীব জরুরি বিবেচনায় ${proposal.description} কাজ সম্পন্ন করা হয়েছে। উক্ত কাজের বিস্তারিত বিবরণ নিম্নে উপস্থাপন করা হলো:`
-    : `বাংলাদেশ কৃষি ব্যাংক, ${office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়")} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সুচারুরূপে সম্পাদনের নিমিত্তে অতীব জরুরি বিবেচনায় স্থানীয় বাজার হতে ${proposal.description} ক্রয় করা হয়েছে। উক্ত কাজের বিস্তারিত বিবরণ নিম্নে উপস্থাপন করা হলো:`;
+    ? `${instName}, ${office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়")} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সুচারুরূপে সম্পাদনের নিমিত্তে অতীব জরুরি বিবেচনায় ${proposal.description} কাজ সম্পন্ন করা হয়েছে। উক্ত কাজের বিস্তারিত বিবরণ নিম্নে উপস্থাপন করা হলো:`
+    : `${instName}, ${office?.name || (isBranch ? "শাখা" : "শাখা কার্যালয়")} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সুচারুরূপে সম্পাদনের নিমিত্তে অতীব জরুরি বিবেচনায় স্থানীয় বাজার হতে ${proposal.description} ক্রয় করা হয়েছে। উক্ত কাজের বিস্তারিত বিবরণ নিম্নে উপস্থাপন করা হলো:`;
 
   const para2Text = isRepair
     ? `০২। তদালক্ষ্যে ${officeOrgGen} জন্য জরুরি ভিত্তিতে উক্ত মেরামত কার্য সম্পাদনের নিমিত্তে গত ${tenderDateBn} ইং তারিখে স্থানীয় দরপত্র আহ্বান করা হয়। উক্ত আহ্বানের প্রেক্ষিতে নিম্নলিখিত দরদাতা প্রতিষ্ঠানসমূহ তাদের সিলমোহরকৃত দরপত্র দাখিল করেন:`
@@ -2716,9 +2718,11 @@ function generatePostFactoForwardingHtml(
     ? `বিষয়: ${proposal.description} বিলের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`
     : `বিষয়: ${proposal.description} ক্রয়ের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`;
 
+  const instName2 = "বাংলাদেশ কৃষি ব্যাংক";
+
   const para2Text = isRepair
-    ? `০২। বাংলাদেশ কৃষি ব্যাংক, ${office?.name || "শাখা কার্যালয়"} এর কার্যকারিতা সচল রাখার নিমিত্তে জরুরি ভিত্তিতে ${proposal.description} কাজ সম্পাদন করা হয়েছে।`
-    : `০২। বাংলাদেশ কৃষি ব্যাংক, ${office?.name || "শাখা কার্যালয়"} এর কার্যকারিতা সচল রাখার নিমিত্তে জরুরি ভিত্তিতে স্থানীয় বাজার হতে ${proposal.description} ক্রয় করা হয়েছে।`;
+    ? `০২। ${instName2}, ${office?.name || "শাখা কার্যালয়"} এর কার্যকারিতা সচল রাখার নিমিত্তে জরুরি ভিত্তিতে ${proposal.description} কাজ সম্পাদন করা হয়েছে।`
+    : `০২। ${instName2}, ${office?.name || "শাখা কার্যালয়"} এর কার্যকারিতা সচল রাখার নিমিত্তে জরুরি ভিত্তিতে স্থানীয় বাজার হতে ${proposal.description} ক্রয় করা হয়েছে।`;
 
   const para3Text = isRepair
     ? `০৩। তদালক্ষ্যে উক্ত মেরামত কাজ সম্পাদনের জন্য গত ${tenderDateBn} ইং তারিখে দরপত্র আহ্বান করা হয় এবং নিম্নে উল্লেখিত প্রতিষ্ঠানের নিকট হতে সিলমোহরকৃত দরপত্র সংগ্রহপূর্বক উপস্থাপন করা হলো:`
@@ -2831,7 +2835,7 @@ function generatePostFactoSupplyOrderHtml(
   };
 
   const currentBill = Number(proposal.totalAmount || 0);
-  const amountWords = numberToBengaliWords(currentBill);
+  const _amountWords = numberToBengaliWords(currentBill);
   const formattedAmount = convertToBengaliNumber(
     currentBill.toLocaleString("en-IN"),
   );
@@ -3462,6 +3466,7 @@ app.get("/api/public/settings", (req, res) => {
         institutionName: appSettings.institutionName || "",
         webAppName: appSettings.webAppName || "",
         logoUrl: appSettings.logoUrl || "",
+        loginLogoUrl: appSettings.loginLogoUrl || "",
         customThemeColor: appSettings.customThemeColor || "",
       });
     } else {
@@ -3712,6 +3717,12 @@ const sheetsList = [
   "OpeningBalances",
   "AuditLogs",
   "PostFactoProposals",
+  "FlowTools",
+  "StockProProducts",
+  "StockProBranches",
+  "StockProInvoices",
+  "StockProVoucherPads",
+  "ToolDocuments",
 ];
 
 const checkWriteAccess = (
@@ -3784,6 +3795,10 @@ sheetsList.forEach((sheet) => {
       }
 
       if (sheet === "Users") {
+        // Admin or other users must not see Super Admin in the user list
+        if (user.role !== "Super Admin") {
+          data = data.filter((item: any) => item.role !== "Super Admin");
+        }
         data = data.map((u: any) => {
           const { passwordHash: _hash, passwordSalt: _salt, ...rest } = u;
           return rest;
@@ -5248,6 +5263,43 @@ app.post("/api/financialyears/:id/close", requireAuth, async (req, res) => {
     res
       .status(statusCode)
       .json({ error: err.message, pendingCount: err.pendingCount });
+  }
+});
+
+app.put("/api/settings", requireAuth, async (req, res) => {
+  try {
+    const user = (req as any).user;
+    const isAdmin = [
+      "Super Admin",
+      "Admin",
+      "Head Office Admin",
+    ].includes(user.role);
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Forbidden: Only Admin can update settings" });
+    }
+
+    const result = await withSheetLock(["Settings"], async () => {
+      const data = getSheetData("Settings");
+      if (data.length === 0) {
+        data.push({ id: "set-1", ...req.body });
+      } else {
+        data[0] = { ...data[0], ...req.body };
+      }
+      await saveSheetData("Settings", data);
+
+      await addAuditLog(
+        user.userId,
+        "UPDATE_SETTINGS",
+        "Settings",
+        data[0].id,
+        "Updated global settings centrally"
+      );
+      return data[0];
+    });
+
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
   }
 });
 

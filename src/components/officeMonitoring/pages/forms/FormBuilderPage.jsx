@@ -1,0 +1,686 @@
+import { useState, useEffect } from 'react'
+import EmptyState from '../../components/ui/EmptyState'
+import { createForm, updateForm, getFormById, getForms } from '../../services/formService'
+import { useAuth } from '../../context/AuthContext'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import toast from 'react-hot-toast'
+
+// Preview Component — form টা exactly কেমন দেখাবে
+const FormPreviewModal = ({ form, fields, onClose }) => {
+  const [previewData, setPreviewData] = useState({})
+  const isVisible = (field) => {
+    if (!field.condition) return true
+    const { dependsOn, showWhen } = field.condition
+    const parentVal = String(previewData[dependsOn] || '')
+    return parentVal === showWhen
+  }
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl w-full max-w-2xl shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200 flex justify-between items-center">
+          <div>
+            <h2 className="text-lg font-bold text-gray-800">👁 Form Preview</h2>
+            <p className="text-xs text-gray-400 mt-0.5">এটি branch user দের কাছে এভাবে দেখাবে</p>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">✕</button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-6 space-y-5">
+          <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
+            <h3 className="font-bold text-primary-800 text-lg">{form || 'Form Title'}</h3>
+          </div>
+          {fields.filter(f => f.label).map(field => {
+            if (!isVisible(field)) return null
+            return (
+              <div key={field.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="font-semibold text-gray-800">
+                    {field.label}
+                    {field.required && <span className="text-red-500 ml-1">*</span>}
+                  </h4>
+                  {field.condition && (
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Conditional</span>
+                  )}
+                </div>
+                {field.children?.length > 0 ? (
+                  <div className="space-y-2">
+                    {field.children.filter(c => c.label).map(child => (
+                      <div key={child.id} className="ml-4 border-l-2 border-gray-300 pl-3">
+                        <p className="text-sm text-gray-600 mb-1">{child.label}</p>
+                        <div className="flex gap-2">
+                          {(field.columns || [{key:'count',label:'সংখ্যা'},{key:'amount',label:'পরিমাণ'}]).map(col => (
+                            <input key={col.key} type="number" placeholder={col.label} disabled
+                              className="w-24 border border-gray-300 rounded px-2 py-1 text-sm bg-white opacity-60"/>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    {(field.type === 'numeric' || ['both','count','amount'].includes(field.type)) && (
+                      (field.columns?.length > 0
+                        ? field.columns
+                        : field.type === 'both' ? [{key:'count',label:'সংখ্যা'},{key:'amount',label:'পরিমাণ'}]
+                        : field.type === 'count' ? [{key:'count',label:'সংখ্যা'}]
+                        : [{key:'amount',label:'পরিমাণ'}]
+                      ).map(col => (
+                        <div key={col.key} className="flex-1">
+                          <p className="text-xs text-gray-500 mb-1">{col.label}</p>
+                          <input type="number"
+                            value={previewData[field.id + '_' + col.key] || ''}
+                            onChange={e => setPreviewData(p => ({...p, [field.id + '_' + col.key]: e.target.value}))}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"/>
+                        </div>
+                      ))
+                    )}
+                    {field.type === 'select' && (
+                      <select
+                        value={previewData[field.id] || ''}
+                        onChange={e => setPreviewData(p => ({...p, [field.id]: e.target.value}))}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400">
+                        <option value="">বেছে নিন</option>
+                        {(field.options || []).map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+                      </select>
+                    )}
+                    {field.type === 'text' && (
+                      <input type="text" placeholder={field.placeholder || field.label}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"/>
+                    )}
+                    {field.type === 'yesno' && (
+                      <div className="flex gap-3">
+                        {['হ্যাঁ','না'].map(opt => (
+                          <label key={opt} className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name={`preview_${field.id}`}
+                              value={opt} onChange={e => setPreviewData(p => ({...p, [field.id]: e.target.value}))}/>
+                            <span className="text-sm">{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+          {fields.filter(f => f.label).length === 0 && (
+            <p className="text-center text-gray-400 py-8">কোনো field যোগ করা হয়নি</p>
+          )}
+        </div>
+        <div className="p-4 border-t border-gray-100 flex justify-end">
+          <button onClick={onClose}
+            className="px-5 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-sm font-medium">
+            বন্ধ করুন
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default function FormBuilderPage() {
+  const { profile } = useAuth()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
+
+  const [formTitle, setFormTitle] = useState('')
+  const [formDescription, setFormDescription] = useState('')
+  const [expiresAt, setExpiresAt] = useState('')
+  const [fields, setFields] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
+
+  // Template
+  const [templates, setTemplates] = useState([])
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
+  const [reportMode, setReportMode] = useState('cumulative')
+  const [templateName, setTemplateName] = useState('')
+
+  useEffect(() => {
+    if (editId) loadForm()
+    loadTemplates()
+  }, [editId])
+
+  const loadForm = async () => {
+    try {
+      const form = await getFormById(editId)
+      setFormTitle(form.title)
+      setFormDescription(form.description || '')
+      setExpiresAt(form.expires_at || '')
+      setFields(form.fields || [])
+      setReportMode(form.report_mode || 'cumulative')
+    } catch (error) { toast.error(error.message) }
+  }
+
+  const loadTemplates = async () => {
+    try {
+      const all = await getForms()
+      setTemplates(all.filter(f => f.is_template))
+    } catch (error) { console.error(error) }
+  }
+
+  const handleSaveAsTemplate = async () => {
+    if (!templateName.trim()) { toast.error('Template নাম লিখুন!'); return }
+    if (fields.length === 0) { toast.error('কমপক্ষে একটি field যোগ করুন!'); return }
+    try {
+      await createForm({ title: templateName, description: formDescription, fields, is_active: false, is_template: true, created_by: profile.id })
+      toast.success(`"${templateName}" template সেভ হয়েছে!`)
+      setShowSaveTemplateModal(false); setTemplateName(''); loadTemplates()
+    } catch (error) { toast.error(error.message) }
+  }
+
+  const handleLoadTemplate = (template) => {
+    if (fields.length > 0 && !window.confirm('বর্তমান fields মুছে template load করবেন?')) return
+    setFields(template.fields?.map(f => ({
+      ...f, id: Date.now().toString() + Math.random(),
+      children: (f.children || []).map(c => ({ ...c, id: Date.now().toString() + Math.random() }))
+    })) || [])
+    if (!formTitle) setFormTitle(template.title.replace(' (Template)', ''))
+    toast.success(`"${template.title}" template load হয়েছে!`)
+    setShowTemplateModal(false)
+  }
+
+  // Default columns helper
+  const defaultColumns = () => [
+    { key: 'col_' + Date.now() + '_1', label: 'সংখ্যা' },
+    { key: 'col_' + Date.now() + '_2', label: 'পরিমাণ' },
+  ]
+
+  const addField = () => {
+    setFields([...fields, { id: Date.now().toString(), label: '', type: 'numeric', required: false, children: [], options: [], condition: null, columns: defaultColumns() }])
+  }
+
+  const addSubField = (parentId) => {
+    setFields(fields.map(f => f.id === parentId ? {
+      ...f, children: [...f.children, { id: Date.now().toString(), label: '', required: false }]
+    } : f))
+  }
+
+  // পুরনো both/count/amount field-কে নতুন columns format-এ migrate করো
+  const migrateFieldColumns = (field) => {
+    if (field.columns && field.columns.length > 0) return field.columns
+    if (field.type === 'both') return [
+      { key: field.id + '_count', label: 'সংখ্যা' },
+      { key: field.id + '_amount', label: 'পরিমাণ' },
+    ]
+    if (field.type === 'count') return [{ key: field.id + '_count', label: 'সংখ্যা' }]
+    if (field.type === 'amount') return [{ key: field.id + '_amount', label: 'পরিমাণ' }]
+    return defaultColumns()
+  }
+
+  // Subtotal field যোগ করো — fields list-এ একটি special row
+  const addSubtotal = (afterIndex) => {
+    const numericFields = fields.filter((f, i) => i <= afterIndex && (f.type === 'numeric' || ['both','count','amount'].includes(f.type)) && f.label)
+    const newField = {
+      id: Date.now().toString(),
+      label: 'মোট',
+      type: 'subtotal',
+      sourceFields: numericFields.map(f => f.id), // default: সব numeric field
+      required: false,
+      children: [],
+    }
+    const newFields = [...fields]
+    newFields.splice(afterIndex + 1, 0, newField)
+    setFields(newFields)
+  }
+
+  // Grand Total যোগ করো — সব subtotal-এর যোগ
+  const addGrandTotal = () => {
+    const subtotals = fields.filter(f => f.type === 'subtotal')
+    const newField = {
+      id: Date.now().toString(),
+      label: 'সর্বমোট (Grand Total)',
+      type: 'grandtotal',
+      sourceFields: subtotals.map(f => f.id),
+      required: false,
+      children: [],
+    }
+    setFields([...fields, newField])
+  }
+
+  // Subtotal/Grandtotal sourceFields আপডেট
+  const toggleSourceField = (subtotalId, fieldId) => {
+    setFields(fields.map(f => {
+      if (f.id !== subtotalId) return f
+      const sources = f.sourceFields || []
+      return {
+        ...f,
+        sourceFields: sources.includes(fieldId)
+          ? sources.filter(id => id !== fieldId)
+          : [...sources, fieldId]
+      }
+    }))
+  }
+
+  const updateField = (id, key, value) => setFields(fields.map(f => f.id === id ? { ...f, [key]: value } : f))
+
+  const updateSubField = (parentId, childId, key, value) => {
+    setFields(fields.map(f => f.id === parentId ? {
+      ...f, children: f.children.map(c => c.id === childId ? { ...c, [key]: value } : c)
+    } : f))
+  }
+
+  const removeField = (id) => setFields(fields.filter(f => f.id !== id))
+  const removeSubField = (parentId, childId) => {
+    setFields(fields.map(f => f.id === parentId ? { ...f, children: f.children.filter(c => c.id !== childId) } : f))
+  }
+
+  const moveField = (index, direction) => {
+    const newFields = [...fields]
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= newFields.length) return
+    ;[newFields[index], newFields[swapIndex]] = [newFields[swapIndex], newFields[index]]
+    setFields(newFields)
+  }
+
+  const handleSave = async () => {
+    if (!formTitle.trim()) { toast.error('Form title is required!'); return }
+    if (fields.length === 0) { toast.error('Add at least one field!'); return }
+    setLoading(true)
+    try {
+      const formData = {
+        title: formTitle, description: formDescription, fields,
+        is_active: true, created_by: profile.id,
+        expires_at: expiresAt || null,
+        report_mode: reportMode,
+      }
+      if (editId) await updateForm(editId, formData)
+      else await createForm(formData)
+      toast.success(editId ? 'Form updated!' : 'Form created!')
+      navigate('/forms')
+    } catch (error) { toast.error(error.message) }
+    finally { setLoading(false) }
+  }
+
+  const FIELD_TYPES = [
+    { value: 'numeric', label: '🔢 সংখ্যাসূচক (কাস্টম কলাম)' },
+    { value: 'text', label: '📝 টেক্সট' },
+    { value: 'select', label: '📋 Dropdown' },
+    { value: 'yesno', label: '✅ হ্যাঁ/না' },
+  ]
+
+  // Conditional এর জন্য parent candidates — select বা yesno type
+  const conditionalParents = fields.filter(f => ['select', 'yesno'].includes(f.type) && f.label)
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white rounded-lg p-6 shadow-sm flex justify-between items-center flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-gray-800">{editId ? '✏️ Edit Form' : '🛠 Form Builder'}</h1>
+        <div className="flex gap-2 flex-wrap">
+          {!editId && (
+            <>
+              <button onClick={() => setShowTemplateModal(true)}
+                className="px-4 py-2 bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100 transition text-sm font-medium">
+                📋 Template
+              </button>
+              {fields.length > 0 && (
+                <button onClick={() => { setTemplateName(formTitle ? `${formTitle} (Template)` : ''); setShowSaveTemplateModal(true) }}
+                  className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100 transition text-sm font-medium">
+                  💾 Template Save
+                </button>
+              )}
+            </>
+          )}
+          {fields.length > 0 && (
+            <button onClick={() => setShowPreview(true)}
+              className="px-4 py-2 bg-yellow-50 text-yellow-700 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition text-sm font-medium">
+              👁 Preview
+            </button>
+          )}
+          <button onClick={() => navigate('/forms')}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm">
+            Cancel
+          </button>
+          <button onClick={handleSave} disabled={loading}
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition disabled:opacity-50 text-sm font-medium">
+            {loading ? 'Saving...' : '💾 Save Form'}
+          </button>
+        </div>
+      </div>
+
+      {/* Form Details */}
+      <div className="bg-white rounded-lg p-6 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Form Title *</label>
+            <input type="text" value={formTitle} onChange={e => setFormTitle(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="Form এর নাম লিখুন" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              ⏰ Deadline (Expiry Date)
+              <span className="ml-2 text-xs text-gray-400 font-normal">এই তারিখের পর submit করা যাবে না</span>
+            </label>
+            <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"/>
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+          <textarea value={formDescription} onChange={e => setFormDescription(e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="Form এর বিবরণ (optional)" rows={2} />
+        </div>
+        {/* Report Mode */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            📊 রিপোর্ট Mode
+            <span className="ml-2 text-xs text-gray-400 font-normal">এই form-এর data রিপোর্টে কীভাবে দেখাবে</span>
+          </label>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setReportMode('cumulative')}
+              className={`flex-1 px-4 py-3 rounded-xl border-2 text-left transition ${reportMode === 'cumulative' ? 'border-primary-500 bg-primary-50' : 'border-gray-200 hover:border-gray-300'}`}>
+              <p className={`text-sm font-semibold ${reportMode === 'cumulative' ? 'text-primary-700' : 'text-gray-700'}`}>
+                {reportMode === 'cumulative' ? '🔵' : '⚪'} সর্বমোট যোগফল
+              </p>
+              <p className="text-xs text-gray-500 mt-1">অর্থবছর / ক্যালেন্ডার বছরে এ পর্যন্ত সব submission-এর যোগফল দেখাবে</p>
+            </button>
+            <button
+              onClick={() => setReportMode('latest')}
+              className={`flex-1 px-4 py-3 rounded-xl border-2 text-left transition ${reportMode === 'latest' ? 'border-orange-500 bg-orange-50' : 'border-gray-200 hover:border-gray-300'}`}>
+              <p className={`text-sm font-semibold ${reportMode === 'latest' ? 'text-orange-700' : 'text-gray-700'}`}>
+                {reportMode === 'latest' ? '🟠' : '⚪'} সর্বশেষ ইনপুট
+              </p>
+              <p className="text-xs text-gray-500 mt-1">অর্থবছর / ক্যালেন্ডার বছরের মধ্যে সর্বশেষ submission-এর data দেখাবে</p>
+            </button>
+          </div>
+        </div>
+
+        {expiresAt && (
+          <div className={`text-sm px-3 py-2 rounded-lg ${new Date(expiresAt) < new Date() ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+            {new Date(expiresAt) < new Date()
+              ? `⚠️ এই deadline ইতিমধ্যে পার হয়ে গেছে — form submit করা যাবে না`
+              : `✅ Deadline: ${new Date(expiresAt).toLocaleDateString('bn-BD', { day: '2-digit', month: 'long', year: 'numeric' })} পর্যন্ত active`}
+          </div>
+        )}
+      </div>
+
+      {/* Fields */}
+      <div className="space-y-4">
+        {fields.map((field, index) => (
+          <div key={field.id}>
+          {/* Subtotal / Grand Total row */}
+          {(field.type === 'subtotal' || field.type === 'grandtotal') ? (
+            <div className={`rounded-lg p-4 shadow-sm border-l-4 ${field.type === 'grandtotal' ? 'bg-primary-50 border-primary-600' : 'bg-green-50 border-green-500'}`}>
+              <div className="flex items-center gap-3">
+                <div className="flex flex-col gap-1">
+                  <button onClick={() => moveField(index, 'up')} className="text-gray-400 hover:text-gray-600 text-xs">▲</button>
+                  <button onClick={() => moveField(index, 'down')} className="text-gray-400 hover:text-gray-600 text-xs">▼</button>
+                </div>
+                <span className="text-sm font-bold">{field.type === 'grandtotal' ? '🔷' : '🔹'}</span>
+                <input type="text" value={field.label}
+                  onChange={e => updateField(field.id, 'label', e.target.value)}
+                  className={`flex-1 border rounded-md px-3 py-2 text-sm font-semibold focus:outline-none focus:ring-2 ${field.type === 'grandtotal' ? 'border-primary-300 bg-primary-100 focus:ring-primary-400 text-primary-800' : 'border-green-300 bg-green-100 focus:ring-green-400 text-green-800'}`} />
+                <span className="text-xs text-gray-500 shrink-0">
+                  {field.type === 'grandtotal' ? 'Grand Total' : 'Subtotal'}
+                </span>
+                <button onClick={() => removeField(field.id)} className="text-red-400 hover:text-red-600">✕</button>
+              </div>
+              {/* Source fields selection */}
+              <div className="mt-3 ml-8">
+                <p className="text-xs text-gray-500 mb-2">
+                  {field.type === 'grandtotal' ? 'কোন Subtotal যোগ হবে:' : 'কোন Field যোগ হবে:'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(field.type === 'grandtotal'
+                    ? fields.filter(f => f.type === 'subtotal')
+                    : fields.filter((f, i) => i < index && (f.type === 'numeric' || ['both','count','amount'].includes(f.type)) && f.label)
+                  ).map(src => (
+                    <label key={src.id} className="flex items-center gap-1.5 cursor-pointer bg-white border border-gray-200 rounded-lg px-2 py-1">
+                      <input type="checkbox"
+                        checked={(field.sourceFields || []).includes(src.id)}
+                        onChange={() => toggleSourceField(field.id, src.id)}
+                        className="rounded" />
+                      <span className="text-xs text-gray-700">{src.label || '(no label)'}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+          <div className="bg-white rounded-lg p-5 shadow-sm border-l-4 border-primary-500">
+            <div className="flex gap-3 items-start">
+              <div className="flex flex-col gap-1 pt-1">
+                <button onClick={() => moveField(index, 'up')} className="text-gray-400 hover:text-gray-600 text-xs">▲</button>
+                <button onClick={() => moveField(index, 'down')} className="text-gray-400 hover:text-gray-600 text-xs">▼</button>
+              </div>
+              <div className="flex-1 space-y-3">
+                {/* Field label + type + required */}
+                <div className="flex gap-3 flex-wrap">
+                  <input type="text" value={field.label}
+                    onChange={e => updateField(field.id, 'label', e.target.value)}
+                    className="flex-1 min-w-40 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="Field label" />
+                  <select value={field.type} onChange={e => updateField(field.id, 'type', e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                    {FIELD_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                  <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                    <input type="checkbox" checked={field.required || false}
+                      onChange={e => updateField(field.id, 'required', e.target.checked)}
+                      className="rounded"/>
+                    Required
+                  </label>
+                </div>
+
+                {/* Select options */}
+                {field.type === 'select' && (
+                  <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                    <p className="text-xs text-gray-500 font-medium">Dropdown options (একটি করে লিখুন)</p>
+                    {(field.options || []).map((opt, oi) => (
+                      <div key={oi} className="flex gap-2">
+                        <input type="text" value={opt}
+                          onChange={e => { const opts = [...(field.options||[])]; opts[oi]=e.target.value; updateField(field.id,'options',opts) }}
+                          className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-primary-400"
+                          placeholder={`Option ${oi+1}`}/>
+                        <button onClick={() => { const opts=(field.options||[]).filter((_,i)=>i!==oi); updateField(field.id,'options',opts) }}
+                          className="text-red-400 hover:text-red-600 text-sm">✕</button>
+                      </div>
+                    ))}
+                    <button onClick={() => updateField(field.id,'options',[...(field.options||[]),''])}
+                      className="text-xs text-primary-600 hover:underline">+ Option যোগ করুন</button>
+                  </div>
+                )}
+
+                {/* Conditional logic */}
+                {conditionalParents.length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                    <p className="text-xs text-yellow-700 font-medium mb-2">⚡ Conditional (কোন field এর উপর নির্ভরশীল?)</p>
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <select
+                        value={field.condition?.dependsOn || ''}
+                        onChange={e => {
+                          if (!e.target.value) updateField(field.id, 'condition', null)
+                          else updateField(field.id, 'condition', { dependsOn: e.target.value, showWhen: field.condition?.showWhen || '' })
+                        }}
+                        className="border border-yellow-300 rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-1 focus:ring-yellow-400">
+                        <option value="">নির্ভরশীল নয়</option>
+                        {conditionalParents.filter(p => p.id !== field.id).map(p => (
+                          <option key={p.id} value={p.id}>{p.label}</option>
+                        ))}
+                      </select>
+                      {field.condition?.dependsOn && (
+                        <>
+                          <span className="text-xs text-yellow-700">এর মান হলে →</span>
+                          {(() => {
+                            const parent = fields.find(f => f.id === field.condition.dependsOn)
+                            if (parent?.type === 'yesno') return (
+                              <select value={field.condition.showWhen || ''}
+                                onChange={e => updateField(field.id,'condition',{...field.condition,showWhen:e.target.value})}
+                                className="border border-yellow-300 rounded px-2 py-1 text-sm bg-white focus:outline-none">
+                                <option value="">বেছে নিন</option>
+                                <option value="হ্যাঁ">হ্যাঁ</option>
+                                <option value="না">না</option>
+                              </select>
+                            )
+                            if (parent?.type === 'select') return (
+                              <select value={field.condition.showWhen || ''}
+                                onChange={e => updateField(field.id,'condition',{...field.condition,showWhen:e.target.value})}
+                                className="border border-yellow-300 rounded px-2 py-1 text-sm bg-white focus:outline-none">
+                                <option value="">বেছে নিন</option>
+                                {(parent.options||[]).map((opt,i) => <option key={i} value={opt}>{opt}</option>)}
+                              </select>
+                            )
+                            return null
+                          })()}
+                          <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full">তখন এই field দেখাবে</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Column Management — numeric type এর জন্য */}
+                {(field.type === 'numeric' || ['both','count','amount'].includes(field.type)) && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                    <p className="text-xs text-blue-700 font-semibold mb-1">📊 কলাম সেটিং (admin যত ইচ্ছা column যোগ/বাদ দিতে পারবেন)</p>
+                    {migrateFieldColumns(field).map((col, ci) => (
+                      <div key={col.key} className="flex gap-2 items-center">
+                        <span className="text-xs text-blue-500 w-5 shrink-0">{ci + 1}.</span>
+                        <input
+                          type="text"
+                          value={col.label}
+                          onChange={e => {
+                            // পুরনো field হলে আগে migrate করো
+                            const cols = field.columns?.length > 0 ? field.columns : migrateFieldColumns(field)
+                            updateField(field.id, 'columns', cols.map(c => c.key === col.key ? { ...c, label: e.target.value } : c))
+                          }}
+                          className="flex-1 border border-blue-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                          placeholder={`কলামের নাম (যেমন: সংখ্যা, পরিমাণ, মেয়াদ...)`}
+                        />
+                        <button
+                          onClick={() => {
+                            const cols = field.columns?.length > 0 ? field.columns : migrateFieldColumns(field)
+                            if (cols.length <= 1) { toast.error('কমপক্ষে ১টি কলাম থাকতে হবে!'); return }
+                            updateField(field.id, 'columns', cols.filter(c => c.key !== col.key))
+                          }}
+                          className="text-red-400 hover:text-red-600 text-lg leading-none shrink-0" title="কলাম মুছুন">✕</button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        // পুরনো field হলে আগে migrate করো
+                        const cols = field.columns?.length > 0 ? field.columns : migrateFieldColumns(field)
+                        updateField(field.id, 'columns', [...cols, { key: 'col_' + Date.now(), label: '' }])
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-800 hover:underline mt-1">
+                      + কলাম যোগ করুন
+                    </button>
+                  </div>
+                )}
+
+                {/* Sub fields */}
+                {(field.type === 'numeric' || ['both','count','amount'].includes(field.type)) && field.children?.map(child => (
+                  <div key={child.id} className="ml-6 flex gap-3 items-center border-l-2 border-gray-200 pl-4">
+                    <input type="text" value={child.label}
+                      onChange={e => updateSubField(field.id, child.id, 'label', e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                      placeholder="Sub field label" />
+                    <button onClick={() => removeSubField(field.id, child.id)} className="text-red-500 hover:text-red-700">✕</button>
+                  </div>
+                ))}
+
+                {(field.type === 'numeric' || ['both','count','amount'].includes(field.type)) && (
+                  <button onClick={() => addSubField(field.id)} className="text-sm text-primary-600 hover:underline">
+                    + Sub Field যোগ করুন
+                  </button>
+                )}
+              </div>
+              <button onClick={() => removeField(field.id)} className="text-red-500 hover:text-red-700 font-bold text-lg">✕</button>
+            </div>
+          </div>
+          )} {/* end subtotal/normal if */}
+
+          {/* Subtotal add button — normal field-এর পরে */}
+          {!['subtotal','grandtotal'].includes(field.type) && (field.type === 'numeric' || ['both','count','amount'].includes(field.type)) && field.label && (
+            <div className="flex justify-end mt-1 mr-1">
+              <button onClick={() => addSubtotal(index)}
+                className="text-xs text-green-600 hover:text-green-800 hover:underline">
+                + Subtotal যোগ করুন এখানে
+              </button>
+            </div>
+          )}
+          </div>
+        ))}
+
+        {/* Grand Total button */}
+        {fields.some(f => f.type === 'subtotal') && !fields.some(f => f.type === 'grandtotal') && (
+          <button onClick={addGrandTotal}
+            className="w-full py-2.5 border-2 border-dashed border-primary-300 rounded-lg text-primary-600 hover:border-primary-500 hover:bg-primary-50 transition text-sm font-medium">
+            🔷 Grand Total যোগ করুন
+          </button>
+        )}
+
+        <button onClick={addField}
+          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-primary-500 hover:text-primary-500 transition font-medium">
+          + Field যোগ করুন
+        </button>
+      </div>
+
+      {/* Preview Modal */}
+      {showPreview && <FormPreviewModal form={formTitle} fields={fields} onClose={() => setShowPreview(false)} />}
+
+      {/* Template Load Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-lg shadow-2xl">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-bold text-gray-800">📋 Template থেকে শুরু</h2>
+              <button onClick={() => setShowTemplateModal(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
+            </div>
+            <div className="p-6">
+              {templates.length === 0 ? (
+                <EmptyState type="form" title="কোনো template নেই" description='Form তৈরি করে "Template Save" করুন' />
+              ) : (
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {templates.map(t => (
+                    <div key={t.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition">
+                      <div>
+                        <p className="font-medium text-gray-800 text-sm">{t.title}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{t.fields?.length || 0}টি field</p>
+                      </div>
+                      <button onClick={() => handleLoadTemplate(t)}
+                        className="text-sm px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                        Load
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save Template Modal */}
+      {showSaveTemplateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-lg font-bold text-gray-800">💾 Template হিসেবে সেভ</h2>
+            </div>
+            <div className="p-6 space-y-4">
+              <input type="text" value={templateName} onChange={e => setTemplateName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                placeholder="Template এর নাম" autoFocus />
+              <div className="flex gap-3">
+                <button onClick={handleSaveAsTemplate}
+                  className="flex-1 bg-green-600 text-white py-2.5 rounded-lg hover:bg-green-700 transition text-sm font-medium">
+                  💾 সেভ
+                </button>
+                <button onClick={() => setShowSaveTemplateModal(false)}
+                  className="flex-1 bg-gray-100 text-gray-700 py-2.5 rounded-lg hover:bg-gray-200 transition text-sm">
+                  বাতিল
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

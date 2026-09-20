@@ -58,7 +58,6 @@ export function NoteSheetsView({
   const { t, language } = useLanguage();
   const { theme, isCustom } = useTheme();
   const isDark = theme === "dark";
-  const _isLight = theme === "light";
 
   const [showModal, setShowModal] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState(
@@ -70,8 +69,6 @@ export function NoteSheetsView({
   const [selectedNoteSheet, setSelectedNoteSheet] = useState<NoteSheet | null>(
     null,
   );
-  const [_combinedCategoryFilter, _setCombinedCategoryFilter] =
-    useState<string>("all");
 
   const [aiPromptCategory, setAiPromptCategory] = useState(
     categories[0]?.id || "",
@@ -102,7 +99,6 @@ export function NoteSheetsView({
   };
 
   const handleDirectDownloadWord = (ns: NoteSheet) => {
-    const off = offices.find((o) => o.id === ns.officeId);
     const formattedContent =
       ns.content.includes("<p>") ||
       ns.content.includes("<table") ||

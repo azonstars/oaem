@@ -142,8 +142,8 @@ export function MiscellaneousView({
     const institution =
       systemSettings?.institutionName ||
       (language === "bn"
-        ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"
-        : "Government of Bangladesh");
+        ? "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম"
+        : "FlowBoard Enterprise Platform");
     const logo = systemSettings?.logoUrl;
 
     return (
@@ -286,7 +286,7 @@ export function MiscellaneousView({
           fileName: "vehicle_requisition.docx",
           fileType: "word",
           uploadedAt: new Date().toLocaleDateString("bn-BD"),
-          textTemplate: `গণপ্রজাতন্ত্রী বাংলাদেশ সরকার
+          textTemplate: `ফ্লোবোর্ড এন্টারপ্রাইজ ওয়ার্কস্পেস
 বাঘাইছড়ি শাখা কার্যালয়, রাঙ্গামাটি।
 
 স্মারক নম্বর: [স্মারক নম্বর]

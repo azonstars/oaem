@@ -193,8 +193,8 @@ export function Dashboard({
     const institutionName =
       systemSettings?.institutionName ||
       (language === "bn"
-        ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"
-        : "Government of the People's Republic of Bangladesh");
+        ? "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম"
+        : "FlowBoard Enterprise Platform");
 
     return template
       .replace(/{name}/g, userName)
@@ -440,7 +440,7 @@ export function Dashboard({
       )}
 
       {/* 7 KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-3">
         {/* Initial Allocation */}
         <div
           className={`p-4 rounded-2xl shadow-sm border transition-colors ${

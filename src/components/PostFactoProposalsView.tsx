@@ -36,7 +36,7 @@ export function PostFactoProposalsView({
   mode,
   offices,
   categories,
-  financialYears: financialYears,
+  financialYears: _financialYears,
   selectedFY,
 }: PostFactoProposalsViewProps) {
   const { t: _t, language, formatCurrency } = useLanguage();
@@ -478,13 +478,25 @@ export function PostFactoProposalsView({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/50">
-            {filtered.length === 0 ? (
+            {loading ? (
               <tr>
                 <td
                   colSpan={6}
                   className="px-4 py-8 text-center text-slate-500"
                 >
-                  {language === "bn" ? "কোন তথ্য পাওয়া যায়নি" : "No data found"}
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                    <span>{language === "bn" ? "তথ্য লোড হচ্ছে..." : "Loading data..."}</span>
+                  </div>
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={6}
+                  className="px-4 py-8 text-center text-slate-500"
+                >
+                  {error ? error : language === "bn" ? "কোন তথ্য পাওয়া যায়নি" : "No data found"}
                 </td>
               </tr>
             ) : (
@@ -1545,19 +1557,19 @@ export function PostFactoProposalsView({
                 </button>
                 <button
                   type="submit"
-                  disabled={isSanctioning}
-                  className={`px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center ${isSanctioning ? "opacity-70 cursor-not-allowed" : ""}`}
+                  disabled={isSubmitting}
+                  className={`px-6 py-2 bg-emerald-600 text-white rounded-xl font-bold flex items-center justify-center ${isSubmitting ? "opacity-70 cursor-not-allowed" : ""}`}
                 >
-                  {isSanctioning ? (
+                  {isSubmitting ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
                   ) : null}
                   {language === "bn"
-                    ? isSanctioning
-                      ? "অপেক্ষা করুন..."
-                      : "মঞ্জুর করুন"
-                    : isSanctioning
-                      ? "Sanctioning..."
-                      : "Sanction"}
+                    ? isSubmitting
+                      ? "সংরক্ষণ হচ্ছে..."
+                      : "সংরক্ষণ করুন"
+                    : isSubmitting
+                      ? "Saving..."
+                      : "Save Proposal"}
                 </button>
               </div>
             </form>

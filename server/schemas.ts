@@ -7,6 +7,7 @@ export const SettingsSchema = z.object({
   institutionName: z.string().min(1, "প্রতিষ্ঠানের নাম আবশ্যক"),
   webAppName: z.string().min(1, "সফটওয়্যারের নাম আবশ্যক"),
   logoUrl: z.string().optional().default(""),
+  loginLogoUrl: z.string().optional().default(""),
   description: z.string().optional().default(""),
   customThemeColor: z.string().optional(),
   welcomeMessages: z.any().optional(),
@@ -53,6 +54,7 @@ export const UsersSchema = z.object({
   designation: z.string().optional().default(""),
   status: z.enum(["Active", "Inactive"]).default("Active"),
   password: z.string().optional(),
+  toolPermissions: z.record(z.any()).optional().default({}),
 }).strip();
 
 export const CategoriesSchema = z.object({
@@ -213,6 +215,29 @@ export const PostFactoProposalsSchema = z.object({
   sanctionedAt: z.string().optional().default(""),
 }).strip();
 
+export const FlowToolsSchema = z.object({
+  name: z.string().min(1, "টুলের নাম আবশ্যক"),
+  nameBn: z.string().optional().default(""),
+  description: z.string().optional().default(""),
+  descriptionBn: z.string().optional().default(""),
+  category: z.enum(["finance", "documents", "compliance", "analytics", "custom"]).default("custom"),
+  icon: z.string().optional().default("AppWindow"),
+  color: z.string().optional().default("#3b82f6"),
+  gradient: z.string().optional().default("from-blue-600 to-indigo-600"),
+  badge: z.string().optional().default(""),
+  badgeBn: z.string().optional().default(""),
+  version: z.string().optional().default("1.0.0"),
+  isDefault: z.boolean().optional().default(false),
+  status: z.enum(["active", "beta", "maintenance"]).default("active"),
+  allowedRoles: z.array(z.string()).optional().default([]),
+  routeOrTab: z.string().optional().default(""),
+  customUrl: z.string().optional().default(""),
+  statsCountKey: z.string().optional().default(""),
+  tags: z.array(z.string()).optional().default([]),
+  createdBy: z.string().optional().default(""),
+  createdAt: z.string().optional().default(""),
+}).strip();
+
 export const SheetSchemas: Record<string, z.ZodTypeAny> = {
   Settings: SettingsSchema,
   FinancialYears: FinancialYearsSchema,
@@ -225,6 +250,7 @@ export const SheetSchemas: Record<string, z.ZodTypeAny> = {
   NoteSheets: NoteSheetsSchema,
   OpeningBalances: OpeningBalancesSchema,
   PostFactoProposals: PostFactoProposalsSchema,
+  FlowTools: FlowToolsSchema,
 };
 
 export const SheetUpdateSchemas: Record<string, z.ZodTypeAny> = {
@@ -239,6 +265,7 @@ export const SheetUpdateSchemas: Record<string, z.ZodTypeAny> = {
   NoteSheets: NoteSheetsSchema.partial(),
   OpeningBalances: OpeningBalancesSchema.partial(),
   PostFactoProposals: PostFactoProposalsSchema.partial(),
+  FlowTools: FlowToolsSchema.partial(),
 };
 
 export function validateReferentialIntegrity(

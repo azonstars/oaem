@@ -181,7 +181,7 @@ export function OfficeBudgetFloatingModal({
       }
 
       const amt = Number(a.allocatedAmount || 0);
-      if (a.type === "Initial" || (!a.type as any)) {
+      if (!a.type || a.type === "Initial") {
         map[a.categoryId].initial += amt;
       } else if (a.type === "Additional") {
         map[a.categoryId].additional += amt;
@@ -1501,10 +1501,10 @@ export function OfficeBudgetFloatingModal({
           }}
         />
 
-        {/* Government Header */}
+        {/* Institution Header */}
         <div className="text-center mb-6 border-b-2 border-black pb-4">
           <h1 className="text-xl font-extrabold text-black uppercase tracking-wide">
-            {systemSettings?.institutionName || "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"}
+            {systemSettings?.institutionName || "ফ্লোবোর্ড এন্টারপ্রাইজ ওয়ার্কস্পেস"}
           </h1>
           <h2 className="text-base font-bold text-gray-800 mt-1">
             {isAllOffices

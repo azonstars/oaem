@@ -124,7 +124,7 @@ function setupDatabase() {
       name: "Settings",
       headers: ["id", "institutionName", "logoUrl", "webAppName", "description", "customThemeColor", "welcomeMessages", "notices"],
       sample: [
-        ["sys-1", "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার", "", "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম", "Office Allocation & Expense Management System", "#0f172a", "", ""]
+        ["sys-1", "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম", "", "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম", "Office Allocation & Expense Management System", "#0f172a", "", ""]
       ]
     },
     {

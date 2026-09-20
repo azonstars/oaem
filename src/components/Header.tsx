@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from "react";
-import { FinancialYear, User, Office, SystemSettings } from "../types";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { FinancialYear, User, Office, SystemSettings, FlowBoardTool, canAccessTool } from "../types";
 import {
   LogOut,
   Search,
@@ -17,6 +17,13 @@ import {
   ChevronLeft,
   ChevronRight,
   UserPlus,
+  LayoutGrid,
+  Layers,
+  Database,
+  Activity,
+  Cpu,
+  ArrowLeft,
+  Shield,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -33,6 +40,12 @@ interface HeaderProps {
   onLogout: () => void;
   onChangePassword: () => void;
   onOpenProposeUser?: () => void;
+  activeTool?: FlowBoardTool | null;
+  tools?: FlowBoardTool[];
+  onOpenHub?: () => void;
+  onSwitchTool?: (toolId: string) => void;
+  onOpenSettings?: (subTab?: string) => void;
+  onOpenCentralManagement?: () => void;
 }
 
 export function Header({
@@ -47,17 +60,25 @@ export function Header({
   onLogout,
   onChangePassword,
   onOpenProposeUser,
+  activeTool,
+  tools = [],
+  onOpenHub,
+  onSwitchTool,
+  onOpenSettings: _onOpenSettings,
+  onOpenCentralManagement,
 }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
   const { theme, setTheme, isCustom, isDark } = useTheme();
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showToolMenu, setShowToolMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentNoticeIndex, setCurrentNoticeIndex] = useState(0);
   const [isNoticePaused, setIsNoticePaused] = useState(false);
 
   const themeMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const toolMenuRef = useRef<HTMLDivElement>(null);
 
   const currentOffice = offices.find((o) => o.id === currentUser.officeId);
   const parentOffice = currentOffice?.parentOfficeId
@@ -83,10 +104,20 @@ export function Header({
       ) {
         setShowUserMenu(false);
       }
+      if (
+        toolMenuRef.current &&
+        !toolMenuRef.current.contains(event.target as Node)
+      ) {
+        setShowToolMenu(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const accessibleTools = useMemo(() => {
+    return (tools || []).filter((t) => canAccessTool(currentUser, t.id));
+  }, [tools, currentUser]);
 
   const getTimeSlotAndGreeting = (): {
     slot: "morning" | "afternoon" | "evening" | "night";
@@ -137,8 +168,8 @@ export function Header({
     const institutionName =
       systemSettings?.institutionName ||
       (language === "bn"
-        ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"
-        : "Government of the People's Republic of Bangladesh");
+        ? "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম"
+        : "FlowBoard Enterprise Platform");
 
     return template
       .replace(/{name}/g, userName)
@@ -195,13 +226,16 @@ export function Header({
   const toBnDigits = (n: number) =>
     n.toString().replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[parseInt(d)]);
 
+  const isHubMode = !activeTool;
+  const isOfficeAllocationMode = Boolean(activeTool && activeTool.id === "budget-expense");
+
   return (
     <div
       className="sticky top-0 z-30 shrink-0 w-full print:hidden"
       data-no-print="true"
     >
       {/* ========================================================================= */}
-      {/* 1. MAIN PROFESSIONAL GOVERNMENT HEADER                                    */}
+      {/* 1. MAIN PROFESSIONAL HEADER                                               */}
       {/* ========================================================================= */}
       <header
         data-no-print="true"
@@ -213,169 +247,343 @@ export function Header({
               : "bg-white border-slate-200 text-slate-900 shadow-xs"
         }`}
       >
-        {/* Left Section: [Logo + System Identity + Office Identity] */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-          {/* Mobile Menu Toggle */}
-          <button
-            onClick={onToggleMobileMenu}
-            className={`md:hidden p-1.5 rounded-xl border transition shrink-0 ${
-              isCustom
-                ? "border-[#43356e] text-purple-200 hover:bg-[#251d45]"
-                : isDark
-                  ? "border-slate-700 text-slate-300 hover:bg-slate-800"
-                  : "border-slate-200 text-slate-600 hover:bg-slate-100"
-            }`}
-            title="Toggle Menu"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-
-          {/* Logo */}
-          <div className="shrink-0">
-            {systemSettings?.logoUrl ? (
-              <img
-                src={systemSettings.logoUrl}
-                alt="Government Emblem / System Logo"
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain bg-white p-1 border border-slate-200/90 shadow-sm ring-1 ring-slate-900/5"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div
-                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ring-1 ring-emerald-500/20 shrink-0 ${
-                  isCustom
-                    ? "bg-gradient-to-br from-purple-700 to-amber-600"
-                    : "bg-gradient-to-br from-emerald-600 to-emerald-800"
-                }`}
-              >
-                <div className="text-center leading-none">
-                  <span className="text-xs sm:text-xs font-extrabold tracking-wider block">
-                    গণ
-                  </span>
-                  <span className="text-[7px] sm:text-[8px] font-semibold opacity-90 block">
-                    GOB
-                  </span>
+        {/* Left Section */}
+        {isHubMode ? (
+          /* FlowBoard Enterprise Institutional Branding - Technical & Modern */
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className="shrink-0 relative group cursor-pointer" onClick={onOpenHub}>
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 dark:from-slate-900 dark:to-indigo-950 border border-slate-700/60 p-1 flex items-center justify-center shadow-md shadow-indigo-950/20">
+                <div className="w-full h-full rounded-xl bg-gradient-to-br from-emerald-500 via-teal-600 to-indigo-600 flex items-center justify-center text-white shadow-inner">
+                  <Cpu className="w-5 h-5 text-emerald-100 animate-pulse" />
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* System & Office Identity */}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xs sm:text-sm lg:text-base font-bold tracking-tight leading-tight truncate">
-                {systemSettings?.webAppName ||
-                  (language === "bn"
-                    ? "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম"
-                    : "Office Allocation & Expense Management System")}
-              </h1>
+              <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 ring-2 ring-emerald-500/30" />
             </div>
 
-            <p className="text-xs sm:text-xs opacity-70 font-medium leading-tight truncate hidden sm:block">
-              {systemSettings?.institutionName ||
-                (language === "bn"
-                  ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"
-                  : "Government of the People's Republic of Bangladesh")}
-            </p>
-
-            {/* Dynamic Office Identity from existing logged-in user / master */}
-            <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-              <div
-                className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-xs font-semibold border max-w-full truncate ${
-                  isCustom
-                    ? "bg-[#251d45] border-[#4b3b7a] text-amber-300"
-                    : isDark
-                      ? "bg-emerald-950/60 border-emerald-800/70 text-emerald-300"
-                      : "bg-emerald-50/90 border-emerald-200 text-emerald-800"
-                }`}
-              >
-                <Building2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 opacity-80" />
-                <span className="truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
-                  {currentOffice?.name ||
-                    (language === "bn"
-                      ? "প্রধান কার্যালয়, ঢাকা"
-                      : "Head Office, Dhaka")}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base sm:text-lg font-black tracking-tight bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 dark:from-emerald-400 dark:via-teal-300 dark:to-indigo-400 bg-clip-text text-transparent">
+                  FlowBoard
                 </span>
+                <span className="text-xs sm:text-sm font-bold tracking-tight text-slate-800 dark:text-slate-200">
+                  {language === "bn" ? "এন্টারপ্রাইজ প্ল্যাটফর্ম" : "Enterprise Platform"}
+                </span>
+
+                <div className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold font-mono tracking-wider bg-emerald-500/10 border border-emerald-500/25 text-emerald-700 dark:text-emerald-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>ONLINE • v3.8.5</span>
+                </div>
+
+                {currentUser?.role === "Super Admin" && (
+                  <div className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-sky-700 dark:text-sky-300 font-mono">
+                    <Database className="w-2.5 h-2.5 text-sky-500" />
+                    <span>SQLite Central Sync</span>
+                  </div>
+                )}
               </div>
 
-              {parentOffice && (
-                <span className="text-xs sm:text-xs opacity-50 hidden xl:inline truncate max-w-[120px]">
-                  ({parentOffice?.name || ""})
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate hidden sm:block mt-0.5">
+                {language === "bn"
+                  ? "সেন্ট্রাল এন্টারপ্রাইজ অপারেটিং প্ল্যাটফর্ম ও ডিস্ট্রিবিউটেড সিস্টেমস হাব"
+                  : "Central Enterprise Cloud Architecture & Distributed Modular Workspaces"}
+              </p>
+            </div>
+          </div>
+        ) : isOfficeAllocationMode ? (
+          /* Office Allocation & Expense Management Suite Branding */
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={onToggleMobileMenu}
+              className={`md:hidden p-1.5 rounded-xl border transition shrink-0 ${
+                isCustom
+                  ? "border-[#43356e] text-purple-200 hover:bg-[#251d45]"
+                  : isDark
+                    ? "border-slate-700 text-slate-300 hover:bg-slate-800"
+                    : "border-slate-200 text-slate-600 hover:bg-slate-100"
+              }`}
+              title="Toggle Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Back to Hub shortcut button */}
+            {onOpenHub && (
+              <button
+                onClick={onOpenHub}
+                title="Return to FlowBoard Enterprise Hub"
+                className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300"
+              >
+                <ArrowLeft className="w-3.5 h-3.5 text-emerald-500" />
+                <span>FlowBoard Hub</span>
+              </button>
+            )}
+
+            {/* Logo */}
+            <div className="shrink-0">
+              {systemSettings?.logoUrl ? (
+                <img
+                  src={systemSettings.logoUrl}
+                  alt="Emblem / System Logo"
+                  className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl object-contain bg-white p-1 border border-slate-200/90 shadow-sm ring-1 ring-slate-900/5"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ring-1 ring-emerald-500/20 shrink-0 ${
+                    isCustom
+                      ? "bg-gradient-to-br from-purple-700 to-amber-600"
+                      : "bg-gradient-to-br from-emerald-600 to-emerald-800"
+                  }`}
+                >
+                  <div className="text-center leading-none">
+                    <span className="text-xs sm:text-xs font-extrabold tracking-wider block">
+                      {language === "bn" ? "ফ্লো" : "FB"}
+                    </span>
+                    <span className="text-[7px] sm:text-[8px] font-semibold opacity-90 block">
+                      FLOW
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* System & Office Identity */}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h1 className="text-xs sm:text-sm lg:text-base font-bold tracking-tight leading-tight truncate">
+                  {systemSettings?.webAppName ||
+                    (language === "bn"
+                      ? "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম"
+                      : "Office Allocation & Expense Management System")}
+                </h1>
+              </div>
+
+              <p className="text-xs sm:text-xs opacity-70 font-medium leading-tight truncate hidden sm:block">
+                {systemSettings?.institutionName ||
+                  (language === "bn"
+                    ? "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম"
+                    : "FlowBoard Enterprise Platform")}
+              </p>
+
+              {/* Dynamic Office Identity from existing logged-in user / master */}
+              <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+                <div
+                  className={`inline-flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-md text-xs sm:text-xs font-semibold border max-w-full truncate ${
+                    isCustom
+                      ? "bg-[#251d45] border-[#4b3b7a] text-amber-300"
+                      : isDark
+                        ? "bg-emerald-950/60 border-emerald-800/70 text-emerald-300"
+                        : "bg-emerald-50/90 border-emerald-200 text-emerald-800"
+                  }`}
+                >
+                  <Building2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 opacity-80" />
+                  <span className="truncate max-w-[120px] sm:max-w-[180px] md:max-w-[240px]">
+                    {currentOffice?.name ||
+                      (language === "bn"
+                        ? "প্রধান কার্যালয়, ঢাকা"
+                        : "Head Office, Dhaka")}
+                  </span>
+                </div>
+
+                {parentOffice && (
+                  <span className="text-xs sm:text-xs opacity-50 hidden xl:inline truncate max-w-[120px]">
+                    ({parentOffice?.name || ""})
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* Independent Tool Workspace Header */
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            {onOpenHub && (
+              <button
+                onClick={onOpenHub}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition shrink-0 bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300"
+              >
+                <ArrowLeft className="w-4 h-4 text-emerald-500" />
+                <span className="hidden sm:inline">FlowBoard Hub</span>
+              </button>
+            )}
+
+            <div className="min-w-0 flex-1 flex items-center gap-2">
+              <span className="text-sm sm:text-base font-bold truncate">
+                {language === "bn" && activeTool?.nameBn ? activeTool.nameBn : activeTool?.name}
+              </span>
+              {activeTool?.badge && (
+                <span className="hidden sm:inline-block px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                  {language === "bn" && activeTool.badgeBn ? activeTool.badgeBn : activeTool.badge}
                 </span>
               )}
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Right Section: [Search] → [Fiscal Year] → [Language] → [Theme] → [User Menu] */}
+        {/* Right Section */}
         <div className="flex items-center gap-1.5 sm:gap-2 md:gap-2.5 shrink-0 ml-auto flex-nowrap">
-          {/* 2. Compact Modern Search Field */}
-          <div className="relative hidden xl:block">
-            <Search
-              className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 opacity-50`}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={
-                t.searchPlaceholder ||
-                (language === "bn" ? "অনুসন্ধান করুন..." : "Search anything...")
-              }
-              className={`w-32 2xl:w-44 text-xs rounded-xl pl-8.5 pr-3 py-1.5 focus:outline-none transition-all ${
-                isCustom
-                  ? "bg-[#231a40] border border-[#43356e] text-purple-100 placeholder-purple-300/40 focus:border-amber-400 focus:w-48"
-                  : isDark
-                    ? "bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 focus:border-emerald-500 focus:w-48"
-                    : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:w-48"
-              }`}
-            />
-          </div>
-
-          {/* 3. Professional Fiscal Year Selector */}
-          <div
-            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border text-xs font-semibold shadow-2xs shrink-0 ${
-              currentFY?.isClosed
-                ? "bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300"
-                : isCustom
-                  ? "bg-[#231a40] border-[#43356e] text-amber-200"
-                  : isDark
-                    ? "bg-slate-800/90 border-slate-700 text-slate-200"
-                    : "bg-slate-50 border-slate-200 text-slate-700"
-            }`}
-          >
-            <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="text-xs opacity-70 hidden xl:inline whitespace-nowrap">
-              {language === "bn" ? "অর্থবছর:" : "FY:"}
-            </span>
-            <select
-              value={selectedFY}
-              onChange={(e) => setSelectedFY(e.target.value)}
-              className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer pr-1 truncate max-w-[80px] sm:max-w-[110px] md:max-w-[130px]"
-            >
-              {financialYears.map((fy) => (
-                <option
-                  key={fy.id}
-                  value={fy.id}
-                  className="text-slate-900 bg-white"
-                >
-                  {fy.name}{" "}
-                  {fy.isClosed
-                    ? `(${language === "bn" ? "🔒 ক্লোজড" : "🔒 Closed"})`
-                    : fy.isActive
-                      ? `(${language === "bn" ? "চলতি" : "Active"})`
-                      : ""}
-                </option>
-              ))}
-            </select>
-            {currentFY?.isClosed && (
-              <span className="px-1.5 py-0.5 rounded text-xs sm:text-xs font-bold bg-rose-600 text-white flex items-center gap-0.5 sm:gap-1 shrink-0">
-                <Lock className="w-2.5 h-2.5" />
-                <span className="hidden sm:inline">
-                  {language === "bn" ? "ক্লোজড" : "Closed"}
-                </span>
+          {/* If on FlowBoard Hub, show technical telemetry status badge */}
+          {isHubMode && (
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 text-xs font-mono">
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                <Activity className="w-3.5 h-3.5 text-emerald-500" />
+                <span>{accessibleTools.length} Modules Active</span>
               </span>
-            )}
-          </div>
+              <span className="text-slate-300 dark:text-slate-700">|</span>
+              <span className="text-slate-500 dark:text-slate-400 text-[11px]">Sync: Instant</span>
+            </div>
+          )}
+
+          {/* FlowBoard Hub Launcher Button (when inside a tool) */}
+          {!isHubMode && onOpenHub && (
+            <button
+              id="header-flowboard-hub-btn"
+              onClick={onOpenHub}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition shadow-xs ${
+                isCustom
+                  ? "bg-[#251d45] border-[#4b3b7a] text-purple-200 hover:bg-[#34285e]"
+                  : isDark
+                    ? "bg-slate-800/90 border-slate-700 text-slate-200 hover:bg-slate-700 hover:text-white"
+                    : "bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200 hover:text-slate-900"
+              }`}
+              title="FlowBoard Workspace Hub"
+            >
+              <LayoutGrid className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden sm:inline">FlowBoard</span>
+            </button>
+          )}
+
+          {/* Active Tool Switcher Dropdown */}
+          {activeTool && accessibleTools.length > 0 && onSwitchTool && (
+            <div className="relative" ref={toolMenuRef}>
+              <button
+                id="header-tool-switcher-btn"
+                onClick={() => setShowToolMenu(!showToolMenu)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition ${
+                  isCustom
+                    ? "bg-[#231a40] border-[#43356e] text-amber-200"
+                    : isDark
+                      ? "bg-slate-800/90 border-slate-700 text-slate-200"
+                      : "bg-slate-50 border-slate-200 text-slate-700"
+                }`}
+              >
+                <Layers className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+                <span className="max-w-[90px] sm:max-w-[140px] truncate hidden md:inline">
+                  {language === "bn" && activeTool.nameBn ? activeTool.nameBn : activeTool.name}
+                </span>
+                <ChevronDown className="w-3 h-3 opacity-60" />
+              </button>
+
+              {showToolMenu && (
+                <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl p-2 z-50 animate-fadeIn">
+                  <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 mb-1">
+                    {language === "bn" ? "টুলস ও ওয়ার্কস্পেসসমূহ" : "Switch Active Tool"}
+                  </div>
+                  <div className="space-y-1 max-h-60 overflow-y-auto">
+                    {accessibleTools.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => {
+                          onSwitchTool(t.id);
+                          setShowToolMenu(false);
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl text-xs text-left flex items-center justify-between transition ${
+                          t.id === activeTool.id
+                            ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold"
+                            : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span
+                            className={`w-2 h-2 rounded-full ${
+                              t.id === activeTool.id ? "bg-emerald-500" : "bg-slate-400"
+                            }`}
+                          />
+                          <span className="truncate">{language === "bn" && t.nameBn ? t.nameBn : t.name}</span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 uppercase shrink-0">
+                          {t.category}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. Compact Modern Search Field - ONLY in Office Allocation Suite */}
+          {isOfficeAllocationMode && (
+            <div className="relative hidden xl:block">
+              <Search
+                className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 opacity-50`}
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={
+                  t.searchPlaceholder ||
+                  (language === "bn" ? "অনুসন্ধান করুন..." : "Search anything...")
+                }
+                className={`w-32 2xl:w-44 text-xs rounded-xl pl-8.5 pr-3 py-1.5 focus:outline-none transition-all ${
+                  isCustom
+                    ? "bg-[#231a40] border border-[#43356e] text-purple-100 placeholder-purple-300/40 focus:border-amber-400 focus:w-48"
+                    : isDark
+                      ? "bg-slate-800/90 border border-slate-700 text-white placeholder-slate-400 focus:border-emerald-500 focus:w-48"
+                      : "bg-slate-50 border border-slate-200 text-slate-800 placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:w-48"
+                }`}
+              />
+            </div>
+          )}
+
+          {/* 3. Professional Fiscal Year Selector - ONLY in Office Allocation Suite */}
+          {isOfficeAllocationMode && (
+            <div
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl border text-xs font-semibold shadow-2xs shrink-0 ${
+                currentFY?.isClosed
+                  ? "bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300"
+                  : isCustom
+                    ? "bg-[#231a40] border-[#43356e] text-amber-200"
+                    : isDark
+                      ? "bg-slate-800/90 border-slate-700 text-slate-200"
+                      : "bg-slate-50 border-slate-200 text-slate-700"
+              }`}
+            >
+              <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              <span className="text-xs opacity-70 hidden xl:inline whitespace-nowrap">
+                {language === "bn" ? "অর্থবছর:" : "FY:"}
+              </span>
+              <select
+                value={selectedFY}
+                onChange={(e) => setSelectedFY(e.target.value)}
+                className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer pr-1 truncate max-w-[80px] sm:max-w-[110px] md:max-w-[130px]"
+              >
+                {financialYears.map((fy) => (
+                  <option
+                    key={fy.id}
+                    value={fy.id}
+                    className="text-slate-900 bg-white"
+                  >
+                    {fy.name}{" "}
+                    {fy.isClosed
+                      ? `(${language === "bn" ? "🔒 ক্লোজড" : "🔒 Closed"})`
+                      : fy.isActive
+                        ? `(${language === "bn" ? "চলতি" : "Active"})`
+                        : ""}
+                  </option>
+                ))}
+              </select>
+              {currentFY?.isClosed && (
+                <span className="px-1.5 py-0.5 rounded text-xs sm:text-xs font-bold bg-rose-600 text-white flex items-center gap-0.5 sm:gap-1 shrink-0">
+                  <Lock className="w-2.5 h-2.5" />
+                  <span className="hidden sm:inline">
+                    {language === "bn" ? "ক্লোজড" : "Closed"}
+                  </span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* 4. Language Switcher (বাংলা | English) */}
           <button
@@ -396,6 +604,25 @@ export function Header({
               {language === "bn" ? "English" : "বাংলা"}
             </span>
           </button>
+
+          {/* Central Management Dedicated Button (Admin & Super Admin only) */}
+          {onOpenCentralManagement &&
+            [
+              "Super Admin",
+              "Admin",
+              "Head Office Admin",
+              "HeadOfficeAdmin",
+            ].includes(currentUser?.role || "") && (
+              <button
+                id="header-central-mgmt-btn"
+                onClick={onOpenCentralManagement}
+                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
+                title={language === "bn" ? "ফ্লোবোর্ড সার্বজনীন সেন্ট্রাল ম্যানেজমেন্ট" : "FlowBoard Central Management"}
+              >
+                <Shield className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="hidden xl:inline">{language === "bn" ? "সেন্ট্রাল ম্যানেজমেন্ট" : "Central Management"}</span>
+              </button>
+            )}
 
           {/* 5. Theme Selector / Toggle */}
           <div className="relative shrink-0" ref={themeMenuRef}>
@@ -532,6 +759,31 @@ export function Header({
 
                 {/* Dropdown Options */}
                 <div className="py-1">
+                  {/* Central Management shortcut for Admin and Super Admin only */}
+                  {onOpenCentralManagement &&
+                    [
+                      "Super Admin",
+                      "Admin",
+                      "Head Office Admin",
+                      "HeadOfficeAdmin",
+                    ].includes(currentUser?.role || "") && (
+                      <button
+                        id="header-user-menu-central-mgmt-btn"
+                        onClick={() => {
+                          onOpenCentralManagement();
+                          setShowUserMenu(false);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-left hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition text-indigo-700 dark:text-indigo-300 font-semibold"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-indigo-500" />
+                        <span>
+                          {language === "bn"
+                            ? "🛡️ সেন্ট্রাল ম্যানেজমেন্ট"
+                            : "🛡️ Central Management"}
+                        </span>
+                      </button>
+                    )}
+
                   {/* Propose Colleague ID Option */}
                   {onOpenProposeUser && (
                     <button
@@ -603,9 +855,9 @@ export function Header({
       </header>
 
       {/* ========================================================================= */}
-      {/* 2. DYNAMIC ROTATING NOTICE & ANNOUNCEMENT BAR                             */}
+      {/* 2. DYNAMIC ROTATING NOTICE & ANNOUNCEMENT BAR (Office Allocation Suite)   */}
       {/* ========================================================================= */}
-      {systemSettings?.showNoticeBar !== false && (
+      {isOfficeAllocationMode && systemSettings?.showNoticeBar !== false && (
         <div
           onMouseEnter={() => setIsNoticePaused(true)}
           onMouseLeave={() => setIsNoticePaused(false)}

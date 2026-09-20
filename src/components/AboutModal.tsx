@@ -71,7 +71,7 @@ export function AboutModal({
                   : "bg-gradient-to-tr from-emerald-600 to-teal-700"
               }`}
             >
-              {language === "bn" ? "বাং" : "GOB"}
+              {language === "bn" ? "ফ্লো" : "FB"}
             </div>
           )}
           <div className="min-w-0 flex-1">
@@ -86,8 +86,8 @@ export function AboutModal({
             >
               {systemSettings?.institutionName ||
                 (language === "bn"
-                  ? "গণপ্রজাতন্ত্রী বাংলাদেশ সরকার"
-                  : "Government of Bangladesh")}
+                  ? "ফ্লোবোর্ড এন্টারপ্রাইজ ওয়ার্কস্পেস"
+                  : "FlowBoard Enterprise Workspace")}
             </p>
           </div>
         </div>

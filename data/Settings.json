@@ -3,7 +3,136 @@
     "id": "sys-1",
     "institutionName": "বাংলাদেশ কৃষি ব্যাংক / Bangladesh Krishi Bank",
     "logoUrl": "",
-    "webAppName": "Office Allocation & Expense Management System",
-    "description": "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"
+    "webAppName": "FlowBoard Enterprise Workspace Management Suite",
+    "description": "স্বতন্ত্র টুলস ও মডুলার প্রজেক্ট ম্যানেজমেন্ট ওয়ার্কস্পেস",
+    "notices": [],
+    "roleToolAccess": {
+      "Super Admin": {
+        "budget-expense": "full",
+        "stockpro": "full",
+        "conference-note": "full",
+        "multi-item-bill": "full",
+        "stationery-bill": "full",
+        "miscellaneous": "full",
+        "office-monitoring": "full"
+      },
+      "Admin": {
+        "budget-expense": "full",
+        "stockpro": "full",
+        "conference-note": "full",
+        "multi-item-bill": "full",
+        "stationery-bill": "full",
+        "miscellaneous": "full",
+        "office-monitoring": "full"
+      },
+      "Head Office Admin": {
+        "budget-expense": "full",
+        "stockpro": "full",
+        "conference-note": "full",
+        "multi-item-bill": "full",
+        "stationery-bill": "full",
+        "miscellaneous": "full",
+        "office-monitoring": "full"
+      },
+      "Moderator": {
+        "budget-expense": "full",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Divisional Admin": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "full"
+      },
+      "Divisional Moderator": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Regional Admin": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "full"
+      },
+      "Regional Moderator": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Branch Admin": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Branch User": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Head Office User": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "operate",
+        "multi-item-bill": "operate",
+        "stationery-bill": "operate",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Sub-office User": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "none",
+        "multi-item-bill": "none",
+        "stationery-bill": "none",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "User": {
+        "budget-expense": "operate",
+        "stockpro": "operate",
+        "conference-note": "none",
+        "multi-item-bill": "none",
+        "stationery-bill": "none",
+        "miscellaneous": "operate",
+        "office-monitoring": "operate"
+      },
+      "Report Viewer": {
+        "budget-expense": "view",
+        "stockpro": "none",
+        "conference-note": "none",
+        "multi-item-bill": "none",
+        "stationery-bill": "none",
+        "miscellaneous": "view",
+        "office-monitoring": "view"
+      }
+    }
   }
 ]

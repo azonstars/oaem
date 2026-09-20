@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Calendar,
   Building2,
-  Users,
   Database,
   PlayCircle,
   Code,
@@ -34,6 +33,7 @@ interface SidebarProps {
   systemSettings: SystemSettings | null;
   isMobileMenuOpen: boolean;
   setIsMobileMenuOpen: (o: boolean) => void;
+  onOpenHub?: () => void;
 }
 
 export function Sidebar({
@@ -43,6 +43,7 @@ export function Sidebar({
   systemSettings,
   isMobileMenuOpen,
   setIsMobileMenuOpen,
+  onOpenHub,
 }: SidebarProps) {
   const { t, language } = useLanguage();
   const { theme, isCustom } = useTheme();
@@ -52,10 +53,6 @@ export function Sidebar({
   const isSuperAdmin = currentUser?.role === "Super Admin";
   const isSuperAdminOrAdmin =
     currentUser?.role === "Super Admin" || currentUser?.role === "Admin";
-  const _isAdmin =
-    currentUser?.role === "Admin" ||
-    currentUser?.role === "Super Admin" ||
-    currentUser?.role === "Head Office Admin";
 
   const isDark = theme === "dark";
   const isLight = theme === "light";
@@ -143,12 +140,6 @@ export function Sidebar({
       superAdminOnly: true,
     },
     { id: "reports", label: t.menuReports, icon: BarChart3, adminOnly: false },
-    {
-      id: "miscellaneous",
-      label: language === "bn" ? "বিবিধ" : "Miscellaneous",
-      icon: Layers,
-      adminOnly: false,
-    },
     { id: "auditlogs", label: t.menuAuditLogs, icon: History, adminOnly: true },
   ];
 
@@ -184,11 +175,6 @@ export function Sidebar({
       id: "categories",
       label: language === "bn" ? "ব্যয়ের খাতসমূহ" : "Categories",
       icon: Folder,
-    },
-    {
-      id: "users",
-      label: language === "bn" ? "ব্যবহারকারী তালিকা" : "Users",
-      icon: Users,
     },
     ...(isSuperAdminOrAdmin
       ? [
@@ -338,6 +324,34 @@ export function Sidebar({
 
         {/* Navigation Menu */}
         <div className="flex-1 overflow-y-auto py-3 px-2.5 space-y-1">
+          {/* FlowBoard Main Hub launcher */}
+          {onOpenHub && (
+            <div className="mb-2 pb-2 border-b border-slate-200 dark:border-slate-800">
+              <button
+                id="sidebar-flowboard-hub-btn"
+                onClick={onOpenHub}
+                title={isCollapsed ? "FlowBoard Hub" : undefined}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  isCustom
+                    ? "bg-[#251d45] text-amber-300 hover:bg-[#34285e]"
+                    : isDark
+                      ? "bg-slate-800/80 text-emerald-400 hover:bg-slate-800 hover:text-emerald-300"
+                      : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                } ${isCollapsed ? "justify-center" : ""}`}
+              >
+                <Layers className="w-4 h-4 shrink-0 text-emerald-500" />
+                {!isCollapsed && (
+                  <div className="flex items-center justify-between flex-1">
+                    <span>FlowBoard Hub</span>
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-300 font-bold">
+                      Tools
+                    </span>
+                  </div>
+                )}
+              </button>
+            </div>
+          )}
+
           {visibleMenu.map((item) => {
             if (item.id === "auditlogs" && canAccessAdminMenus) {
               return (

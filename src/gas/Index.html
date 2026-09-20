@@ -52,7 +52,7 @@
         <div id="loginLogoBox" class="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-sky-600 text-white flex items-center justify-center mx-auto mb-4 shadow-lg border border-emerald-400/30 overflow-hidden">
           <i data-lucide="shield-check" class="w-8 h-8"></i>
         </div>
-        <h1 id="loginInstName" class="text-xl font-bold tracking-tight text-white">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h1>
+        <h1 id="loginInstName" class="text-xl font-bold tracking-tight text-white">ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম</h1>
         <p id="loginAppName" class="text-xs text-sky-400 font-medium mt-1">অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম</p>
         <div class="mt-3 inline-block bg-slate-800 text-slate-300 text-xs px-3 py-1 rounded-full border border-slate-700 font-mono">
           🔐 নিরাপদ অভ্যন্তরীণ লগইন পোর্টাল
@@ -832,7 +832,7 @@
             <div id="gasNsSpacerTop" style="display: none; flex: 1;"></div>
             <div id="gasNsInnerContainer" class="w-full">
               <div class="text-center pb-2 mb-3 border-b-2 border-slate-900">
-                <h4 class="font-bold text-xs">গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h4>
+                <h4 class="font-bold text-xs">ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম</h4>
                 <h5 class="text-xs text-slate-700">অফিস বরাদ্দ ও ব্যয় মঞ্জুরি নোট শিট</h5>
               </div>
               <div id="modalNsContent" class="leading-relaxed text-justify whitespace-pre-wrap"></div>
@@ -1969,7 +1969,7 @@
       var printWin = window.open("", "_blank");
       if (!printWin) return;
       var contentHtml = currentActiveNs.content.replace(/\n/g, "<br/>");
-      printWin.document.write("<!DOCTYPE html><html><head><title>" + (currentActiveNs.title || "Note Sheet") + "</title><style>@page{size:" + pageSize + " " + orientation + ";margin:0;}body{margin:0;padding:" + topMargin + "mm 20mm " + bottomMargin + "mm 20mm;font-family:serif;color:#0f172a;line-height:1.8;}.header{text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px;}.content{text-align:justify;}.sig{margin-top:50px;display:flex;justify-content:space-between;}</style></head><body><div class=\"header\"><h3>গণপ্রজাতন্ত্রী বাংলাদেশ সরকার</h3><h4>অফিস বরাদ্দ ও ব্যয় মঞ্জুরি নোট শিট</h4></div><div class=\"content\">" + contentHtml + "</div><div class=\"sig\"><div>প্রস্তুতকারী কর্মকর্তা</div><div>অনুমোদনকারী</div></div><script>window.onload=function(){window.print();};<\/script></body></html>");
+      printWin.document.write("<!DOCTYPE html><html><head><title>" + (currentActiveNs.title || "Note Sheet") + "</title><style>@page{size:" + pageSize + " " + orientation + ";margin:0;}body{margin:0;padding:" + topMargin + "mm 20mm " + bottomMargin + "mm 20mm;font-family:serif;color:#0f172a;line-height:1.8;}.header{text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:16px;}.content{text-align:justify;}.sig{margin-top:50px;display:flex;justify-content:space-between;}</style></head><body><div class=\"header\"><h3>ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম</h3><h4>অফিস বরাদ্দ ও ব্যয় মঞ্জুরি নোট শিট</h4></div><div class=\"content\">" + contentHtml + "</div><div class=\"sig\"><div>প্রস্তুতকারী কর্মকর্তা</div><div>অনুমোদনকারী</div></div><script>window.onload=function(){window.print();};<\/script></body></html>");
       printWin.document.close();
     }
 

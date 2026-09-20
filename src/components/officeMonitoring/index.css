@@ -1,0 +1,235 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary:        #cc785c;
+  --primary-dark:   #b5633f;
+  --primary-light:  #f5e6e0;
+  --primary-50:     #fdf5f2;
+  --primary-100:    #f5e6e0;
+  --primary-200:    #eac9bc;
+  --primary-300:    #dba891;
+  --primary-400:    #cc785c;
+  --primary-500:    #b5633f;
+  --primary-600:    #cc785c;
+  --primary-700:    #9e4f2e;
+  --primary-800:    #7d3b21;
+  --primary-900:    #5c2914;
+  --sidebar-bg:           #f9f9f7;
+  --sidebar-border:       rgba(0,0,0,0.08);
+  --sidebar-text:         rgba(26,26,26,0.75);
+  --sidebar-text-solid:   #1a1a1a;
+  --sidebar-hover-bg:     rgba(0,0,0,0.05);
+  --sidebar-active-bg:    rgba(0,0,0,0.08);
+  --sidebar-border-color: rgba(0,0,0,0.08);
+  --bg-primary:   #ffffff;
+  --bg-secondary: #f9f9f7;
+  --bg-card:      #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #6b6b6b;
+  --border:       rgba(0,0,0,0.1);
+  --subtotal-bg: #f0fdf4;
+  --subtotal-text: #15803d;
+  --subtotal-border: #bbf7d0;
+  --grandtotal-bg: #eff6ff;
+  --grandtotal-text: #1e40af;
+  --grandtotal-border: #bfdbfe;
+}
+
+.dark {
+  --sidebar-bg:           #1f1f1e;
+  --sidebar-border:       rgba(255,255,255,0.08);
+  --sidebar-text:         rgba(236,236,236,0.75);
+  --sidebar-text-solid:   #ececec;
+  --sidebar-hover-bg:     rgba(255,255,255,0.06);
+  --sidebar-active-bg:    rgba(255,255,255,0.1);
+  --sidebar-border-color: rgba(255,255,255,0.08);
+  --bg-primary:   #1f1f1e;
+  --bg-secondary: #2a2a28;
+  --bg-card:      #2a2a28;
+  --text-primary: #ececec;
+  --text-secondary: #a0a0a0;
+  --border:       rgba(255,255,255,0.1);
+  --subtotal-bg: rgba(34,197,94,0.12);
+  --subtotal-text: #86efac;
+  --subtotal-border: rgba(34,197,94,0.3);
+  --grandtotal-bg: rgba(59,130,246,0.12);
+  --grandtotal-text: #93c5fd;
+  --grandtotal-border: rgba(59,130,246,0.3);
+  --primary-50:  rgba(181,99,63,0.10);
+  --primary-100: rgba(181,99,63,0.16);
+  --primary-200: rgba(181,99,63,0.25);
+}
+
+.bg-theme-primary   { background-color: var(--bg-primary); }
+.bg-theme-secondary { background-color: var(--bg-secondary); }
+.bg-theme-card      { background-color: var(--bg-card); }
+.text-theme-primary { color: var(--text-primary); }
+.text-theme-secondary { color: var(--text-secondary); }
+.border-theme       { border-color: var(--border); }
+
+.sidebar-dynamic {
+  background-color: var(--sidebar-bg) !important;
+  color: var(--sidebar-text-solid, #1a1a1a) !important;
+}
+.sidebar-border-dynamic {
+  border-color: var(--sidebar-border-color, rgba(0,0,0,0.08)) !important;
+}
+
+/* ── Dark mode — backgrounds ─────────────────────────────── */
+.dark .bg-white     { background-color: var(--bg-card, #2a2a28) !important; }
+.dark .bg-gray-50   { background-color: var(--bg-secondary, #2a2a28) !important; }
+.dark .bg-gray-100  { background-color: #374151 !important; }
+.dark .bg-gray-200  { background-color: #374151 !important; }
+
+/* ── Dark mode — text ────────────────────────────────────── */
+.dark,
+.dark * {
+  --tw-text-opacity: 1;
+}
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark h1,.dark h2,.dark h3,.dark h4,.dark h5 { color: var(--text-primary, #ececec) !important; }
+.dark .text-gray-700 { color: #e5e7eb !important; }
+.dark .text-gray-600 { color: #d1d5db !important; }
+.dark .text-gray-500,
+.dark .text-gray-400 { color: #9ca3af !important; }
+
+/* ── Dark mode — borders ─────────────────────────────────── */
+.dark .border-gray-200,
+.dark .border-gray-300 { border-color: var(--border, rgba(255,255,255,0.1)) !important; }
+.dark .border-gray-100 { border-color: #374151 !important; }
+.dark .divide-gray-100 > * + * { border-color: #374151 !important; }
+.dark .divide-gray-200 > * + * { border-color: var(--border) !important; }
+
+/* ── Dark mode — inputs ──────────────────────────────────── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+.dark select,
+.dark textarea {
+  background-color: var(--bg-secondary, #374151) !important;
+  color: var(--text-primary, #f9fafb) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #6b7280 !important; }
+
+/* ── Dark mode — tables ──────────────────────────────────── */
+.dark table { background-color: var(--bg-card, #2a2a28) !important; color: var(--text-primary, #ececec) !important; }
+.dark thead,
+.dark thead tr,
+.dark thead th { background-color: var(--bg-secondary, #1f2937) !important; color: var(--text-secondary, #9ca3af) !important; }
+.dark tbody tr:hover { background-color: rgba(255,255,255,0.04) !important; }
+.dark td { color: var(--text-primary, #ececec) !important; border-color: var(--border, rgba(255,255,255,0.08)) !important; }
+
+/* ── Dark mode — shadows ─────────────────────────────────── */
+.dark .shadow-sm,
+.dark .shadow { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+
+/* ── Dark mode — hover backgrounds ──────────────────────── */
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.05) !important; }
+
+/* ── Dark mode — specific components ────────────────────── */
+
+/* ── Form submit page — primary-50/100 dark mode ──────────── */
+.dark .bg-primary-50   { background-color: rgba(181,99,63,0.10) !important; }
+.dark .bg-primary-100  { background-color: rgba(181,99,63,0.16) !important; }
+.dark .border-primary-100 { border-color: rgba(181,99,63,0.25) !important; }
+.dark .border-primary-200 { border-color: rgba(181,99,63,0.35) !important; }
+.dark .text-primary-700 { color: var(--primary-400, #d4855a) !important; }
+.dark .bg-blue-50   { background-color: rgba(59,130,246,0.15) !important; }
+.dark .bg-green-50  { background-color: rgba(34,197,94,0.12) !important; }
+.dark .bg-red-50    { background-color: rgba(239,68,68,0.12) !important; }
+.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.12) !important; }
+.dark .bg-purple-50 { background-color: rgba(168,85,247,0.12) !important; }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,0.12) !important; }
+
+.sidebar-normal-item { color: var(--sidebar-text) !important; transition: background-color 0.15s, color 0.15s; }
+.sidebar-normal-item:hover { background-color: var(--sidebar-hover-bg) !important; color: var(--sidebar-text-solid) !important; }
+.sidebar-active-item { background-color: var(--sidebar-active-bg) !important; color: var(--sidebar-text-solid) !important; }
+
+
+/* ── Chat page dark mode ─────────────────────────────────── */
+.dark .chat-message-bubble { background-color: var(--bg-secondary) !important; }
+.dark [class*="bg-white"]  { background-color: var(--bg-card) !important; }
+.dark [class*="bg-gray-50"]{ background-color: var(--bg-secondary) !important; }
+
+/* ── Report page dark mode ───────────────────────────────── */
+.dark .report-table th { background-color: var(--bg-secondary) !important; color: var(--text-secondary) !important; }
+.dark .report-table td { background-color: var(--bg-card) !important; color: var(--text-primary) !important; }
+
+/* ── Comprehensive text colors ───────────────────────────── */
+.dark p, .dark span, .dark label, .dark td, .dark th,
+.dark li, .dark a:not([class*="text-"]) {
+  color: var(--text-primary, #ececec);
+}
+.dark .text-gray-900 { color: var(--text-primary) !important; }
+.dark .text-gray-800 { color: var(--text-primary) !important; }
+.dark .text-gray-700 { color: #e5e7eb !important; }
+.dark .text-gray-600 { color: #d1d5db !important; }
+.dark .text-gray-500 { color: #9ca3af !important; }
+.dark .text-gray-400 { color: #6b7280 !important; }
+
+/* ── Comprehensive borders ───────────────────────────────── */
+.dark .border-gray-200 { border-color: var(--border) !important; }
+.dark .border-gray-300 { border-color: var(--border) !important; }
+.dark .border-gray-100 { border-color: rgba(255,255,255,0.06) !important; }
+
+/* ── Inputs comprehensive ────────────────────────────────── */
+.dark input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]),
+.dark select,
+.dark textarea {
+  background-color: var(--bg-secondary, #374151) !important;
+  color: var(--text-primary, #f9fafb) !important;
+  border-color: rgba(255,255,255,0.15) !important;
+}
+
+/* ── Tables comprehensive ────────────────────────────────── */
+.dark table  { background-color: var(--bg-card) !important; }
+.dark thead  { background-color: var(--bg-secondary) !important; }
+.dark thead th { color: var(--text-secondary) !important; }
+.dark tbody td { color: var(--text-primary) !important; }
+.dark tbody tr { border-color: var(--border) !important; }
+.dark tbody tr:hover { background-color: rgba(255,255,255,0.04) !important; }
+
+/* ── Cards & modals ──────────────────────────────────────── */
+.dark .shadow-sm  { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+.dark .shadow-xl  { box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important; }
+.dark .shadow-lg  { box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important; }
+
+/* ── Hover backgrounds ───────────────────────────────────── */
+.dark .hover\:bg-gray-50:hover  { background-color: rgba(255,255,255,0.04) !important; }
+.dark .hover\:bg-gray-100:hover { background-color: rgba(255,255,255,0.06) !important; }
+
+/* ── Semantic color backgrounds (dimmed) ─────────────────── */
+
+/* ── Form submit page — primary-50/100 dark mode ──────────── */
+.dark .bg-primary-50   { background-color: rgba(181,99,63,0.10) !important; }
+.dark .bg-primary-100  { background-color: rgba(181,99,63,0.16) !important; }
+.dark .border-primary-100 { border-color: rgba(181,99,63,0.25) !important; }
+.dark .border-primary-200 { border-color: rgba(181,99,63,0.35) !important; }
+.dark .text-primary-700 { color: var(--primary-400, #d4855a) !important; }
+.dark .bg-blue-50   { background-color: rgba(59,130,246,0.12) !important; }
+.dark .bg-blue-100  { background-color: rgba(59,130,246,0.18) !important; }
+.dark .bg-green-50  { background-color: rgba(34,197,94,0.10) !important; }
+.dark .bg-green-100 { background-color: rgba(34,197,94,0.16) !important; }
+.dark .bg-red-50    { background-color: rgba(239,68,68,0.10) !important; }
+.dark .bg-red-100   { background-color: rgba(239,68,68,0.16) !important; }
+.dark .bg-yellow-50 { background-color: rgba(234,179,8,0.10) !important; }
+.dark .bg-purple-50 { background-color: rgba(168,85,247,0.10) !important; }
+.dark .bg-orange-50 { background-color: rgba(249,115,22,0.10) !important; }
+
+/* ── Dividers ────────────────────────────────────────────── */
+.dark .divide-gray-100 > * + * { border-color: rgba(255,255,255,0.06) !important; }
+.dark .divide-gray-200 > * + * { border-color: var(--border) !important; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background: #4b5563; }
+
+/* ── Chat bubble (others) dark mode ─────────────────────── */
+.dark .rounded-bl-sm { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
+.dark .rounded-full.shadow-lg { background-color: var(--bg-card) !important; }
+.dark .rounded-xl.shadow-xl  { background-color: var(--bg-card) !important; }

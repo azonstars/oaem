@@ -1,6 +1,6 @@
 {
-  "name": "Office Allocation & Expense Management System",
-  "description": "Head Office and Sub-office financial allocation, expense tracking, note sheet generation, and audit logs.",
+  "name": "FlowBoard",
+  "description": "FlowBoard - Enterprise Multi-Tool Workspace & Modular Management Platform",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

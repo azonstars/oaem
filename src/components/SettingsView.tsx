@@ -7,12 +7,16 @@ import {
   Category,
   User,
   UserRole,
+  FlowBoardTool,
+  UserToolPermissions,
+  getUserToolAccess,
+  getToolRoleTitle,
 } from "../types";
+import { DEFAULT_FLOW_TOOLS } from "../config/flowTools";
 import {
   Settings,
   Calendar,
   Folder,
-  Users,
   Plus,
   Check,
   X,
@@ -22,12 +26,21 @@ import {
   Image as ImageIcon,
   Trash2,
   RefreshCw,
-  KeyRound,
   Lock,
   AlertTriangle,
   Edit2,
   UserPlus,
   ShieldCheck,
+  Layers,
+  Coins,
+  Package,
+  FileSpreadsheet,
+  Receipt,
+  Printer,
+  Database,
+  PlayCircle,
+  Code,
+  MessageSquare,
 } from "lucide-react";
 
 import { useTheme } from "../context/ThemeContext";
@@ -49,6 +62,8 @@ interface SettingsViewProps {
   allocations?: any[];
   expenses?: any[];
   refreshData: () => void;
+  flowTools?: FlowBoardTool[];
+  onOpenCentralManagement?: () => void;
 }
 
 export function SettingsView({
@@ -63,6 +78,8 @@ export function SettingsView({
   allocations = [],
   expenses = [],
   refreshData,
+  flowTools = DEFAULT_FLOW_TOOLS,
+  onOpenCentralManagement,
 }: SettingsViewProps) {
   const { theme } = useTheme();
   const { t, language } = useLanguage();
@@ -93,8 +110,8 @@ export function SettingsView({
     setCurrentTab(activeTab);
   }, [activeTab]);
 
-  const [localUsers, setLocalUsers] = useState<User[]>(users);
-  const [togglingUserIds, setTogglingUserIds] = useState<Set<string>>(
+  const [_localUsers, setLocalUsers] = useState<User[]>(users);
+  const [_togglingUserIds, setTogglingUserIds] = useState<Set<string>>(
     new Set(),
   );
 
@@ -309,7 +326,44 @@ export function SettingsView({
   const [userOffice, setUserOffice] = useState("");
   const [userPassword, setUserPassword] = useState("password123");
   const [userStatus, setUserStatus] = useState<"Active" | "Inactive">("Active");
+  const [userToolPermissions, setUserToolPermissions] = useState<UserToolPermissions>({});
   const [editingUser, setEditingUser] = useState<any | null>(null);
+
+  const applyPresetToPermissions = (
+    preset: "all_full" | "branch_std" | "stock_mgr" | "finance_mgr" | "auditor_view",
+  ) => {
+    const updated: UserToolPermissions = {};
+    flowTools.forEach((tool) => {
+      if (preset === "all_full") {
+        updated[tool.id] = { access: "full", roleTitle: language === "bn" ? "পূর্ণ নিয়ন্ত্রণকারী" : "Full Admin" };
+      } else if (preset === "branch_std") {
+        updated[tool.id] = { access: "operate", roleTitle: language === "bn" ? "শাখা অপারেটর" : "Branch Operator" };
+      } else if (preset === "stock_mgr") {
+        if (tool.id === "stockpro" || tool.id === "stationery-bill") {
+          updated[tool.id] = { access: "full", roleTitle: language === "bn" ? "স্টক ইনচার্জ" : "Stock Manager" };
+        } else if (tool.id === "budget-expense" || tool.id === "multi-item-bill") {
+          updated[tool.id] = { access: "view", roleTitle: language === "bn" ? "পরিদর্শক" : "Viewer" };
+        } else {
+          updated[tool.id] = { access: "none", roleTitle: "" };
+        }
+      } else if (preset === "finance_mgr") {
+        if (
+          tool.id === "budget-expense" ||
+          tool.id === "multi-item-bill" ||
+          tool.id === "conference-note"
+        ) {
+          updated[tool.id] = { access: "full", roleTitle: language === "bn" ? "বাজেট ও হিসাব কর্মকর্তা" : "Finance Officer" };
+        } else if (tool.id === "stockpro") {
+          updated[tool.id] = { access: "view", roleTitle: language === "bn" ? "স্টক পরিদর্শক" : "Stock Auditor" };
+        } else {
+          updated[tool.id] = { access: "operate", roleTitle: language === "bn" ? "বিল প্রস্তুতকারক" : "Operator" };
+        }
+      } else if (preset === "auditor_view") {
+        updated[tool.id] = { access: "view", roleTitle: language === "bn" ? "নিরীক্ষা কর্মকর্তা" : "Auditor" };
+      }
+    });
+    setUserToolPermissions(updated);
+  };
 
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -564,7 +618,7 @@ export function SettingsView({
     });
   };
 
-  const openAddUser = () => {
+  const _openAddUser = () => {
     setEditingUser(null);
     setUserIdVal("");
     setUserName("");
@@ -574,10 +628,20 @@ export function SettingsView({
     setUserOffice(offices[0]?.id || "");
     setUserPassword("password123");
     setUserStatus("Active");
+    
+    // Initialize default tool permissions
+    const initialPermissions: UserToolPermissions = {};
+    flowTools.forEach((tool) => {
+      initialPermissions[tool.id] = {
+        access: "operate",
+        roleTitle: language === "bn" ? "শাখা অপারেটর" : "Branch Operator",
+      };
+    });
+    setUserToolPermissions(initialPermissions);
     setShowUserModal(true);
   };
 
-  const openEditUser = (u: any) => {
+  const _openEditUser = (u: any) => {
     setEditingUser(u);
     setUserIdVal(u.userId || "");
     setUserName(u.name || "");
@@ -587,6 +651,22 @@ export function SettingsView({
     setUserOffice(u.officeId || offices[0]?.id || "");
     setUserPassword("");
     setUserStatus(u.status || "Active");
+
+    // Initialize or load tool permissions
+    const existingPermissions: UserToolPermissions = {};
+    flowTools.forEach((tool) => {
+      if (u.toolPermissions && u.toolPermissions[tool.id]) {
+        existingPermissions[tool.id] = { ...u.toolPermissions[tool.id] };
+      } else {
+        const deducedAccess = getUserToolAccess(u, tool.id);
+        const deducedRole = getToolRoleTitle(u, tool.id);
+        existingPermissions[tool.id] = {
+          access: deducedAccess,
+          roleTitle: deducedRole,
+        };
+      }
+    });
+    setUserToolPermissions(existingPermissions);
     setShowUserModal(true);
   };
 
@@ -606,6 +686,7 @@ export function SettingsView({
         role: userRole,
         officeId: userOffice || offices[0]?.id || "",
         status: userStatus,
+        toolPermissions: userToolPermissions,
       };
       if (userPassword && userPassword.trim()) {
         payload.password = userPassword;
@@ -648,6 +729,7 @@ export function SettingsView({
         setUserRole("Sub-office User");
         setUserOffice("");
         setUserPassword("password123");
+        setUserToolPermissions({});
         refreshData();
       } else {
         const data = await res.json();
@@ -664,7 +746,7 @@ export function SettingsView({
     }
   };
 
-  const handleAdminResetPassword = async (targetUserId: string) => {
+  const _handleAdminResetPassword = async (targetUserId: string) => {
     const newPass = prompt("Enter new password for this user:", "password123");
     if (!newPass) return;
     try {
@@ -685,7 +767,7 @@ export function SettingsView({
     }
   };
 
-  const handleDeleteUser = async (user: User) => {
+  const _handleDeleteUser = async (user: User) => {
     if (user.id === currentUser?.id) {
       alert(
         language === "bn"
@@ -731,7 +813,7 @@ export function SettingsView({
     });
   };
 
-  const handleToggleUserStatus = async (user: User) => {
+  const _handleToggleUserStatus = async (user: User) => {
     const nextStatus = user.status === "Active" ? "Inactive" : "Active";
 
     setLocalUsers((prev) =>
@@ -807,12 +889,12 @@ export function SettingsView({
     roleStr === "Super Admin" ||
     roleStr === "Admin" ||
     roleStr === "Head Office Admin";
-  const _isModerator = roleStr === "Moderator";
 
-  const _settingsTabs = [
+  const settingsTabs = [
     {
       id: "general",
       label: language === "bn" ? "সাধারণ কনফিগারেশন" : "General",
+      icon: Settings,
     },
     ...(isSuperAdminOrAdmin
       ? [
@@ -822,6 +904,7 @@ export function SettingsView({
               language === "bn"
                 ? "ওয়েলকাম নোট ও নোটিশ"
                 : "Welcome Note & Notices",
+            icon: MessageSquare,
           },
         ]
       : []),
@@ -829,13 +912,14 @@ export function SettingsView({
       id: "financial-years",
       label:
         language === "bn" ? "অর্থবছর ও ক্লোজিং" : "Financial Years & Closing",
+      icon: Calendar,
     },
-    { id: "offices", label: language === "bn" ? "অফিস তালিকা" : "Offices" },
+    { id: "offices", label: language === "bn" ? "অফিস তালিকা" : "Offices", icon: Building2 },
     {
       id: "categories",
       label: language === "bn" ? "ব্যয়ের খাতসমূহ" : "Categories",
+      icon: Folder,
     },
-    { id: "users", label: language === "bn" ? "ব্যবহারকারী তালিকা" : "Users" },
     ...(isSuperAdminOrAdmin
       ? [
           {
@@ -844,6 +928,7 @@ export function SettingsView({
               language === "bn"
                 ? "ডাটা ব্যাকআপ ও ডাটাবেজ"
                 : "Data Backup & Database",
+            icon: Database,
           },
         ]
       : []),
@@ -855,17 +940,51 @@ export function SettingsView({
               language === "bn"
                 ? "গুগল স্ক্রিপ্ট ডেপ্লয়"
                 : "Apps Script Deploy",
+            icon: PlayCircle,
           },
         ]
       : []),
     {
       id: "developer",
       label: language === "bn" ? "ডেভেলপার তথ্য" : "Developer Info",
+      icon: Code,
     },
   ];
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)]">
+      {/* Settings Subtabs Navigation Bar */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-none shrink-0">
+        {settingsTabs.map((tab) => {
+          const isActive = currentTab === tab.id;
+          const TabIcon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              data-settings-tab={tab.id}
+              id={`settings-tab-btn-${tab.id}`}
+              onClick={() => setCurrentTab(tab.id)}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+                isActive
+                  ? isOcean
+                    ? "bg-sky-600 text-white shadow-md font-bold"
+                    : isDark
+                      ? "bg-emerald-600 text-white shadow-md font-bold"
+                      : "bg-emerald-600 text-white shadow-md font-bold"
+                  : isOcean
+                    ? "bg-sky-950/60 text-sky-200 hover:bg-sky-900/60 border border-sky-800/40"
+                    : isDark
+                      ? "bg-slate-800/80 text-slate-300 hover:bg-slate-700/80 border border-slate-700/60"
+                      : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <TabIcon className="w-3.5 h-3.5 shrink-0" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Main Content Area */}
       <div
         className={`flex-1 border rounded-2xl shadow-sm flex flex-col overflow-hidden transition-colors ${
@@ -1835,249 +1954,44 @@ export function SettingsView({
           </div>
         )}
 
-        {/* Users */}
+        {/* Users (Redirect Notice to Central Management) */}
         {currentTab === "users" && (
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[400px]">
             <div
-              className={`p-4 border-b flex justify-between items-center shrink-0 ${
+              className={`max-w-md p-8 rounded-3xl border shadow-xl space-y-4 ${
                 isOcean
-                  ? "bg-sky-950/80 border-sky-900/60"
+                  ? "bg-sky-950/80 border-sky-800 text-sky-100"
                   : isDark
-                    ? "bg-slate-850 border-slate-800"
-                    : "bg-slate-50 border-slate-200"
+                    ? "bg-slate-900 border-slate-800 text-slate-100"
+                    : "bg-white border-slate-200 text-slate-900"
               }`}
             >
-              <h2 className="font-bold flex items-center gap-2">
-                <Users
-                  className={`w-5 h-5 ${isOcean ? "text-sky-400" : "text-emerald-500"}`}
-                />
-                {language === "bn" ? "ব্যবহারকারী তালিকা" : "System Users"}
-              </h2>
-              {isAdmin ? (
+              <div className="w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <h3 className="text-base font-bold">
+                {language === "bn"
+                  ? "ব্যবহারকারী ব্যবস্থাপনা সেন্ট্রাল ম্যানেজমেন্টে স্থানান্তর করা হয়েছে"
+                  : "User Management Moved to Central Management"}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                {language === "bn"
+                  ? "সকল টুল এবং সিস্টেমের সার্বজনীন ব্যবহারকারী তৈরি, তথ্য সম্পাদনা, পাসওয়ার্ড রিসেট ও RBAC পারমিশন নিয়ন্ত্রণ এখন ফ্লোবোর্ড সেন্ট্রাল ম্যানেজমেন্ট থেকে পরিচালিত হয়।"
+                  : "All user creation, profile edits, password resets, and tool RBAC permissions are now centrally administered in FlowBoard Central Management."}
+              </p>
+              {onOpenCentralManagement && (
                 <button
-                  onClick={openAddUser}
-                  className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                    isOcean
-                      ? "bg-sky-600 hover:bg-sky-500"
-                      : "bg-emerald-600 hover:bg-emerald-500"
-                  }`}
+                  onClick={onOpenCentralManagement}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold shadow-md shadow-emerald-950/30 transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer"
                 >
-                  <Plus className="w-4 h-4" />{" "}
-                  {language === "bn" ? "নতুন ব্যবহারকারী" : "Add User"}
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowProposalModal(true)}
-                  className={`text-white px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow transition ${
-                    isOcean
-                      ? "bg-sky-600 hover:bg-sky-500"
-                      : "bg-emerald-600 hover:bg-emerald-500"
-                  }`}
-                >
-                  <UserPlus className="w-4 h-4" />{" "}
-                  {language === "bn"
-                    ? "সহকর্মীর আইডি প্রস্তাব দিন"
-                    : "Propose Colleague"}
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>
+                    {language === "bn"
+                      ? "সেন্ট্রাল ম্যানেজমেন্টে যান"
+                      : "Go to Central Management"}
+                  </span>
                 </button>
               )}
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr
-                    className={`uppercase tracking-wider font-semibold border-b ${
-                      isOcean
-                        ? "bg-sky-950 text-sky-300 border-sky-800"
-                        : isDark
-                          ? "bg-slate-800 text-slate-300 border-slate-700"
-                          : "bg-slate-100 text-slate-700 border-slate-200"
-                    }`}
-                  >
-                    <th className="p-3">User ID & Name</th>
-                    <th className="p-3">Designation</th>
-                    <th className="p-3">Role</th>
-                    <th className="p-3">Office</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody
-                  className={`divide-y ${isOcean ? "divide-sky-900/40" : isDark ? "divide-slate-800" : "divide-slate-100"}`}
-                >
-                  {localUsers
-                    .filter((u) => {
-                      if (
-                        currentUser.role !== "Super Admin" &&
-                        u.role === "Super Admin"
-                      ) {
-                        return false;
-                      }
-                      return true;
-                    })
-                    .map((u) => {
-                      const off = offices.find((o) => o.id === u.officeId);
-                      const isToggling = togglingUserIds.has(u.id);
-                      const isActive = u.status === "Active";
-                      return (
-                        <tr
-                          key={u.id}
-                          className={`transition ${isOcean ? "hover:bg-sky-900/20" : isDark ? "hover:bg-slate-800/40" : "hover:bg-slate-50"}`}
-                        >
-                          <td className="p-3 font-medium">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                                  isOcean
-                                    ? "bg-sky-500/20 text-sky-300"
-                                    : "bg-emerald-500/20 text-emerald-400"
-                                }`}
-                              >
-                                {u.name
-                                  ? u.name.charAt(0)
-                                  : u.userId
-                                    ? u.userId.charAt(0).toUpperCase()
-                                    : "U"}
-                              </div>
-                              <div>
-                                <div className="font-semibold">
-                                  {u.name || u.userId || "User"}
-                                </div>
-                                <div className="font-mono text-xs text-slate-400">
-                                  ID: {u.userId || u.email}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="p-3 opacity-80 text-xs">
-                            {u.designation || "N/A"}
-                          </td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-0.5 rounded text-xs font-semibold border ${
-                                u.role === "Super Admin"
-                                  ? "bg-purple-500/20 text-purple-300 border-purple-500/30"
-                                  : u.role === "Admin" ||
-                                      u.role === "Head Office Admin"
-                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                                    : u.role === "Moderator"
-                                      ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                      : "bg-sky-500/20 text-sky-300 border-sky-500/30"
-                              }`}
-                            >
-                              {u.role}
-                            </span>
-                          </td>
-                          <td className="p-3 opacity-70 text-xs">
-                            {off?.name || "N/A"}
-                          </td>
-                          <td className="p-3">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
-                                isActive
-                                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30"
-                                  : "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30"
-                              }`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  isActive
-                                    ? "bg-emerald-500 animate-pulse"
-                                    : "bg-rose-500"
-                                }`}
-                              />
-                              {isActive
-                                ? language === "bn"
-                                  ? "সক্রিয় (Active)"
-                                  : "Active"
-                                : language === "bn"
-                                  ? "নিষ্ক্রিয় (Inactive)"
-                                  : "Inactive"}
-                            </span>
-                          </td>
-
-                          <td className="p-3 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {isAdmin && (
-                                <>
-                                  <button
-                                    onClick={() => openEditUser(u)}
-                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/30 hover:bg-blue-500/20 transition flex items-center gap-1"
-                                    title={
-                                      language === "bn"
-                                        ? "রোল আপগ্রেড বা শাখা ট্রান্সফার (সম্পাদনা)"
-                                        : "Edit Role / Transfer Branch"
-                                    }
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                    <span>
-                                      {language === "bn" ? "সম্পাদনা" : "Edit"}
-                                    </span>
-                                  </button>
-
-                                  <button
-                                    onClick={() =>
-                                      handleAdminResetPassword(u.id)
-                                    }
-                                    className="px-2 py-1 rounded-lg text-xs font-semibold bg-sky-500/10 text-sky-400 border border-sky-500/30 hover:bg-sky-500/20 transition flex items-center gap-1"
-                                    title="Reset Password"
-                                  >
-                                    <KeyRound className="w-3 h-3" /> Reset
-                                  </button>
-
-                                  <button
-                                    onClick={() => handleToggleUserStatus(u)}
-                                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all duration-150 flex items-center gap-1 shadow-sm active:scale-95 cursor-pointer ${
-                                      !isActive
-                                        ? "bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-600 hover:border-emerald-500 shadow-emerald-950/20"
-                                        : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700"
-                                    }`}
-                                    title={
-                                      !isActive
-                                        ? language === "bn"
-                                          ? "ক্লিক করার সাথে সাথেই সক্রিয় করুন"
-                                          : "Click to activate immediately"
-                                        : language === "bn"
-                                          ? "ক্লিক করার সাথে সাথেই নিষ্ক্রিয় করুন"
-                                          : "Click to deactivate immediately"
-                                    }
-                                  >
-                                    {isToggling ? (
-                                      <RefreshCw className="w-3 h-3 animate-spin" />
-                                    ) : !isActive ? (
-                                      <Check className="w-3 h-3 text-white" />
-                                    ) : (
-                                      <X className="w-3 h-3 text-slate-400" />
-                                    )}
-                                    <span>
-                                      {!isActive
-                                        ? language === "bn"
-                                          ? "সক্রিয় করুন"
-                                          : "Activate"
-                                        : language === "bn"
-                                          ? "নিষ্ক্রিয় করুন"
-                                          : "Deactivate"}
-                                    </span>
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteUser(u)}
-                                    className="p-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/20 transition"
-                                    title={
-                                      language === "bn"
-                                        ? "ডিলিট করুন"
-                                        : "Delete"
-                                    }
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
@@ -2300,7 +2214,7 @@ export function SettingsView({
       {showUserModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6">
           <div
-            className={`m-auto rounded-2xl max-w-lg w-full p-6 shadow-xl border ${
+            className={`m-auto rounded-2xl max-w-2xl w-full p-6 shadow-xl border my-auto ${
               isOcean
                 ? "bg-[#0f172a] border-sky-800 text-sky-100"
                 : isDark
@@ -2315,11 +2229,11 @@ export function SettingsView({
                 />
                 {editingUser
                   ? language === "bn"
-                    ? "ব্যবহারকারী সম্পাদনা, রোল আপগ্রেড ও শাখা ট্রান্সফার"
-                    : "Edit User, Role & Branch Transfer"
+                    ? "ব্যবহারকারী সম্পাদনা, রোল আপগ্রেড ও সেন্ট্রাল টুল পারমিশন"
+                    : "Edit User, Role & Central Tool RBAC Matrix"
                   : language === "bn"
-                    ? "নতুন ব্যবহারকারী যোগ করুন"
-                    : "Add New System User"}
+                    ? "নতুন ব্যবহারকারী যোগ ও টুল পারমিশন নির্ধারণ"
+                    : "Add New System User & Tool RBAC"}
               </h3>
               <button
                 type="button"
@@ -2396,8 +2310,8 @@ export function SettingsView({
                 <div>
                   <label className="block text-xs font-semibold opacity-75 mb-1">
                     {language === "bn"
-                      ? "রোল / পদমর্যাদা (Role & Access)"
-                      : "Role / Access Level"}
+                      ? "সিস্টেম রোল (Global Role)"
+                      : "Global System Role"}
                   </label>
                   <select
                     value={userRole}
@@ -2470,26 +2384,6 @@ export function SettingsView({
                 </div>
               </div>
 
-              {/* Branch transfer helper note */}
-              {editingUser && (
-                <div
-                  className={`p-2.5 rounded-xl border text-xs flex items-start gap-2 ${
-                    isOcean
-                      ? "bg-sky-950/40 border-sky-800/60 text-sky-200"
-                      : isDark
-                        ? "bg-slate-800/50 border-slate-700/60 text-slate-300"
-                        : "bg-blue-50 border-blue-200 text-blue-800"
-                  }`}
-                >
-                  <span className="font-bold shrink-0">💡 টিপস:</span>
-                  <span>
-                    {language === "bn"
-                      ? "শাখা ট্রান্সফার: এখানে শাখা/কর্মস্থল পরিবর্তন করে সংরক্ষণ করলেই উক্ত ইউজার আইডি তাৎক্ষণিকভাবে নতুন শাখার জন্য কার্যকর হবে।"
-                      : "Branch Transfer: Changing the branch here immediately moves this User ID and its operational access to the new branch."}
-                  </span>
-                </div>
-              )}
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold opacity-75 mb-1">
@@ -2538,6 +2432,265 @@ export function SettingsView({
                       Inactive (নিষ্ক্রিয়)
                     </option>
                   </select>
+                </div>
+              </div>
+
+              {/* GLOBAL TOOL RBAC MATRIX SECTION */}
+              <div className="pt-3 border-t border-slate-700/40 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-100">
+                      <Layers className="w-4 h-4 text-emerald-500" />
+                      <span>
+                        {language === "bn"
+                          ? "টুল পারমিশন ম্যাট্রিক্স (Tool-Specific RBAC)"
+                          : "Tool-Specific RBAC Matrix"}
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {language === "bn"
+                        ? "প্রতিটি টুলের জন্য স্বতন্ত্র অনুমতি (পূর্ণ নিয়ন্ত্রণ, অপারেটর, শুধুমাত্র পরিদর্শন বা বন্ধ) নির্ধারণ করুন।"
+                        : "Configure granular permissions per FlowBoard tool for this specific user."}
+                    </p>
+                  </div>
+
+                  {/* Presets Quick Fill */}
+                  <div className="flex flex-wrap items-center gap-1">
+                    <span className="text-[10px] font-semibold text-slate-400 mr-0.5">
+                      {language === "bn" ? "প্রিসেট:" : "Presets:"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetToPermissions("all_full")}
+                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30 transition"
+                      title="সকল টুলে পূর্ণ নিয়ন্ত্রণ"
+                    >
+                      {language === "bn" ? "সব পূর্ণ" : "All Full"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetToPermissions("branch_std")}
+                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-500/25 border border-blue-500/30 transition"
+                      title="সকল টুলে স্ট্যান্ডার্ড শাখা অপারেটর"
+                    >
+                      {language === "bn" ? "শাখা" : "Standard"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetToPermissions("stock_mgr")}
+                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/30 transition"
+                      title="স্টক ও স্টেশনারী স্পেশালিস্ট"
+                    >
+                      {language === "bn" ? "স্টক" : "Stock"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetToPermissions("finance_mgr")}
+                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 border border-amber-500/30 transition"
+                      title="বাজেট ও বিল প্রস্তুতকারক"
+                    >
+                      {language === "bn" ? "বাজেট" : "Finance"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyPresetToPermissions("auditor_view")}
+                      className="px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/15 text-purple-600 dark:text-purple-400 hover:bg-purple-500/25 border border-purple-500/30 transition"
+                      title="সকল টুলে শুধুমাত্র পরিদর্শন"
+                    >
+                      {language === "bn" ? "অডিটর" : "Auditor"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tool Cards List */}
+                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                  {flowTools.map((tool) => {
+                    const config = userToolPermissions[tool.id] || {
+                      access: getUserToolAccess(
+                        editingUser || { role: userRole },
+                        tool.id,
+                      ),
+                      roleTitle: "",
+                    };
+                    const currentAccess = config.access;
+
+                    return (
+                      <div
+                        key={tool.id}
+                        className={`p-2.5 rounded-xl border transition-all ${
+                          currentAccess === "none"
+                            ? "bg-slate-50/50 dark:bg-slate-900/30 border-slate-200/50 dark:border-slate-800/50 opacity-60"
+                            : isOcean
+                              ? "bg-sky-950/30 border-sky-900/50"
+                              : isDark
+                                ? "bg-slate-800/40 border-slate-700/60"
+                                : "bg-slate-50/90 border-slate-200"
+                        }`}
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-sm"
+                              style={{ backgroundColor: tool.color || "#059669" }}
+                            >
+                              {tool.id === "budget-expense" ? (
+                                <Coins className="w-4 h-4" />
+                              ) : tool.id === "stockpro" ? (
+                                <Package className="w-4 h-4" />
+                              ) : tool.id === "conference-note" ? (
+                                <FileSpreadsheet className="w-4 h-4" />
+                              ) : tool.id === "multi-item-bill" ? (
+                                <Receipt className="w-4 h-4" />
+                              ) : tool.id === "stationery-bill" ? (
+                                <Printer className="w-4 h-4" />
+                              ) : (
+                                <Layers className="w-4 h-4" />
+                              )}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-xs text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                                <span>
+                                  {language === "bn" && tool.nameBn
+                                    ? tool.nameBn
+                                    : tool.name}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  (v{tool.version})
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-500 truncate max-w-[220px]">
+                                {tool.id} • {tool.category}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Segmented 4-Option Access Level Switcher */}
+                          <div className="flex items-center gap-1 bg-white/70 dark:bg-slate-900/80 p-1 rounded-lg border border-slate-200/80 dark:border-slate-700/80">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUserToolPermissions((prev) => ({
+                                  ...prev,
+                                  [tool.id]: {
+                                    ...prev[tool.id],
+                                    access: "full",
+                                  },
+                                }))
+                              }
+                              className={`px-2 py-1 rounded text-[10px] font-semibold transition ${
+                                currentAccess === "full"
+                                  ? "bg-emerald-600 text-white shadow-sm"
+                                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                              title="পূর্ণ নিয়ন্ত্রণ (Create, Edit, Delete, Settings)"
+                            >
+                              🟢 {language === "bn" ? "পূর্ণ" : "Full"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUserToolPermissions((prev) => ({
+                                  ...prev,
+                                  [tool.id]: {
+                                    ...prev[tool.id],
+                                    access: "operate",
+                                  },
+                                }))
+                              }
+                              className={`px-2 py-1 rounded text-[10px] font-semibold transition ${
+                                currentAccess === "operate"
+                                  ? "bg-blue-600 text-white shadow-sm"
+                                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                              title="অপারেটর (Create, Daily Operations, Drafts)"
+                            >
+                              🔵 {language === "bn" ? "অপারেট" : "Operate"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUserToolPermissions((prev) => ({
+                                  ...prev,
+                                  [tool.id]: {
+                                    ...prev[tool.id],
+                                    access: "view",
+                                  },
+                                }))
+                              }
+                              className={`px-2 py-1 rounded text-[10px] font-semibold transition ${
+                                currentAccess === "view"
+                                  ? "bg-amber-600 text-white shadow-sm"
+                                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                              title="শুধুমাত্র পরিদর্শন (Read-Only / Reports)"
+                            >
+                              🟡 {language === "bn" ? "ভিউ" : "View"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setUserToolPermissions((prev) => ({
+                                  ...prev,
+                                  [tool.id]: {
+                                    ...prev[tool.id],
+                                    access: "none",
+                                  },
+                                }))
+                              }
+                              className={`px-2 py-1 rounded text-[10px] font-semibold transition ${
+                                currentAccess === "none"
+                                  ? "bg-rose-600 text-white shadow-sm"
+                                  : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                              title="প্রবেশাধিকার নেই (No Access / Locked)"
+                            >
+                              🔴 {language === "bn" ? "লকড" : "Locked"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Custom Tool-Specific Role Title (Optional) */}
+                        {currentAccess !== "none" && (
+                          <div className="mt-1.5 pt-1.5 border-t border-slate-200/50 dark:border-slate-800/50 flex items-center gap-2">
+                            <span className="text-[10px] text-slate-500 font-medium shrink-0">
+                              {language === "bn" ? "টুল-রোল পদবী:" : "Tool Role Title:"}
+                            </span>
+                            <input
+                              type="text"
+                              value={config.roleTitle || ""}
+                              onChange={(e) =>
+                                setUserToolPermissions((prev) => ({
+                                  ...prev,
+                                  [tool.id]: {
+                                    ...prev[tool.id],
+                                    access: currentAccess,
+                                    roleTitle: e.target.value,
+                                  },
+                                }))
+                              }
+                              placeholder={
+                                tool.id === "stockpro"
+                                  ? language === "bn"
+                                    ? "উদাঃ স্টক ইনচার্জ / শাখা রিসিভার"
+                                    : "e.g. Stock Manager"
+                                  : tool.id === "budget-expense"
+                                    ? language === "bn"
+                                      ? "উদাঃ বাজেট অফিসার / ভাউচার প্রস্তুতকারক"
+                                      : "e.g. Budget Officer"
+                                    : language === "bn"
+                                      ? "উদাঃ অনুমোদক / অপারেটর"
+                                      : "e.g. Operator"
+                              }
+                              className="flex-1 px-2 py-0.5 rounded-lg text-[11px] border border-slate-200 dark:border-slate-700 bg-transparent"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 

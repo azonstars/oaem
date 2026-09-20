@@ -166,7 +166,7 @@ const TABLE_SCHEMAS: Record<string, string> = {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
-  PostFactoProposals: `
+    PostFactoProposals: `
     CREATE TABLE IF NOT EXISTS PostFactoProposals (
       id TEXT PRIMARY KEY,
       financialYearId TEXT,
@@ -187,6 +187,81 @@ const TABLE_SCHEMAS: Record<string, string> = {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
   `,
+  FlowTools: `
+    CREATE TABLE IF NOT EXISTS FlowTools (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      nameBn TEXT,
+      category TEXT,
+      status TEXT DEFAULT 'active',
+      data TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
+  StockProProducts: `
+    CREATE TABLE IF NOT EXISTS StockProProducts (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      sku TEXT,
+      padType TEXT,
+      fromPad INTEGER DEFAULT 0,
+      perPadPages INTEGER DEFAULT 100,
+      stockQuantity REAL DEFAULT 0,
+      sellingPrice REAL DEFAULT 0,
+      costPrice REAL DEFAULT 0,
+      data TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
+  StockProBranches: `
+    CREATE TABLE IF NOT EXISTS StockProBranches (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      code TEXT,
+      phone TEXT,
+      address TEXT,
+      data TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
+  StockProInvoices: `
+    CREATE TABLE IF NOT EXISTS StockProInvoices (
+      id TEXT PRIMARY KEY,
+      date TEXT,
+      agentId TEXT,
+      totalAmount REAL DEFAULT 0,
+      linkedPadNo TEXT,
+      createdBy TEXT,
+      data TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
+  StockProVoucherPads: `
+    CREATE TABLE IF NOT EXISTS StockProVoucherPads (
+      id TEXT PRIMARY KEY,
+      padNo TEXT,
+      category TEXT,
+      totalPages INTEGER DEFAULT 100,
+      currentPage INTEGER DEFAULT 1,
+      data TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
+  ToolDocuments: `
+    CREATE TABLE IF NOT EXISTS ToolDocuments (
+      id TEXT PRIMARY KEY,
+      toolType TEXT,
+      title TEXT,
+      docDate TEXT,
+      memoNo TEXT,
+      officeId TEXT,
+      financialYearId TEXT,
+      createdBy TEXT,
+      totalAmount REAL DEFAULT 0,
+      data TEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `,
 };
 
 const INDEX_COMMANDS = [
@@ -200,6 +275,9 @@ const INDEX_COMMANDS = [
   "CREATE INDEX IF NOT EXISTS idx_audit_time ON AuditLogs(timestamp);",
   "CREATE INDEX IF NOT EXISTS idx_pfp_office ON PostFactoProposals(officeId);",
   "CREATE INDEX IF NOT EXISTS idx_pfp_fy ON PostFactoProposals(financialYearId);",
+  "CREATE INDEX IF NOT EXISTS idx_stockpro_inv_agent ON StockProInvoices(agentId);",
+  "CREATE INDEX IF NOT EXISTS idx_tooldocs_type ON ToolDocuments(toolType);",
+  "CREATE INDEX IF NOT EXISTS idx_tooldocs_office ON ToolDocuments(officeId);",
 ];
 
 /**

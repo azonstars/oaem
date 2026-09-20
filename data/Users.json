@@ -28,12 +28,12 @@
     "userId": "user01",
     "name": "Proggya Paromi Chakma",
     "email": "user@oaem.com",
-    "role": "Head Office User",
+    "role": "Moderator",
     "officeId": "off-ho",
     "designation": "Officer",
     "status": "Active",
-    "passwordSalt": "c7db51cb759a6151caa4e9428d3ecab0",
-    "passwordHash": "c94532585dd7f4dfe56bd614500b14c81712f87f43ccdc8279baf5377bc47254809dcadcbe205342d39d2b1b48ec16784a9b02cb654d63a1ae630e12c974608e"
+    "passwordSalt": "41377b400950febc5c14bfe899fda172",
+    "passwordHash": "35bb11f3820cb716f33e8307ebe8639561a54a38d82903884dcdedb15779cb41bd2d472af31716718c8c970423de7a8829c86344bcb272bda1dea4aacf76a65e"
   },
   {
     "id": "use-1789325659440",
@@ -190,5 +190,30 @@
     "status": "Active",
     "passwordSalt": "fa332dbdda31c3e05d17a5d7e1ab9909",
     "passwordHash": "037b05731d2156aac46fa64c03a4308c14a99567b3bbce66e4000d2db55772bfcdcb9563e251278107bfe2429d248c107c51f4f11f71340da613f8622658f91f"
+  },
+  {
+    "id": "u_1789408962975",
+    "userId": "baghaichari_user2",
+    "name": "মোঃ মিনহাজুর রহমান",
+    "email": "minhajur@baghaicharibr.com",
+    "role": "Sub-office User",
+    "officeId": "off-bo-3507",
+    "designation": "২য কর্মকর্তা (উক)",
+    "passwordHash": "d1ea8beb65bc8f7e0f7d5c6f449778c4f03e0b5bb0a0df5bf5caae86365ebed39d38ece2f3a98304d314b6988cda800df60b812e5fea61a74d2721a85500ba30",
+    "passwordSalt": "44cccdcd83847774eadc4d950412cca5",
+    "status": "Active",
+    "mustChangePassword": true
+  },
+  {
+    "id": "u_1789487386904",
+    "userId": "baghaichari_user1",
+    "name": "অমিত চৌধুরী",
+    "email": "amit@oaem.com",
+    "role": "Sub-office User",
+    "officeId": "off-bo-3507",
+    "designation": "কর্মকর্তা",
+    "passwordHash": "0dda9999bc69d3b9976676aa5a766edbbb0460adf02cfbf29f8f54f42a854a4ffba64ca58cde8f042dc7109cb7637d36a81b57e74efd355604a93ef5695fa9a3",
+    "passwordSalt": "434fe36d4f174be42107c1d998754a79",
+    "status": "Active"
   }
 ]
