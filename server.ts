@@ -1717,6 +1717,258 @@ async function saveSheetData(sheetName: string, data: any[]): Promise<void> {
   }
 }
 
+function _generateOfficePadHeaderHtml(office: any): string {
+  const name = office?.name || "বাংলাদেশ কৃষি ব্যাংক";
+  const address = office?.address || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি।";
+  return `<div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 15px;">
+    <h2 style="margin: 0; font-size: 14pt; font-weight: bold; color: #000;">${name}</h2>
+    <p style="margin: 3px 0 0 0; font-size: 10.5pt; color: #333;">${address}</p>
+  </div>`;
+}
+
+function _generateOfficialWatermarkHtml(_office: any): string {
+  return `<div style="position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg); font-size: 50pt; color: rgba(0, 0, 0, 0.04); font-weight: bold; z-index: 0; pointer-events: none; white-space: nowrap; user-select: none;">
+    বাংলাদেশ কৃষি ব্যাংক
+  </div>`;
+}
+
+function generateMotorVehicleForwardingHtml(
+  expense: any,
+  office: any,
+  _category: any,
+  _financialYear: any,
+  _balanceInfo: any,
+): string {
+  const offName = office?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি।";
+  
+  const vRate = Number(expense.vatRate || 0);
+  const tRate = Number(expense.taxRate || 0);
+  const baseAmt = Number(expense.baseAmount || expense.amount || 0);
+  const calcVat = Number(expense.vatAmount !== undefined ? expense.vatAmount : (baseAmt * vRate) / 100);
+  const calcTax = Number(expense.taxAmount !== undefined ? expense.taxAmount : (baseAmt * tRate) / 100);
+  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const amountWords = numberToBengaliWords(currentBill);
+
+  const baseAmtFormatted = convertToBengaliNumber(baseAmt.toFixed(2));
+  const calcVatFormatted = convertToBengaliNumber(calcVat.toFixed(2));
+  const calcTaxFormatted = convertToBengaliNumber(calcTax.toFixed(2));
+  const currentBillFormatted = convertToBengaliNumber(currentBill.toFixed(2));
+
+  const categoryCode = _category?.code || "১৩৩/২৬ (এ)";
+  const applicantName = expense.applicant?.name || expense.applicantName || expense.driverName || "";
+  const applicantDesignation = expense.applicant?.designation || expense.applicantDesignation || "";
+  const purposeText = expense.description || expense.purpose || expense.maintenancePurpose || "মবিল পরিবর্তন ও মেরামত";
+
+  const isVehicleCat =
+    _category?.code === "১৩৩/২৬" ||
+    _category?.code === "133/26" ||
+    _category?.code === "১৩৩/২৬ (এ)" ||
+    _category?.code === "133/26 (A)" ||
+    _category?.code === "133/26(A)" ||
+    _category?.code === "১৩৩/২৬(এ)" ||
+    _category?.id === "cat-32" ||
+    _category?.id === "cat-33" ||
+    Boolean(
+      _category?.name &&
+        (_category.name.includes("গাড়ী") ||
+          _category.name.includes("গাড়ি") ||
+          _category.name.includes("মোটর")) &&
+        (_category.name.includes("জ্বালানী") ||
+          _category.name.includes("জ্বালানি") ||
+          _category.name.includes("রক্ষণাবেক্ষণ") ||
+          _category.name.includes("রক্ষণাবেক্ষন") ||
+          _category.name.includes("মেরামত")),
+    );
+
+  const purposeDescription = isVehicleCat
+    ? `অত্র কার্যালয়ের গাড়ীর ${purposeText} বাবদ`
+    : `অত্র কার্যালয়ের ${purposeText || _category?.name || "প্রয়োজনীয় কার্যক্রম"} বাবদ`;
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%; padding: 10px 5px;">
+  <div style="text-align: center; margin-bottom: 22px;">
+    <div style="font-size: 1.35em; font-weight: bold; color: #000; line-height: 1.2;">বাংলাদেশ কৃষি ব্যাংক</div>
+    <div style="font-size: 1.1em; font-weight: bold; color: #000; margin-top: 3px;">${offName}</div>
+  </div>
+
+  <div style="text-align: center; font-weight: bold; margin-bottom: 24px; text-decoration: underline;">
+    বিষয় : ভ্রমণ অগ্রিম/ বিল মূল্য/ খরচের অগ্রিম/ খরচের পুরঃভরণ পাওয়ার আবেদন ।
+  </div>
+
+  <table border="1" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 25px;">
+    <thead>
+      <tr style="border-bottom: 1.5px solid #000; background-color: #fafafa;">
+        <th style="border: 1px solid #000; padding: 6px 4px; text-align: center; width: 7%; font-weight: bold;">ক্রম</th>
+        <th style="border: 1px solid #000; padding: 6px 6px; text-align: center; width: 15%; font-weight: bold;">খাত</th>
+        <th style="border: 1px solid #000; padding: 6px 8px; text-align: center; width: 60%; font-weight: bold;">উদ্দেশ্য/বিবরণ</th>
+        <th style="border: 1px solid #000; padding: 6px 6px; text-align: center; width: 18%; font-weight: bold;">টাকার পরিমান</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;">১.</td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center; font-weight: bold;">${categoryCode}</td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">${purposeDescription}</td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center; font-family: 'Hind Siliguri', 'Kalpurush', sans-serif;">${baseAmtFormatted}</td>
+      </tr>
+      ${calcVat > 0 ? `
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"></td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center;"></td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">${convertToBengaliNumber(vRate)}% ভ্যাট</td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center; font-family: 'Hind Siliguri', 'Kalpurush', sans-serif;">${calcVatFormatted}</td>
+      </tr>` : ''}
+      ${calcTax > 0 ? `
+      <tr>
+        <td style="border: 1px solid #000; padding: 6px 4px; text-align: center;"></td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center;"></td>
+        <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; font-weight: bold;">${convertToBengaliNumber(tRate)}% ট্যাক্স</td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center; font-family: 'Hind Siliguri', 'Kalpurush', sans-serif;">${calcTaxFormatted}</td>
+      </tr>` : ''}
+      <tr style="font-weight: bold;">
+        <td colspan="3" style="border: 1px solid #000; padding: 6px 8px; text-align: left;">
+          মোট টাকা (কথায়) : ${amountWords} টাকা মাত্র
+        </td>
+        <td style="border: 1px solid #000; padding: 6px 6px; text-align: center; font-family: 'Hind Siliguri', 'Kalpurush', sans-serif;">
+          ${currentBillFormatted}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+    <div>
+      <strong>সংযুক্তি :-</strong>
+    </div>
+    <div style="text-align: center; min-width: 170px;">
+      <div>আবেদনকারীর স্বাক্ষর</div>
+      <div style="height: 50px;"></div>
+      <div style="font-weight: bold;">
+        ${applicantName ? `(${applicantName})` : "নাম ও পদবী"}
+      </div>
+      ${applicantDesignation ? `<div>${applicantDesignation}</div>` : ""}
+    </div>
+  </div>
+
+  <div style="margin-bottom: 1in; line-height: 1.6;">
+    প্রস্তাব মতে ৳=${currentBillFormatted}/- (কথায়ঃ ${amountWords} টাকা মাত্র) প্রদান করার সুপারিশ করা হলো ।
+  </div>
+
+  <div style="margin-bottom: 1in; line-height: 1.6;">
+    ৳=${currentBillFormatted}/- (কথায়ঃ ${amountWords} টাকা মাত্র) প্রদান করুন ।
+  </div>
+
+  <div style="display: flex; justify-content: flex-end; margin-bottom: 30px;">
+    <div style="text-align: right; font-weight: bold; min-width: 150px;">
+      আঞ্চলিক ব্যবস্থাপক
+    </div>
+  </div>
+
+  <div style="margin-top: 20px; border-top: 1px dashed #94a3b8; padding-top: 12px;">
+    প্রয়োজনীয় ব্যবস্থা গ্রহনের জন্য প্রেরিত : ব্যবস্থাপক, বিকেবি, রাঙ্গামাটি শাখা, রাঙ্গামাটি ।
+  </div>
+</div>`;
+}
+
+function generateMotorVehicleNoteSheetHtml(
+  expense: any,
+  _office: any,
+  category: any,
+  financialYear: any,
+  balanceInfo: any,
+): string {
+  const vRate = Number(expense.vatRate || 0);
+  const tRate = Number(expense.taxRate || 0);
+  const baseAmt = Number(expense.baseAmount || expense.amount || 0);
+  const calcVat = Number(expense.vatAmount || (baseAmt * vRate) / 100);
+  const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
+  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const amountWords = numberToBengaliWords(currentBill);
+
+  const vehicleModel = expense.vehicleModel || "Toyota Land Cruiser Prado";
+  const vehicleRegNo = expense.vehicleRegNo || "ঢাকা-মেট্রো-ঘ-১৪-১১৩২";
+  const applicantName = expense.applicant?.name || expense.applicantName || expense.driverName || "মোঃ এনামুল হক";
+  const applicantDesignation = expense.applicant?.designation || expense.applicantDesignation || "গাড়ী চালক";
+  const purposeText = expense.description || expense.purpose || expense.maintenancePurpose || "মেরামত ও রক্ষণাবেক্ষণ";
+
+  const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
+
+  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const safeSpentSoFar = Math.max(0, spentSoFar);
+  const spentIncludingCurrent = safeSpentSoFar + currentBill;
+  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+
+  const budgetHtml = generateBudgetProvisionTableHtml(
+    balanceInfo,
+    category,
+    financialYear,
+    currentBill,
+    safeSpentSoFar,
+    remainingBalance,
+  );
+
+  const vatTaxStr = (vRate > 0 || tRate > 0)
+    ? ` ${convertToBengaliNumber(vRate)}% ভ্যাট ও ${convertToBengaliNumber(tRate)}% ট্যাক্স সহ`
+    : "";
+
+  const isVehicleCat =
+    category?.code === "১৩৩/২৬" ||
+    category?.code === "133/26" ||
+    category?.code === "১৩৩/২৬ (এ)" ||
+    category?.code === "133/26 (A)" ||
+    category?.code === "133/26(A)" ||
+    category?.code === "১৩৩/২৬(এ)" ||
+    category?.id === "cat-32" ||
+    category?.id === "cat-33" ||
+    Boolean(
+      category?.name &&
+        (category.name.includes("গাড়ী") ||
+          category.name.includes("গাড়ি") ||
+          category.name.includes("মোটর")) &&
+        (category.name.includes("জ্বালানী") ||
+          category.name.includes("জ্বালানি") ||
+          category.name.includes("রক্ষণাবেক্ষণ") ||
+          category.name.includes("রক্ষণাবেক্ষন") ||
+          category.name.includes("মেরামত")),
+    );
+
+  const categoryLabel = category?.name
+    ? `${category.name} (${category.code || "১৩৩/২৬ (এ)"})`
+    : "মোটর গাড়ী রক্ষণাবেক্ষণ (১৩৩/২৬ (এ))";
+
+  const subjectText = isVehicleCat
+    ? `বিষয় : অত্র কার্যালয়ের ${vehicleModel} গাড়ি ${purposeText} বাবদ খরচকৃত অর্থ পরিশোধ প্রসঙ্গে।`
+    : `বিষয় : অত্র কার্যালয়ের ${categoryLabel} বাবদ খরচকৃত অর্থ পরিশোধ প্রসঙ্গে।`;
+
+  const para1Prefix = isVehicleCat
+    ? `অত্র কার্যালয়ের ${vehicleModel} গাড়ী নং-${vehicleRegNo} এর জরুরী ভিত্তিতে ${purposeText} বাবদ${vatTaxStr}`
+    : `অত্র কার্যালয়ের জরুরী ভিত্তিতে ${purposeText || category?.name || "প্রয়োজনীয় কার্যক্রম"} বাবদ${vatTaxStr}`;
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.6; text-align: justify;">
+  <div style="text-align: center; font-weight: bold; margin-bottom: 8pt;">
+    (পাতা-${pageNoStr})
+  </div>
+  <div style="font-weight: bold; margin-bottom: 16pt; text-align: center; text-decoration: underline;">
+    ${subjectText}
+  </div>
+  
+  <p style="text-indent: 40px; margin-bottom: 12pt; text-align: justify; line-height: 1.6;">
+    ${para1Prefix} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) খরচ পূর্বক অত্র কার্যালয়ের ${applicantDesignation} জনাব ${applicantName} কর্তৃক খরচের রশিদ সহ একখানা আবেদন করা হয়। তাঁর আবেদন সঠিক ও যথাযথ পরিলক্ষিত হওয়ায় আবেদনকৃত ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) নগদে প্রদানাদেশ দেওয়া যেতে পারে।
+  </p>
+
+  ${budgetHtml}
+
+  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 1in; text-align: justify; line-height: 1.6;">
+    আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
+  </p>
+  
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 1in; line-height: 1.6;">
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
+    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+  </div>
+</div>`;
+}
+
 function renderExpenseNoteSheetContent(
   expense: any,
   office: any,
@@ -1725,6 +1977,21 @@ function renderExpenseNoteSheetContent(
   balanceInfo: any,
   template?: any,
 ): string {
+  const is133Series = Boolean(
+    (category?.code &&
+      (category.code.startsWith("১৩৩/") ||
+        category.code.startsWith("133/"))) ||
+      category?.id === "cat-33",
+  );
+  if (is133Series) {
+    return generateMotorVehicleNoteSheetHtml(
+      expense,
+      office,
+      category,
+      financialYear,
+      balanceInfo,
+    );
+  }
   if (
     expense.expenseType === "Quotation" &&
     expense.quotationFormType === "Form2"
@@ -2440,7 +2707,57 @@ async function syncNoteSheetForExpense(
 
   let forwardingContent = undefined;
   let supplyOrderContent = undefined;
-  if (
+
+  const is133Series = Boolean(
+    (category?.code &&
+      (category.code.startsWith("১৩৩/") || category.code.startsWith("133/"))) ||
+    category?.id === "cat-33"
+  );
+
+  if (is133Series) {
+    const docType = expense.motorDocType || "application";
+    if (docType === "forwarding") {
+      forwardingContent = generateForm1ForwardingHtml(
+        expense,
+        office,
+        category,
+        fy,
+        balanceInfo,
+      );
+    } else if (docType === "supplyorder") {
+      supplyOrderContent = generateForm1SupplyOrderHtml(
+        expense,
+        office,
+        category,
+        fy,
+        balanceInfo,
+      );
+    } else if (docType === "all") {
+      forwardingContent = generateMotorVehicleForwardingHtml(
+        expense,
+        office,
+        category,
+        fy,
+        balanceInfo,
+      );
+      supplyOrderContent = generateForm1SupplyOrderHtml(
+        expense,
+        office,
+        category,
+        fy,
+        balanceInfo,
+      );
+    } else {
+      // Default: "application"
+      forwardingContent = generateMotorVehicleForwardingHtml(
+        expense,
+        office,
+        category,
+        fy,
+        balanceInfo,
+      );
+    }
+  } else if (
     expense.expenseType === "Quotation" &&
     (expense.quotationFormType === "Form1" ||
       expense.quotationFormType === "Form2")
@@ -5600,6 +5917,28 @@ async function startServer() {
   }
 
   if (process.env.NODE_ENV !== "test") {
+    try {
+      const expenses = getSheetData("Expenses");
+      const categories = getSheetData("Categories");
+      for (const exp of expenses) {
+        const cat = categories.find((c: any) => c.id === exp.categoryId);
+        const is133 = Boolean(
+          (cat?.code &&
+            (cat.code.startsWith("১৩৩/") || cat.code.startsWith("133/"))) ||
+            cat?.id === "cat-33",
+        );
+        if (is133) {
+          await syncNoteSheetForExpense(
+            exp,
+            exp.entryOfficer?.userId || "system",
+            false,
+          );
+        }
+      }
+    } catch (_e) {
+      console.warn("Auto-sync 133 series note sheets on boot error:", _e);
+    }
+
     app.listen(PORT, "0.0.0.0", () => {
       console.log(
         `Allocation & Expense Management Server running on port ${PORT}`,

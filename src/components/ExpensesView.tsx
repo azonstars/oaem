@@ -37,6 +37,7 @@ import {
   Eye,
   RefreshCw,
   Sparkles,
+  Car,
 } from "lucide-react";
 import { NoteSheetPreviewModal } from "./NoteSheetPreviewModal";
 import { useLanguage } from "../i18n";
@@ -161,6 +162,11 @@ export function ExpensesView({
     categories[0]?.code || "১৩৪/০৫",
   );
   const [noteSheetId, setNoteSheetId] = useState("");
+  const [vehicleModel, setVehicleModel] = useState("Toyota Land Cruiser Prado");
+  const [vehicleRegNo, setVehicleRegNo] = useState("ঢাকা-মেট্রো-ঘ-১৪-১১৩২");
+  const [motorDocType, setMotorDocType] = useState<
+    "application" | "forwarding" | "supplyorder" | "all"
+  >("application");
 
   const defaultSupplierOrg1 = "কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি।";
   const defaultSupplierOrg2 = "কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি।";
@@ -425,6 +431,9 @@ export function ExpensesView({
     ]);
     setBranchEntries([]);
     setNoteSheetId("");
+    setVehicleModel("Toyota Land Cruiser Prado");
+    setVehicleRegNo("ঢাকা-মেট্রো-ঘ-১৪-১১৩২");
+    setMotorDocType("application");
     setApplicantType("OwnOffice");
     setApplicantName("");
     setApplicantDesignation("");
@@ -493,6 +502,10 @@ export function ExpensesView({
     if (exp.supplierOrg1) setSupplierOrg1(exp.supplierOrg1);
     if (exp.supplierOrg2) setSupplierOrg2(exp.supplierOrg2);
     if (exp.supplierOrg3) setSupplierOrg3(exp.supplierOrg3);
+    if (exp.vehicleModel) setVehicleModel(exp.vehicleModel);
+    if (exp.vehicleRegNo) setVehicleRegNo(exp.vehicleRegNo);
+    if (exp.motorDocType) setMotorDocType(exp.motorDocType);
+    else setMotorDocType("application");
 
     if (exp.quotationItems && exp.quotationItems.length > 0) {
       if (exp.quotationFormType === "Form2") {
@@ -1012,6 +1025,39 @@ export function ExpensesView({
   const currentCategory = categories.find((c) => c.id === categoryId);
   const currentFY = financialYears.find((f) => f.id === activeModalFY);
 
+  const is133SeriesCategory = (cat?: { id?: string; code?: string; name?: string } | null) => {
+    if (!cat) return false;
+    return Boolean(
+      (cat.code && (cat.code.startsWith("১৩৩/") || cat.code.startsWith("133/"))) ||
+      cat.id === "cat-33"
+    );
+  };
+
+  const isVehicleFuelOrMaintenanceCategory = (cat?: { id?: string; code?: string; name?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    if (
+      code === "১৩৩/২৬" ||
+      code === "133/26" ||
+      code === "১৩৩/২৬ (এ)" ||
+      code === "133/26 (A)" ||
+      code === "133/26(A)" ||
+      code === "১৩৩/২৬(এ)" ||
+      code.startsWith("১৩৩/২৬") ||
+      code.startsWith("133/26")
+    ) {
+      return true;
+    }
+    if (cat.id === "cat-32" || cat.id === "cat-33") {
+      return true;
+    }
+    const name = cat.name || "";
+    const isVehicle = name.includes("গাড়ী") || name.includes("গাড়ি") || name.includes("মোটর");
+    const isFuel = name.includes("জ্বালানী") || name.includes("জ্বালানি") || name.includes("ফুয়েল") || name.toLowerCase().includes("fuel");
+    const isMaintenance = name.includes("রক্ষণাবেক্ষণ") || name.includes("রক্ষণাবেক্ষন") || (name.includes("মেরামত") && isVehicle);
+    return isVehicle && (isFuel || isMaintenance);
+  };
+
   const categoryAllocations = allocations.filter(
     (a) =>
       a.financialYearId === activeModalFY &&
@@ -1319,6 +1365,17 @@ export function ExpensesView({
             vatChalanDate: undefined,
           };
 
+    const selectedCatObj = categories.find((c) => c.id === categoryId);
+    const is133Series = is133SeriesCategory(selectedCatObj);
+    const isFuelOrMaint = isVehicleFuelOrMaintenanceCategory(selectedCatObj);
+    const motorPayload = is133Series
+      ? {
+          vehicleModel: isFuelOrMaint ? vehicleModel : undefined,
+          vehicleRegNo: isFuelOrMaint ? vehicleRegNo : undefined,
+          motorDocType,
+        }
+      : {};
+
     try {
       if (editingExpenseId && onUpdateExpense) {
         await onUpdateExpense(editingExpenseId, {
@@ -1331,6 +1388,7 @@ export function ExpensesView({
           expenseDate,
           amount: Number(effectiveAmount),
           ...quotationPayload,
+          ...motorPayload,
           voucherNo: voucherNo.trim(),
           voucherDate,
           description: finalDescription,
@@ -1395,6 +1453,7 @@ export function ExpensesView({
           expenseDate,
           amount: Number(effectiveAmount),
           ...quotationPayload,
+          ...motorPayload,
           voucherNo: voucherNo.trim(),
           voucherDate,
           description: finalDescription,
@@ -2222,6 +2281,166 @@ export function ExpensesView({
                     </select>
                   </div>
                 </div>
+
+                {is133SeriesCategory(currentCategory) && (
+                  <div
+                    className={`p-4 rounded-xl border space-y-3 ${isCustom ? "bg-[#140e29] border-[#382b61]" : isDark ? "bg-slate-800/70 border-slate-700" : "bg-blue-50/70 border-blue-200"}`}
+                  >
+                    <div className="font-bold text-xs text-blue-700 dark:text-blue-300 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5">
+                        {isVehicleFuelOrMaintenanceCategory(currentCategory) ? (
+                          <>
+                            <Car className="w-4 h-4" /> ১৩৩ সিরিজ খাতের নথিপত্র ও গাড়ির তথ্য
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-4 h-4" /> ১৩৩ সিরিজ খাতের নথিপত্র
+                          </>
+                        )}
+                      </div>
+                      <span className="text-[11px] font-normal text-slate-500 dark:text-slate-400">
+                        {currentCategory?.code}
+                      </span>
+                    </div>
+
+                    {/* Document Type Radio Selector */}
+                    <div className="pt-1 pb-1">
+                      <label
+                        className={`block font-semibold text-xs mb-2 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                      >
+                        {language === "bn"
+                          ? "প্রস্তুতযোগ্য নথির ধরণ নির্বাচন করুন (Document Type) :"
+                          : "Select Document Type to Generate:"}
+                      </label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        <label
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                            motorDocType === "application"
+                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="motorDocType"
+                            value="application"
+                            checked={motorDocType === "application"}
+                            onChange={() => setMotorDocType("application")}
+                            className="sr-only"
+                          />
+                          <span>✉️</span>
+                          <span>
+                            {language === "bn" ? "আবেদন (ডিফল্ট)" : "Application"}
+                          </span>
+                        </label>
+
+                        <label
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                            motorDocType === "forwarding"
+                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="motorDocType"
+                            value="forwarding"
+                            checked={motorDocType === "forwarding"}
+                            onChange={() => setMotorDocType("forwarding")}
+                            className="sr-only"
+                          />
+                          <span>📨</span>
+                          <span>
+                            {language === "bn" ? "ফরোয়ার্ডিং" : "Forwarding"}
+                          </span>
+                        </label>
+
+                        <label
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                            motorDocType === "supplyorder"
+                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="motorDocType"
+                            value="supplyorder"
+                            checked={motorDocType === "supplyorder"}
+                            onChange={() => setMotorDocType("supplyorder")}
+                            className="sr-only"
+                          />
+                          <span>📦</span>
+                          <span>
+                            {language === "bn" ? "সাপ্লাই অর্ডার" : "Supply Order"}
+                          </span>
+                        </label>
+
+                        <label
+                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                            motorDocType === "all"
+                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="motorDocType"
+                            value="all"
+                            checked={motorDocType === "all"}
+                            onChange={() => setMotorDocType("all")}
+                            className="sr-only"
+                          />
+                          <span>📑</span>
+                          <span>
+                            {language === "bn" ? "সকল নথি (All)" : "All Docs"}
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {isVehicleFuelOrMaintenanceCategory(currentCategory) && (
+                      <div className="grid grid-cols-2 gap-3 pt-1 border-t border-blue-200/50 dark:border-slate-700">
+                        <div>
+                          <label
+                            className={`block font-semibold text-xs mb-1 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
+                            গাড়ির মডেল (Vehicle Model)
+                          </label>
+                          <input
+                            type="text"
+                            value={vehicleModel}
+                            onChange={(e) => setVehicleModel(e.target.value)}
+                            placeholder="Toyota Land Cruiser Prado"
+                            className={`w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                          />
+                        </div>
+                        <div>
+                          <label
+                            className={`block font-semibold text-xs mb-1 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
+                            গাড়ির নম্বর (Reg No)
+                          </label>
+                          <input
+                            type="text"
+                            value={vehicleRegNo}
+                            onChange={(e) => setVehicleRegNo(e.target.value)}
+                            placeholder="ঢাকা-মেট্রো-ঘ-১৪-১১৩২"
+                            className={`w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {expenseType === "Quotation" && (
                   <div className="space-y-3 pt-2 border-t border-emerald-500/20">

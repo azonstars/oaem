@@ -479,6 +479,12 @@ export interface Expense {
   supplierOrg1?: string;
   supplierOrg2?: string;
   supplierOrg3?: string;
+  vehicleModel?: string;
+  vehicleRegNo?: string;
+  motorDocType?: "application" | "forwarding" | "supplyorder" | "all";
+  driverName?: string;
+  ferryAmount?: number;
+  maintenancePurpose?: string;
 }
 
 export interface NoteSheet {
@@ -492,6 +498,7 @@ export interface NoteSheet {
   supplyOrderContent?: string;
   sanctionNoteSheetContent?: string;
   sanctionLetterContent?: string;
+  motorDocType?: "application" | "forwarding" | "supplyorder" | "all";
   status?: string;
   createdBy: string;
   createdAt: string;

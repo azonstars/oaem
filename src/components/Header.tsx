@@ -546,7 +546,7 @@ export function Header({
           {/* 4. Language Switcher (বাংলা | English) */}
           <button
             onClick={toggleLanguage}
-            className={`flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-xl text-xs font-bold transition border shrink-0 ${
+            className={`flex items-center gap-1 px-2 py-1.5 rounded-xl text-xs font-bold transition border shrink-0 ${
               isCustom
                 ? "bg-[#231a40] hover:bg-[#2d2252] text-purple-100 border-[#43356e]"
                 : isDark
@@ -558,8 +558,8 @@ export function Header({
             }
           >
             <Globe className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span className="hidden lg:inline">
-              {language === "bn" ? "English" : "বাংলা"}
+            <span className="text-[11px]">
+              {language === "bn" ? "EN" : "বাং"}
             </span>
           </button>
 
@@ -574,11 +574,11 @@ export function Header({
               <button
                 id="header-central-mgmt-btn"
                 onClick={onOpenCentralManagement}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
+                className="hidden lg:flex items-center gap-1 px-2 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/70 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 text-xs font-semibold shadow-2xs transition-colors shrink-0 cursor-pointer"
                 title={language === "bn" ? "ফ্লোবোর্ড সার্বজনীন সেন্ট্রাল ম্যানেজমেন্ট" : "FlowBoard Central Management"}
               >
                 <Shield className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                <span className="hidden xl:inline">{language === "bn" ? "সেন্ট্রাল ম্যানেজমেন্ট" : "Central Management"}</span>
+                <span className="hidden 2xl:inline">{language === "bn" ? "সেন্ট্রাল ম্যানেজমেন্ট" : "Central"}</span>
               </button>
             )}
 

@@ -298,6 +298,33 @@ export function NoteSheetPreviewModal({
     activeDocTab,
   ]);
 
+  const is133Series = useMemo(() => {
+    const isCode133 = Boolean(
+      categoryName?.includes("১৩৩/") ||
+      categoryName?.includes("133/") ||
+      (currentNoteSheet?.title && (currentNoteSheet.title.includes("১৩৩/") || currentNoteSheet.title.includes("133/"))) ||
+      (currentNoteSheet?.content && (currentNoteSheet.content.includes("১৩৩/") || currentNoteSheet.content.includes("133/"))) ||
+      (currentNoteSheet?.forwardingContent && (currentNoteSheet.forwardingContent.includes("১৩৩/") || currentNoteSheet.forwardingContent.includes("133/")))
+    );
+    const isMotor =
+      categoryId === "cat-33" ||
+      categoryName?.includes("মোটর") ||
+      Boolean(currentNoteSheet?.title?.includes("মোটর")) ||
+      Boolean(currentNoteSheet?.content && currentNoteSheet.content.includes("১৩৩/২৬ (এ)")) ||
+      Boolean(currentNoteSheet?.forwardingContent && currentNoteSheet.forwardingContent.includes("ভ্রমণ অগ্রিম/ বিল মূল্য/ খরচের অগ্রিম/ খরচের পুরঃভরণ পাওয়ার আবেদন"));
+    return isCode133 || isMotor;
+  }, [categoryId, categoryName, currentNoteSheet]);
+
+  const isApplicationDoc = useMemo(() => {
+    const fwContent = currentNoteSheet?.forwardingContent || editForwardingContent || "";
+    return (
+      fwContent.includes("ভ্রমণ অগ্রিম/ বিল মূল্য/ খরচের অগ্রিম/ খরচের পুরঃভরণ পাওয়ার আবেদন") ||
+      (is133Series &&
+        (currentNoteSheet as any)?.motorDocType !== "forwarding" &&
+        (currentNoteSheet as any)?.motorDocType !== "supplyorder")
+    );
+  }, [currentNoteSheet, editForwardingContent, is133Series]);
+
   const getDefaultForwardingHtml = () => {
     const offName = officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি";
     const dateStr = new Date()
@@ -1039,8 +1066,10 @@ export function NoteSheetPreviewModal({
 
 
 
+    // Strip any fixed font-size from style attributes across all HTML elements (p, div, span, table, th, td, h1-h6)
+    // so font-size can be controlled globally and dynamically across the whole page (Requirement 3)
     raw = raw.replace(
-      /(<(?:p|div|span|h[1-6])[^>]*?style="[^"]*?)font-size\s*:\s*(?:9(?:\.[0-9]+)?|10(?:\.[0-9]+)?|11(?:\.[0-9]+)?|12(?:\.[0-9]+)?|13(?:\.[0-9]+)?|14(?:\.[0-9]+)?|15(?:\.[0-9]+)?|16(?:\.[0-9]+)?|17(?:\.[0-9]+)?|18(?:\.[0-9]+)?)\s*(?:pt|px)\s*;?/gi,
+      /(<[a-zA-Z0-9]+[^>]*?style="[^"]*?)font-size\s*:\s*[0-9]+(?:\.[0-9]+)?\s*(?:pt|px)\s*;?/gi,
       "$1",
     );
 
@@ -1267,12 +1296,12 @@ export function NoteSheetPreviewModal({
                 table.budget-provision-table,
                 .budget-provision-table {
                   border: none !important;
-                  font-size: ${Math.max(10, settings.fontSizePt)}pt !important;
+                  font-size: ${settings.fontSizePt}pt !important;
                 }
                 table.budget-provision-table td,
                 .budget-provision-table td {
                   border: none !important;
-                  font-size: ${Math.max(10, settings.fontSizePt)}pt !important;
+                  font-size: ${settings.fontSizePt}pt !important;
                   line-height: 1.4 !important;
                 }
                 table:not(.budget-provision-table),
@@ -1815,11 +1844,24 @@ export function NoteSheetPreviewModal({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
+    const docSuffix =
+      activeDocTab === "forwarding"
+        ? isApplicationDoc
+          ? "আবেদন"
+          : "ফরোয়ার্ডিং"
+        : activeDocTab === "supplyorder"
+          ? "সাপ্লাই_অর্ডার"
+          : activeDocTab === "sanctionnotesheet"
+            ? "মঞ্জুরী_নোট"
+            : activeDocTab === "sanctionletter"
+              ? "মঞ্জুরী_পত্র"
+              : "নোটশিট";
+
     const safeTitle = (currentNoteSheet.title || "Note_Sheet").replace(
       /[^a-zA-Z0-9_\u0980-\u09FF-]/g,
       "_",
     );
-    a.download = `${safeTitle}_${noteSheet.id}.doc`;
+    a.download = `${safeTitle}_${docSuffix}_${noteSheet.id}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -3009,29 +3051,39 @@ export function NoteSheetPreviewModal({
                       : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
                   }`}
                 >
-                  <span>📨</span>
+                  <span>{isApplicationDoc ? "✉️" : "📨"}</span>
                   <span>
-                    {language === "bn"
-                      ? "ফরোয়ার্ডিং পত্র (Forwarding)"
-                      : "Forwarding Letter"}
+                    {isApplicationDoc
+                      ? language === "bn"
+                        ? "আবেদন (Application)"
+                        : "Application"
+                      : language === "bn"
+                        ? "ফরোয়ার্ডিং পত্র (Forwarding)"
+                        : "Forwarding Letter"}
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchDocTab("supplyorder")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
-                    activeDocTab === "supplyorder"
-                      ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
-                      : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
-                  }`}
-                >
-                  <span>📦</span>
-                  <span>
-                    {language === "bn"
-                      ? "সাপ্লাই অর্ডার (Supply Order)"
-                      : "Supply Order"}
-                  </span>
-                </button>
+                {(!isApplicationDoc ||
+                  Boolean(currentNoteSheet.supplyOrderContent) ||
+                  Boolean(editSupplyOrderContent) ||
+                  (currentNoteSheet as any).motorDocType === "supplyorder" ||
+                  (currentNoteSheet as any).motorDocType === "all") && (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchDocTab("supplyorder")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      activeDocTab === "supplyorder"
+                        ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
+                        : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
+                    }`}
+                  >
+                    <span>📦</span>
+                    <span>
+                      {language === "bn"
+                        ? "সাপ্লাই অর্ডার (Supply Order)"
+                        : "Supply Order"}
+                    </span>
+                  </button>
+                )}
                 {(noteSheet.sanctionNoteSheetContent ||
                   currentNoteSheet.sanctionNoteSheetContent ||
                   editSanctionNoteSheetContent ||
@@ -3961,6 +4013,28 @@ export function NoteSheetPreviewModal({
                     }}
                     className="bg-white text-slate-900 shadow-2xl rounded-sm transition-all duration-150 flex flex-col relative shrink-0 border border-slate-300 mb-20"
                   >
+                    <style>{`
+                      .preview-sheet-content {
+                        font-size: ${previewFontPx}px !important;
+                      }
+                      .preview-sheet-content table {
+                        font-size: ${previewFontPx}px !important;
+                      }
+                      .preview-sheet-content table.budget-provision-table,
+                      .preview-sheet-content .budget-provision-table {
+                        font-size: ${previewFontPx}px !important;
+                      }
+                      .preview-sheet-content table td,
+                      .preview-sheet-content table th,
+                      .preview-sheet-content .budget-provision-table td {
+                        font-size: ${previewFontPx}px !important;
+                      }
+                      .preview-sheet-content div:not(.pad-header-title):not(.pad-header-subtitle),
+                      .preview-sheet-content p,
+                      .preview-sheet-content span:not(.pad-header-title):not(.pad-header-subtitle) {
+                        font-size: inherit;
+                      }
+                    `}</style>
                     {/* Margin guideline overlays (for interactive visual guidance) */}
                     {showGuidelines && (
                       <div
