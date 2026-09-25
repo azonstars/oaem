@@ -2440,7 +2440,7 @@ async function startServer() {
       console.warn("Auto-sync 133 series note sheets on boot error:", _e);
     }
 
-    app.listen(PORT, "0.0.0.0", () => {
+    app.listen(Number(PORT), "0.0.0.0", () => {
       console.log(
         `Allocation & Expense Management Server running on port ${PORT}`,
       );
