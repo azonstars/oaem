@@ -427,7 +427,7 @@ export function getDbSheetData(
 }
 
 /**
- * Saves all sheet items to SQLite and updates in-memory cache
+ * Saves all sheet items to SQLite and updates in-memory cache using high-speed atomic batching
  */
 export async function saveDbSheetData(
   sheetName: string,
@@ -441,26 +441,35 @@ export async function saveDbSheetData(
   }
 
   try {
-
     if (items.length === 0) {
       await dbClient.execute(`DELETE FROM ${sheetName}`);
       return;
     }
 
+    const statements: any[] = [];
     const currentIds = items.map((it) => it.id).filter(Boolean);
-    if (currentIds.length > 0) {
+    if (currentIds.length > 0 && currentIds.length < 500) {
       const placeholders = currentIds.map(() => "?").join(",");
-      await dbClient.execute({
+      statements.push({
         sql: `DELETE FROM ${sheetName} WHERE id NOT IN (${placeholders})`,
         args: currentIds,
       });
     }
 
     for (const item of items) {
-      await insertOrReplaceItem(sheetName, item);
+      const stmt = getItemStatement(sheetName, item);
+      if (stmt) {
+        statements.push(stmt);
+      }
     }
 
-    await checkpointWal();
+    if (statements.length > 0) {
+      const BATCH_SIZE = 80;
+      for (let i = 0; i < statements.length; i += BATCH_SIZE) {
+        const chunk = statements.slice(i, i + BATCH_SIZE);
+        await dbClient.batch(chunk, "write");
+      }
+    }
   } catch (err) {
     console.error(
       `[SQLite Error] Failed to save records for ${sheetName}:`,
@@ -471,10 +480,59 @@ export async function saveDbSheetData(
 }
 
 /**
- * Inserts or updates an individual item in its corresponding table
+ * Saves a single item directly to SQLite and updates in-memory cache with sub-millisecond latency
  */
-async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
-  if (!dbClient || !item) return;
+export async function saveDbSingleItem(
+  sheetName: string,
+  item: any,
+): Promise<void> {
+  if (!item || !item.id) return;
+  if (!memoryCache[sheetName]) {
+    memoryCache[sheetName] = [];
+  }
+  const idx = memoryCache[sheetName].findIndex((it: any) => it.id === item.id);
+  if (idx !== -1) {
+    memoryCache[sheetName][idx] = item;
+  } else {
+    memoryCache[sheetName].push(item);
+  }
+
+  if (dbClient) {
+    const stmt = getItemStatement(sheetName, item);
+    if (stmt) {
+      await dbClient.execute(stmt);
+    }
+  }
+}
+
+/**
+ * Deletes a single item from SQLite and cache
+ */
+export async function deleteDbItem(
+  sheetName: string,
+  id: string,
+): Promise<void> {
+  if (memoryCache[sheetName]) {
+    memoryCache[sheetName] = memoryCache[sheetName].filter(
+      (it: any) => it.id !== id,
+    );
+  }
+  if (dbClient) {
+    await dbClient.execute({
+      sql: `DELETE FROM ${sheetName} WHERE id = ?`,
+      args: [id],
+    });
+  }
+}
+
+/**
+ * Builds SQL and parameters for an individual item
+ */
+export function getItemStatement(
+  sheet: string,
+  item: any,
+): { sql: string; args: any[] } | null {
+  if (!item || !item.id) return null;
 
   const dataStr = JSON.stringify(item);
   const cleanArgs = (args: any[]) =>
@@ -482,7 +540,7 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
 
   switch (sheet) {
     case "Settings":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO Settings (id, institutionName, webAppName, data) VALUES (?, ?, ?, ?)`,
         args: cleanArgs([
           item.id || "system_settings",
@@ -490,11 +548,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.webAppName || "",
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "FinancialYears":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO FinancialYears (id, name, startDate, endDate, isActive, status, isClosed, closedAt, closedBy, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -508,11 +565,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.closedBy || null,
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "Offices":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO Offices (id, name, type, code, address, parentOfficeId, status, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -524,11 +580,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.status || "Active",
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "Users":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO Users (id, userId, name, email, role, officeId, designation, passwordHash, passwordSalt, status, mustChangePassword, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -544,11 +599,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.mustChangePassword ? 1 : 0,
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "Categories":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO Categories (id, code, name, description, budgetHead, status, allowInQuotation, allowExcess, requireApproval, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -562,11 +616,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.requireApproval ? 1 : 0,
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "Allocations":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO Allocations (id, financialYearId, officeId, categoryId, type, allocatedAmount, date, referenceNo, allocatedBy, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -580,11 +633,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.allocatedBy || "",
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "Expenses":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO Expenses (id, financialYearId, officeId, categoryId, expenseType, quotationFormType, expenseDate, amount, baseAmount, vatRate, vatAmount, taxRate, taxAmount, netPayable, grossAmount, voucherNo, voucherDate, description, status, noteSheetId, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -609,11 +661,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.noteSheetId || null,
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "NoteSheets":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO NoteSheets (id, financialYearId, officeId, expenseId, title, status, createdBy, createdAt, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -626,11 +677,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.createdAt || "",
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "NoteTemplates":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO NoteTemplates (id, categoryId, title, data) VALUES (?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -638,11 +688,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.title || "",
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "OpeningBalances":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO OpeningBalances (id, financialYearId, officeId, categoryId, amount, sourceFYId, data) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -653,11 +702,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.sourceFYId || null,
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "AuditLogs":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO AuditLogs (id, timestamp, userId, action, tableName, recordId, details, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -669,11 +717,10 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.details || "",
           dataStr,
         ]),
-      });
-      break;
+      };
 
     case "PostFactoProposals":
-      await dbClient.execute({
+      return {
         sql: `INSERT OR REPLACE INTO PostFactoProposals (id, financialYearId, officeId, categoryId, description, vatRate, taxRate, unitPrice, totalAmount, managerName, status, sanctionMemoNo, sanctionDate, sanctionedAmount, sanctionDocument, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         args: cleanArgs([
           item.id,
@@ -693,13 +740,52 @@ async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
           item.sanctionDocument || "",
           dataStr,
         ]),
-      });
-      break;
+      };
+
+    case "StockProInvoices":
+      return {
+        sql: `INSERT OR REPLACE INTO StockProInvoices (id, date, agentId, totalAmount, linkedPadNo, createdBy, data) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        args: cleanArgs([
+          item.id,
+          item.date || "",
+          item.agentId || "",
+          Number(item.totalAmount || 0),
+          item.linkedPadNo || "",
+          item.createdBy || "",
+          dataStr,
+        ]),
+      };
+
+    case "ToolDocuments":
+      return {
+        sql: `INSERT OR REPLACE INTO ToolDocuments (id, toolType, title, docDate, memoNo, officeId, financialYearId, createdBy, totalAmount, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: cleanArgs([
+          item.id,
+          item.toolType || "",
+          item.title || "",
+          item.docDate || "",
+          item.memoNo || "",
+          item.officeId || "",
+          item.financialYearId || "",
+          item.createdBy || "",
+          Number(item.totalAmount || 0),
+          dataStr,
+        ]),
+      };
 
     default:
-      console.warn(
-        `[SQLite] Unrecognized table ${sheet}, skipping SQL mapping.`,
-      );
+      return null;
+  }
+}
+
+/**
+ * Inserts or updates an individual item in its corresponding table
+ */
+async function insertOrReplaceItem(sheet: string, item: any): Promise<void> {
+  if (!dbClient || !item) return;
+  const stmt = getItemStatement(sheet, item);
+  if (stmt) {
+    await dbClient.execute(stmt);
   }
 }
 

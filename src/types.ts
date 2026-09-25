@@ -433,6 +433,19 @@ export interface BranchDebitEntry {
   amount: number;
 }
 
+export interface FuelExpenseItem {
+  id?: string;
+  fuelType?: string;
+  supplyDate?: string;
+  receiptNoDate?: string;
+  qtyLiters?: number;
+  unit?: string;
+  ratePerLiter?: number;
+  supplierName?: string;
+  totalAmount?: number;
+  prevPayOrderNoDate?: string;
+}
+
 export interface Expense {
   id: string;
   financialYearId: string;
@@ -485,6 +498,10 @@ export interface Expense {
   driverName?: string;
   ferryAmount?: number;
   maintenancePurpose?: string;
+  fuelMonthYear?: string;
+  fuelType?: string;
+  fuelSupplierName?: string;
+  fuelItems?: FuelExpenseItem[];
 }
 
 export interface NoteSheet {
@@ -494,6 +511,7 @@ export interface NoteSheet {
   expenseId?: string;
   title: string;
   content: string;
+  applicationContent?: string;
   forwardingContent?: string;
   supplyOrderContent?: string;
   sanctionNoteSheetContent?: string;

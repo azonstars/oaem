@@ -100,8 +100,6 @@ export const DEFAULT_A4_SETTINGS: PrintLayoutSettings = {
   customHeight: 297,
 };
 
-// const DEFAULT_SETTINGS = DEFAULT_NOTESHEET_SETTINGS;
-
 const GOOGLE_DOCS_FONT_SIZES = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28,
   32, 36, 40, 48, 56, 64, 72, 96, 120, 144, 200, 300, 500,
@@ -211,6 +209,7 @@ export function NoteSheetPreviewModal({
     useState<NoteSheet>(noteSheet);
   const [activeDocTab, setActiveDocTab] = useState<
     | "notesheet"
+    | "application"
     | "forwarding"
     | "supplyorder"
     | "sanctionnotesheet"
@@ -220,6 +219,9 @@ export function NoteSheetPreviewModal({
   const [editTitle, setEditTitle] = useState(noteSheet.title);
   const [editNoteSheetContent, setEditNoteSheetContent] = useState(
     noteSheet.content || "",
+  );
+  const [editApplicationContent, setEditApplicationContent] = useState(
+    noteSheet.applicationContent || "",
   );
   const [editForwardingContent, setEditForwardingContent] = useState(
     noteSheet.forwardingContent || "",
@@ -298,6 +300,33 @@ export function NoteSheetPreviewModal({
     activeDocTab,
   ]);
 
+  const is133_26 = useMemo(() => {
+    const cid = categoryId || (currentNoteSheet as any)?.categoryId || (noteSheet as any)?.categoryId || "";
+    const cn = categoryName || "";
+    const t = (currentNoteSheet?.title || noteSheet?.title || "");
+    const c = (currentNoteSheet?.content || noteSheet?.content || "");
+    return Boolean(
+      cid === "cat-32" ||
+      cn.includes("১৩৩/২৬") ||
+      cn.includes("133/26") ||
+      cn.includes("মোটর গাড়ীর জ্বালানী") ||
+      cn.includes("মোটর গাড়ির জ্বালানী") ||
+      cn.includes("জ্বালানী") ||
+      t.includes("১৩৩/২৬") ||
+      t.includes("133/26") ||
+      t.includes("মোটর গাড়ীর জ্বালানী") ||
+      t.includes("মোটর গাড়ির জ্বালানী") ||
+      t.includes("জ্বালানী") ||
+      c.includes("১৩৩/২৬") ||
+      c.includes("133/26") ||
+      c.includes("মোটর গাড়ীর জ্বালানী") ||
+      c.includes("মোটর গাড়ির জ্বালানী") ||
+      c.includes("জ্বালানী বিল") ||
+      c.includes("জ্বালানী তেলের মূল্য") ||
+      (currentNoteSheet as any)?.is133_26
+    );
+  }, [categoryId, categoryName, currentNoteSheet, noteSheet]);
+
   const is133Series = useMemo(() => {
     const isCode133 = Boolean(
       categoryName?.includes("১৩৩/") ||
@@ -316,6 +345,7 @@ export function NoteSheetPreviewModal({
   }, [categoryId, categoryName, currentNoteSheet]);
 
   const isApplicationDoc = useMemo(() => {
+    if (is133_26) return false;
     const fwContent = currentNoteSheet?.forwardingContent || editForwardingContent || "";
     return (
       fwContent.includes("ভ্রমণ অগ্রিম/ বিল মূল্য/ খরচের অগ্রিম/ খরচের পুরঃভরণ পাওয়ার আবেদন") ||
@@ -323,7 +353,7 @@ export function NoteSheetPreviewModal({
         (currentNoteSheet as any)?.motorDocType !== "forwarding" &&
         (currentNoteSheet as any)?.motorDocType !== "supplyorder")
     );
-  }, [currentNoteSheet, editForwardingContent, is133Series]);
+  }, [currentNoteSheet, editForwardingContent, is133Series, is133_26]);
 
   const getDefaultForwardingHtml = () => {
     const offName = officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি";
@@ -364,7 +394,7 @@ export function NoteSheetPreviewModal({
         বাংলাদেশ কৃষি ব্যাংক, প্রধান কার্যালয়, ঢাকা।
       </div>
       <div style="font-weight: bold; margin-bottom: 12pt;">
-        বিষয়ঃ- ${currentNoteSheet?.title || "প্রশাসনিক ও বিল পরিশোধের ফরোয়ার্ডিং পত্র"}।
+        বিষয়ঃ ${currentNoteSheet?.title || "প্রশাসনিক ও বিল পরিশোধের ফরোয়ার্ডিং পত্র"}।
       </div>
       <p style="text-indent: 35px; margin-bottom: 10pt; line-height: 1.6;">
         উপযুক্ত বিষয়ের প্রেক্ষিতে জানানো যাচ্ছে যে, অত্র কার্যালয়ের প্রশাসনিক ও দাপ্তরিক ব্যয়ের বিবরণী ও সংশ্লিষ্ট ভাউচারাদি যাচাইপূর্বক যথাযথ অনুমোদনের জন্য অত্র পত্রের সাথে প্রেরণ করা হলো।
@@ -443,6 +473,10 @@ export function NoteSheetPreviewModal({
     `;
   };
 
+  const getDefaultApplicationHtml = () => {
+    return isApplicationDoc ? (editForwardingContent || currentNoteSheet.forwardingContent || "") : "";
+  };
+
   const activeEditContent =
     activeDocTab === "notesheet"
       ? editNoteSheetContent
@@ -450,22 +484,28 @@ export function NoteSheetPreviewModal({
         ? editSanctionNoteSheetContent ||
           currentNoteSheet.sanctionNoteSheetContent ||
           ""
-        : activeDocTab === "forwarding"
-          ? editForwardingContent ||
-            currentNoteSheet.forwardingContent ||
-            getDefaultForwardingHtml()
-          : activeDocTab === "sanctionletter"
-            ? editSanctionLetterContent ||
-              currentNoteSheet.sanctionLetterContent ||
-              ""
-            : editSupplyOrderContent ||
-              currentNoteSheet.supplyOrderContent ||
-              getDefaultSupplyOrderHtml();
+        : activeDocTab === "application"
+          ? editApplicationContent ||
+            currentNoteSheet.applicationContent ||
+            (isApplicationDoc ? (editForwardingContent || currentNoteSheet.forwardingContent) : "") ||
+            ""
+          : activeDocTab === "forwarding"
+            ? editForwardingContent ||
+              currentNoteSheet.forwardingContent ||
+              getDefaultForwardingHtml()
+            : activeDocTab === "sanctionletter"
+              ? editSanctionLetterContent ||
+                currentNoteSheet.sanctionLetterContent ||
+                ""
+              : editSupplyOrderContent ||
+                currentNoteSheet.supplyOrderContent ||
+                getDefaultSupplyOrderHtml();
 
   const setActiveEditContent = (val: string) => {
     if (activeDocTab === "notesheet") setEditNoteSheetContent(val);
     else if (activeDocTab === "sanctionnotesheet")
       setEditSanctionNoteSheetContent(val);
+    else if (activeDocTab === "application") setEditApplicationContent(val);
     else if (activeDocTab === "forwarding") setEditForwardingContent(val);
     else if (activeDocTab === "supplyorder") setEditSupplyOrderContent(val);
     else if (activeDocTab === "sanctionletter")
@@ -475,6 +515,7 @@ export function NoteSheetPreviewModal({
   const handleSwitchDocTab = (
     tab:
       | "notesheet"
+      | "application"
       | "forwarding"
       | "supplyorder"
       | "sanctionnotesheet"
@@ -493,6 +534,8 @@ export function NoteSheetPreviewModal({
         if (activeDocTab === "notesheet") setEditNoteSheetContent(currentVal);
         else if (activeDocTab === "sanctionnotesheet")
           setEditSanctionNoteSheetContent(currentVal);
+        else if (activeDocTab === "application")
+          setEditApplicationContent(currentVal);
         else if (activeDocTab === "forwarding")
           setEditForwardingContent(currentVal);
         else if (activeDocTab === "supplyorder")
@@ -548,11 +591,31 @@ export function NoteSheetPreviewModal({
     setCurrentNoteSheet(noteSheet);
     setEditTitle(noteSheet.title);
     setEditNoteSheetContent(noteSheet.content || "");
+    setEditApplicationContent(noteSheet.applicationContent || "");
     setEditForwardingContent(noteSheet.forwardingContent || "");
     setEditSupplyOrderContent(noteSheet.supplyOrderContent || "");
     setEditSanctionNoteSheetContent(noteSheet.sanctionNoteSheetContent || "");
     setEditSanctionLetterContent(noteSheet.sanctionLetterContent || "");
-  }, [noteSheet]);
+
+    const is133_26_note = Boolean(
+      categoryId === "cat-32" ||
+      categoryName?.includes("১৩৩/২৬") ||
+      categoryName?.includes("133/26") ||
+      categoryName?.includes("মোটর গাড়ীর জ্বালানী খরচ") ||
+      noteSheet.title?.includes("১৩৩/২৬") ||
+      noteSheet.title?.includes("133/26") ||
+      noteSheet.content?.includes("১৩৩/২৬") ||
+      noteSheet.content?.includes("133/26") ||
+      noteSheet.content?.includes("জ্বালানী")
+    );
+    if (is133_26_note) {
+      if (!initialTab || (initialTab as string) === "application" || initialTab === "supplyorder") {
+        setActiveDocTab("notesheet");
+      }
+      setEditApplicationContent("");
+      setEditSupplyOrderContent("");
+    }
+  }, [noteSheet, categoryId, categoryName, initialTab]);
 
   const handleSyncFromExpense = async () => {
     const expId = currentNoteSheet.expenseId || noteSheet.expenseId;
@@ -583,6 +646,7 @@ export function NoteSheetPreviewModal({
         setCurrentNoteSheet(data.noteSheet);
         setEditTitle(data.noteSheet.title || editTitle);
         setEditNoteSheetContent(data.noteSheet.content || "");
+        setEditApplicationContent(data.noteSheet.applicationContent || "");
         setEditForwardingContent(data.noteSheet.forwardingContent || "");
         setEditSupplyOrderContent(data.noteSheet.supplyOrderContent || "");
         setEditSanctionNoteSheetContent(
@@ -621,6 +685,7 @@ export function NoteSheetPreviewModal({
 
       let noteContent = editNoteSheetContent;
       let sanctionNoteContent = editSanctionNoteSheetContent;
+      let appContent = editApplicationContent;
       let fwdContent = editForwardingContent;
       let soContent = editSupplyOrderContent;
       let slContent = editSanctionLetterContent;
@@ -631,6 +696,9 @@ export function NoteSheetPreviewModal({
       } else if (activeDocTab === "sanctionnotesheet") {
         sanctionNoteContent = contentToSave;
         setEditSanctionNoteSheetContent(contentToSave);
+      } else if (activeDocTab === "application") {
+        appContent = contentToSave;
+        setEditApplicationContent(contentToSave);
       } else if (activeDocTab === "forwarding") {
         fwdContent = contentToSave;
         setEditForwardingContent(contentToSave);
@@ -646,6 +714,7 @@ export function NoteSheetPreviewModal({
         isCustomEdited: true,
         title: editTitle,
         content: noteContent,
+        applicationContent: appContent,
         forwardingContent: fwdContent,
         supplyOrderContent: soContent,
         sanctionNoteSheetContent: sanctionNoteContent,
@@ -669,6 +738,7 @@ export function NoteSheetPreviewModal({
       setCurrentNoteSheet(data);
       setEditTitle(data.title || editTitle);
       setEditNoteSheetContent(data.content || noteContent);
+      setEditApplicationContent(data.applicationContent || appContent);
       setEditForwardingContent(data.forwardingContent || fwdContent);
       setEditSupplyOrderContent(data.supplyOrderContent || soContent);
       setEditSanctionNoteSheetContent(
@@ -830,6 +900,7 @@ export function NoteSheetPreviewModal({
     Record<string, PrintLayoutSettings>
   >(() => ({
     notesheet: loadSettingsForDoc("notesheet"),
+    application: loadSettingsForDoc("application"),
     forwarding: loadSettingsForDoc("forwarding"),
     supplyorder: loadSettingsForDoc("supplyorder"),
     sanctionnotesheet: loadSettingsForDoc("sanctionnotesheet"),
@@ -867,6 +938,7 @@ export function NoteSheetPreviewModal({
 
   const { pageWidthMm, pageHeightMm } = useMemo(() => {
     if (
+      activeDocTab === "application" ||
       activeDocTab === "forwarding" ||
       activeDocTab === "supplyorder" ||
       activeDocTab === "sanctionletter"
@@ -1040,25 +1112,33 @@ export function NoteSheetPreviewModal({
             : currentNoteSheet.sanctionNoteSheetContent ||
               editSanctionNoteSheetContent ||
               ""
-          : activeDocTab === "forwarding"
+          : activeDocTab === "application"
             ? isEditing
-              ? editForwardingContent
-              : currentNoteSheet.forwardingContent ||
-                editForwardingContent ||
+              ? editApplicationContent
+              : currentNoteSheet.applicationContent ||
+                (isApplicationDoc ? (editForwardingContent || currentNoteSheet.forwardingContent) : "") ||
+                editApplicationContent ||
                 ""
-            : activeDocTab === "sanctionletter"
+            : activeDocTab === "forwarding"
               ? isEditing
-                ? editSanctionLetterContent
-                : currentNoteSheet.sanctionLetterContent ||
-                  editSanctionLetterContent ||
+                ? editForwardingContent
+                : currentNoteSheet.forwardingContent ||
+                  editForwardingContent ||
                   ""
-              : isEditing
-                ? editSupplyOrderContent
-                : currentNoteSheet.supplyOrderContent ||
-                  editSupplyOrderContent ||
-                  "";
+              : activeDocTab === "sanctionletter"
+                ? isEditing
+                  ? editSanctionLetterContent
+                  : currentNoteSheet.sanctionLetterContent ||
+                    editSanctionLetterContent ||
+                    ""
+                : isEditing
+                  ? editSupplyOrderContent
+                  : currentNoteSheet.supplyOrderContent ||
+                    editSupplyOrderContent ||
+                    "";
 
     if (!raw || raw.trim() === "") {
+      if (activeDocTab === "application") return getDefaultApplicationHtml();
       if (activeDocTab === "forwarding") return getDefaultForwardingHtml();
       if (activeDocTab === "supplyorder") return getDefaultSupplyOrderHtml();
       return "";
@@ -1070,6 +1150,13 @@ export function NoteSheetPreviewModal({
     // so font-size can be controlled globally and dynamically across the whole page (Requirement 3)
     raw = raw.replace(
       /(<[a-zA-Z0-9]+[^>]*?style="[^"]*?)font-size\s*:\s*[0-9]+(?:\.[0-9]+)?\s*(?:pt|px)\s*;?/gi,
+      "$1",
+    );
+
+    // Strip any hardcoded font-family from style attributes across all HTML elements
+    // so font-family changes apply uniformly across the whole document including tables
+    raw = raw.replace(
+      /(<[a-zA-Z0-9]+[^>]*?style="[^"]*?)font-family\s*:\s*[^;"]+;?/gi,
       "$1",
     );
 
@@ -1177,10 +1264,13 @@ export function NoteSheetPreviewModal({
                 body {
                   margin: 0;
                   padding: 0;
-                  font-family: ${settings.fontFamily};
+                  font-family: ${settings.fontFamily} !important;
                   color: #000000;
                   background: #f8fafc;
                   -webkit-font-smoothing: antialiased;
+                }
+                body, table, th, td, div, p, span, tr, .forwarding-table, .forwarding-table th, .forwarding-table td {
+                  font-family: ${settings.fontFamily} !important;
                 }
 
                 .print-toolbar {
@@ -1845,17 +1935,19 @@ export function NoteSheetPreviewModal({
     const a = document.createElement("a");
     a.href = url;
     const docSuffix =
-      activeDocTab === "forwarding"
-        ? isApplicationDoc
-          ? "আবেদন"
-          : "ফরোয়ার্ডিং"
-        : activeDocTab === "supplyorder"
-          ? "সাপ্লাই_অর্ডার"
-          : activeDocTab === "sanctionnotesheet"
-            ? "মঞ্জুরী_নোট"
-            : activeDocTab === "sanctionletter"
-              ? "মঞ্জুরী_পত্র"
-              : "নোটশিট";
+      activeDocTab === "application"
+        ? "আবেদন"
+        : activeDocTab === "forwarding"
+          ? isApplicationDoc
+            ? "আবেদন"
+            : "ফরোয়ার্ডিং"
+          : activeDocTab === "supplyorder"
+            ? "সাপ্লাই_অর্ডার"
+            : activeDocTab === "sanctionnotesheet"
+              ? "মঞ্জুরী_নোট"
+              : activeDocTab === "sanctionletter"
+                ? "মঞ্জুরী_পত্র"
+                : "নোটশিট";
 
     const safeTitle = (currentNoteSheet.title || "Note_Sheet").replace(
       /[^a-zA-Z0-9_\u0980-\u09FF-]/g,
@@ -3042,31 +3134,65 @@ export function NoteSheetPreviewModal({
                     {language === "bn" ? "নোট শিট (Note Sheet)" : "Note Sheet"}
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchDocTab("forwarding")}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
-                    activeDocTab === "forwarding"
-                      ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
-                      : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
-                  }`}
-                >
-                  <span>{isApplicationDoc ? "✉️" : "📨"}</span>
-                  <span>
-                    {isApplicationDoc
-                      ? language === "bn"
+
+                {/* Application Tab */}
+                {!is133_26 &&
+                  (Boolean(currentNoteSheet.applicationContent) ||
+                    Boolean(editApplicationContent) ||
+                    ((currentNoteSheet as any).motorDocType === "application" || (currentNoteSheet as any).motorDocType === "all") ||
+                    (isApplicationDoc && !currentNoteSheet.applicationContent)) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchDocTab("application")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      activeDocTab === "application"
+                        ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
+                        : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
+                    }`}
+                  >
+                    <span>✉️</span>
+                    <span>
+                      {language === "bn"
                         ? "আবেদন (Application)"
-                        : "Application"
-                      : language === "bn"
+                        : "Application"}
+                    </span>
+                  </button>
+                )}
+
+                {/* Forwarding Letter Tab */}
+                {(is133_26 ||
+                  (!is133_26 &&
+                    (Boolean(currentNoteSheet.forwardingContent && !isApplicationDoc) ||
+                      Boolean(currentNoteSheet.forwardingContent && currentNoteSheet.applicationContent) ||
+                      Boolean(editForwardingContent) ||
+                      (currentNoteSheet as any).motorDocType === "forwarding" ||
+                      (currentNoteSheet as any).motorDocType === "all" ||
+                      (!is133Series && !isApplicationDoc)))) && (
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchDocTab("forwarding")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      activeDocTab === "forwarding"
+                        ? "bg-emerald-600 text-white shadow-sm font-bold ring-1 ring-emerald-400"
+                        : "bg-slate-800/90 text-slate-300 hover:bg-slate-750 hover:text-white border border-slate-700"
+                    }`}
+                  >
+                    <span>📨</span>
+                    <span>
+                      {language === "bn"
                         ? "ফরোয়ার্ডিং পত্র (Forwarding)"
                         : "Forwarding Letter"}
-                  </span>
-                </button>
-                {(!isApplicationDoc ||
-                  Boolean(currentNoteSheet.supplyOrderContent) ||
-                  Boolean(editSupplyOrderContent) ||
-                  (currentNoteSheet as any).motorDocType === "supplyorder" ||
-                  (currentNoteSheet as any).motorDocType === "all") && (
+                    </span>
+                  </button>
+                )}
+
+                {/* Supply Order Tab */}
+                {!is133_26 &&
+                  (Boolean(currentNoteSheet.supplyOrderContent) ||
+                    Boolean(editSupplyOrderContent) ||
+                    (currentNoteSheet as any).motorDocType === "supplyorder" ||
+                    (currentNoteSheet as any).motorDocType === "all" ||
+                    (!is133Series && currentNoteSheet.expenseType === "Quotation")) && (
                   <button
                     type="button"
                     onClick={() => handleSwitchDocTab("supplyorder")}
@@ -3137,7 +3263,7 @@ export function NoteSheetPreviewModal({
                 <span className="font-medium">
                   {isEditing
                     ? language === "bn"
-                      ? `${activeDocTab === "notesheet" ? "নোট শিট" : activeDocTab === "sanctionnotesheet" ? "মঞ্জুরীর নোটশিট" : activeDocTab === "forwarding" ? "ফরোয়ার্ডিং পত্র" : activeDocTab === "sanctionletter" ? "মঞ্জুরপত্র" : "সাপ্লাই অর্ডার"} কাস্টম এডিট মোড চালু`
+                      ? `${activeDocTab === "notesheet" ? "নোট শিট" : activeDocTab === "sanctionnotesheet" ? "মঞ্জুরীর নোটশিট" : activeDocTab === "application" ? "আবেদন" : activeDocTab === "forwarding" ? "ফরোয়ার্ডিং পত্র" : activeDocTab === "sanctionletter" ? "মঞ্জুরপত্র" : "সাপ্লাই অর্ডার"} কাস্টম এডিট মোড চালু`
                       : "Custom Edit Mode Active"
                     : language === "bn"
                       ? "প্রিভিউ ও প্রিন্ট মোড"
@@ -4014,25 +4140,35 @@ export function NoteSheetPreviewModal({
                     className="bg-white text-slate-900 shadow-2xl rounded-sm transition-all duration-150 flex flex-col relative shrink-0 border border-slate-300 mb-20"
                   >
                     <style>{`
+                      .preview-sheet-content,
+                      .preview-sheet-content * {
+                        font-family: inherit !important;
+                      }
                       .preview-sheet-content {
                         font-size: ${previewFontPx}px !important;
                       }
                       .preview-sheet-content table {
                         font-size: ${previewFontPx}px !important;
+                        font-family: inherit !important;
                       }
                       .preview-sheet-content table.budget-provision-table,
                       .preview-sheet-content .budget-provision-table {
                         font-size: ${previewFontPx}px !important;
+                        font-family: inherit !important;
                       }
                       .preview-sheet-content table td,
                       .preview-sheet-content table th,
+                      .preview-sheet-content .forwarding-table td,
+                      .preview-sheet-content .forwarding-table th,
                       .preview-sheet-content .budget-provision-table td {
                         font-size: ${previewFontPx}px !important;
+                        font-family: inherit !important;
                       }
                       .preview-sheet-content div:not(.pad-header-title):not(.pad-header-subtitle),
                       .preview-sheet-content p,
                       .preview-sheet-content span:not(.pad-header-title):not(.pad-header-subtitle) {
                         font-size: inherit;
+                        font-family: inherit !important;
                       }
                     `}</style>
                     {/* Margin guideline overlays (for interactive visual guidance) */}

@@ -12,6 +12,7 @@ import {
   EntryOfficerInfo,
   QuotationItem,
   BranchDebitEntry,
+  FuelExpenseItem,
 } from "../types";
 import {
   Receipt,
@@ -109,6 +110,7 @@ export function ExpensesView({
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const [errorMessage, setErrorMessage] = useState("");
   const [toastMsg, setToastMsg] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -167,6 +169,51 @@ export function ExpensesView({
   const [motorDocType, setMotorDocType] = useState<
     "application" | "forwarding" | "supplyorder" | "all"
   >("application");
+  const [fuelMonthYear, setFuelMonthYear] = useState("জুন/২০২৬");
+  const [fuelType, setFuelType] = useState("অকটেন");
+  const [fuelSupplierName, setFuelSupplierName] = useState("মেসার্স হিল ভিউ");
+  const [fuelItems, setFuelItems] = useState<FuelExpenseItem[]>([
+    {
+      id: "f-1",
+      fuelType: "অকটেন",
+      supplyDate: "2026-06-02",
+      qtyLiters: 20,
+      unit: "লিঃ",
+      ratePerLiter: 145,
+      supplierName: "মেসার্স হিল ভিউ",
+      totalAmount: 2900,
+    },
+    {
+      id: "f-2",
+      fuelType: "অকটেন",
+      supplyDate: "2026-06-09",
+      qtyLiters: 40,
+      unit: "লিঃ",
+      ratePerLiter: 145,
+      supplierName: "মেসার্স হিল ভিউ",
+      totalAmount: 5800,
+    },
+    {
+      id: "f-3",
+      fuelType: "অকটেন",
+      supplyDate: "2026-06-24",
+      qtyLiters: 7,
+      unit: "লিঃ",
+      ratePerLiter: 145,
+      supplierName: "মেসার্স হিল ভিউ",
+      totalAmount: 1015,
+    },
+    {
+      id: "f-4",
+      fuelType: "মবিল",
+      supplyDate: "2026-06-24",
+      qtyLiters: 5,
+      unit: "লিঃ",
+      ratePerLiter: 1000,
+      supplierName: "মেসার্স হিল ভিউ",
+      totalAmount: 5000,
+    },
+  ]);
 
   const defaultSupplierOrg1 = "কম্পিউটার ভিলেজ, বনরূপা, রাঙ্গামাটি।";
   const defaultSupplierOrg2 = "কম্পিউটার পার্ক, বনরূপা, রাঙ্গামাটি।";
@@ -431,9 +478,54 @@ export function ExpensesView({
     ]);
     setBranchEntries([]);
     setNoteSheetId("");
-    setVehicleModel("Toyota Land Cruiser Prado");
+    setVehicleModel("জীপ");
     setVehicleRegNo("ঢাকা-মেট্রো-ঘ-১৪-১১৩২");
     setMotorDocType("application");
+    setFuelMonthYear("জুন/২০২৬");
+    setFuelType("অকটেন");
+    setFuelSupplierName("মেসার্স হিল ভিউ");
+    setFuelItems([
+      {
+        id: "f-1",
+        fuelType: "অকটেন",
+        supplyDate: "2026-06-02",
+        qtyLiters: 20,
+        unit: "লিঃ",
+        ratePerLiter: 145,
+        supplierName: "মেসার্স হিল ভিউ",
+        totalAmount: 2900,
+      },
+      {
+        id: "f-2",
+        fuelType: "অকটেন",
+        supplyDate: "2026-06-09",
+        qtyLiters: 40,
+        unit: "লিঃ",
+        ratePerLiter: 145,
+        supplierName: "মেসার্স হিল ভিউ",
+        totalAmount: 5800,
+      },
+      {
+        id: "f-3",
+        fuelType: "অকটেন",
+        supplyDate: "2026-06-24",
+        qtyLiters: 7,
+        unit: "লিঃ",
+        ratePerLiter: 145,
+        supplierName: "মেসার্স হিল ভিউ",
+        totalAmount: 1015,
+      },
+      {
+        id: "f-4",
+        fuelType: "মবিল",
+        supplyDate: "2026-06-24",
+        qtyLiters: 5,
+        unit: "লিঃ",
+        ratePerLiter: 1000,
+        supplierName: "মেসার্স হিল ভিউ",
+        totalAmount: 5000,
+      },
+    ]);
     setApplicantType("OwnOffice");
     setApplicantName("");
     setApplicantDesignation("");
@@ -503,9 +595,109 @@ export function ExpensesView({
     if (exp.supplierOrg2) setSupplierOrg2(exp.supplierOrg2);
     if (exp.supplierOrg3) setSupplierOrg3(exp.supplierOrg3);
     if (exp.vehicleModel) setVehicleModel(exp.vehicleModel);
+    else setVehicleModel("Toyota Land Cruiser Prado");
     if (exp.vehicleRegNo) setVehicleRegNo(exp.vehicleRegNo);
-    if (exp.motorDocType) setMotorDocType(exp.motorDocType);
-    else setMotorDocType("application");
+    else setVehicleRegNo("ঢাকা-মেট্রো-ঘ-১৪-১১৩২");
+    if (exp.fuelMonthYear) setFuelMonthYear(exp.fuelMonthYear);
+    else setFuelMonthYear("জুন/২০২৬");
+    if (exp.fuelType) setFuelType(exp.fuelType);
+    else setFuelType("অকটেন");
+    if (exp.fuelSupplierName) setFuelSupplierName(exp.fuelSupplierName);
+    else setFuelSupplierName("মেসার্স হিল ভিউ");
+
+    let loadedFuelItems: FuelExpenseItem[] = [];
+    const rawFuelItems = exp.fuelItems as any;
+    if (rawFuelItems) {
+      if (Array.isArray(rawFuelItems) && rawFuelItems.length > 0) {
+        loadedFuelItems = rawFuelItems;
+      } else if (typeof rawFuelItems === "string" && rawFuelItems.trim()) {
+        try {
+          const parsed = JSON.parse(rawFuelItems);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            loadedFuelItems = parsed;
+          }
+        } catch {}
+      }
+    }
+
+    const expCategory = categories.find((c) => c.id === exp.categoryId);
+    const isThisFuelCategory = isVehicleFuelCategory(expCategory);
+
+    if (exp.motorDocType) {
+      setMotorDocType(exp.motorDocType);
+    } else {
+      setMotorDocType("application");
+    }
+
+    if (
+      loadedFuelItems.length > 0 &&
+      loadedFuelItems.some(
+        (it) => Number(it.qtyLiters) > 0 || Number(it.totalAmount) > 0,
+      )
+    ) {
+      setFuelItems(loadedFuelItems);
+    } else if (isThisFuelCategory) {
+      setFuelItems([
+        {
+          id: "f-1",
+          fuelType: "অকটেন",
+          supplyDate: "2026-06-02",
+          qtyLiters: 20,
+          unit: "লিঃ",
+          ratePerLiter: 145,
+          supplierName: exp.fuelSupplierName || "মেসার্স হিল ভিউ",
+          totalAmount: 2900,
+        },
+        {
+          id: "f-2",
+          fuelType: "অকটেন",
+          supplyDate: "2026-06-09",
+          qtyLiters: 40,
+          unit: "লিঃ",
+          ratePerLiter: 145,
+          supplierName: exp.fuelSupplierName || "মেসার্স হিল ভিউ",
+          totalAmount: 5800,
+        },
+        {
+          id: "f-3",
+          fuelType: "অকটেন",
+          supplyDate: "2026-06-24",
+          qtyLiters: 7,
+          unit: "লিঃ",
+          ratePerLiter: 145,
+          supplierName: exp.fuelSupplierName || "মেসার্স হিল ভিউ",
+          totalAmount: 1015,
+        },
+        {
+          id: "f-4",
+          fuelType: "মবিল",
+          supplyDate: "2026-06-24",
+          qtyLiters: 5,
+          unit: "লিঃ",
+          ratePerLiter: 1000,
+          supplierName: exp.fuelSupplierName || "মেসার্স হিল ভিউ",
+          totalAmount: 5000,
+        },
+      ]);
+    } else {
+      setFuelItems(
+        loadedFuelItems.length > 0
+          ? loadedFuelItems
+          : [
+              {
+                id: "f-1",
+                fuelType: exp.fuelType || "অকটেন",
+                receiptNoDate: exp.voucherNo
+                  ? `ক্যাশ মেমো নং-${exp.voucherNo}`
+                  : "ক্যাশ মেমো অনুযায়ী",
+                qtyLiters: 0,
+                ratePerLiter: 0,
+                totalAmount: Number(exp.amount || 0),
+                prevPayOrderNoDate: "",
+              },
+            ],
+      );
+    }
 
     if (exp.quotationItems && exp.quotationItems.length > 0) {
       if (exp.quotationFormType === "Form2") {
@@ -1029,6 +1221,7 @@ export function ExpensesView({
     if (!cat) return false;
     return Boolean(
       (cat.code && (cat.code.startsWith("১৩৩/") || cat.code.startsWith("133/"))) ||
+      cat.id === "cat-32" ||
       cat.id === "cat-33"
     );
   };
@@ -1056,6 +1249,36 @@ export function ExpensesView({
     const isFuel = name.includes("জ্বালানী") || name.includes("জ্বালানি") || name.includes("ফুয়েল") || name.toLowerCase().includes("fuel");
     const isMaintenance = name.includes("রক্ষণাবেক্ষণ") || name.includes("রক্ষণাবেক্ষন") || (name.includes("মেরামত") && isVehicle);
     return isVehicle && (isFuel || isMaintenance);
+  };
+
+  const isVehicleFuelCategory = (cat?: { id?: string; code?: string; name?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    if (code === "১৩৩/২৬" || code === "133/26" || cat.id === "cat-32") {
+      return true;
+    }
+    const name = cat.name || "";
+    const isVehicle = name.includes("গাড়ী") || name.includes("গাড়ি") || name.includes("মোটর");
+    const isFuel = name.includes("জ্বালানী") || name.includes("জ্বালানি") || name.includes("ফুয়েল") || name.toLowerCase().includes("fuel");
+    return isVehicle && isFuel;
+  };
+
+  const _isVehicleMaintenanceCategory = (cat?: { id?: string; code?: string; name?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    if (
+      code === "১৩৩/২৬ (এ)" ||
+      code === "133/26 (A)" ||
+      code === "133/26(A)" ||
+      code === "১৩৩/২৬(এ)" ||
+      cat.id === "cat-33"
+    ) {
+      return true;
+    }
+    const name = cat.name || "";
+    const isVehicle = name.includes("গাড়ী") || name.includes("গাড়ি") || name.includes("মোটর");
+    const isMaintenance = name.includes("রক্ষণাবেক্ষণ") || name.includes("রক্ষণাবেক্ষন") || (name.includes("মেরামত") && isVehicle);
+    return isVehicle && isMaintenance;
   };
 
   const categoryAllocations = allocations.filter(
@@ -1367,14 +1590,26 @@ export function ExpensesView({
 
     const selectedCatObj = categories.find((c) => c.id === categoryId);
     const is133Series = is133SeriesCategory(selectedCatObj);
+    const is133_26 =
+      selectedCatObj?.id === "cat-32" ||
+      (selectedCatObj?.code &&
+        (selectedCatObj.code === "১৩৩/২৬" || selectedCatObj.code === "133/26"));
     const isFuelOrMaint = isVehicleFuelOrMaintenanceCategory(selectedCatObj);
+    const isFuel = isVehicleFuelCategory(selectedCatObj);
     const motorPayload = is133Series
       ? {
           vehicleModel: isFuelOrMaint ? vehicleModel : undefined,
           vehicleRegNo: isFuelOrMaint ? vehicleRegNo : undefined,
-          motorDocType,
+          motorDocType: is133_26 ? undefined : motorDocType,
+          fuelMonthYear: isFuel ? fuelMonthYear : undefined,
+          fuelType: isFuel ? fuelType : undefined,
+          fuelSupplierName: isFuel ? fuelSupplierName : undefined,
+          fuelItems: isFuel ? fuelItems : undefined,
         }
       : {};
+
+    if (isSaving) return;
+    setIsSaving(true);
 
     try {
       if (editingExpenseId && onUpdateExpense) {
@@ -1511,26 +1746,32 @@ export function ExpensesView({
           noteSheetId: noteSheetId || undefined,
         });
 
-        if (newExp && newExp.id && !noteSheetId) {
-          await apiFetch(`/api/expenses/${newExp.id}/generate-notesheet`, {
+        if (newExp && newExp.id && !newExp.noteSheetId && !noteSheetId) {
+          apiFetch(`/api/expenses/${newExp.id}/generate-notesheet`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ userId: currentUser.id }),
-          });
+          }).catch(console.error);
         }
       }
 
       resetForm();
       setShowModal(false);
-      if (refreshData) refreshData();
       showToast(
-        language === "bn"
-          ? "ব্যয় সফলভাবে যুক্ত/হালনাগাদ হয়েছে!"
-          : "Expense saved successfully!",
+        editingExpenseId
+          ? language === "bn"
+            ? "ব্যয় সফলভাবে হালনাগাদ হয়েছে!"
+            : "Expense updated successfully!"
+          : language === "bn"
+            ? "ব্যয় সফলভাবে সংরক্ষিত হয়েছে!"
+            : "Expense saved successfully!",
       );
+      if (refreshData) refreshData();
     } catch (err: any) {
       console.error(err);
       setErrorMessage(err.message || "Error saving expense");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -2263,6 +2504,62 @@ export function ExpensesView({
                           setDebitAccount(
                             selCat.code || selCat.budgetHead || selCat.name,
                           );
+                          if (isVehicleFuelCategory(selCat)) {
+                            setFuelItems((prev) => {
+                              const hasValidItems = prev.some(
+                                (it) =>
+                                  Number(it.qtyLiters) > 0 ||
+                                  Number(it.totalAmount) > 0,
+                              );
+                              if (hasValidItems && prev.length > 1) return prev;
+                              return [
+                                {
+                                  id: "f-1",
+                                  fuelType: "অকটেন",
+                                  supplyDate: "2026-06-02",
+                                  qtyLiters: 20,
+                                  unit: "লিঃ",
+                                  ratePerLiter: 145,
+                                  supplierName:
+                                    fuelSupplierName || "মেসার্স হিল ভিউ",
+                                  totalAmount: 2900,
+                                },
+                                {
+                                  id: "f-2",
+                                  fuelType: "অকটেন",
+                                  supplyDate: "2026-06-09",
+                                  qtyLiters: 40,
+                                  unit: "লিঃ",
+                                  ratePerLiter: 145,
+                                  supplierName:
+                                    fuelSupplierName || "মেসার্স হিল ভিউ",
+                                  totalAmount: 5800,
+                                },
+                                {
+                                  id: "f-3",
+                                  fuelType: "অকটেন",
+                                  supplyDate: "2026-06-24",
+                                  qtyLiters: 7,
+                                  unit: "লিঃ",
+                                  ratePerLiter: 145,
+                                  supplierName:
+                                    fuelSupplierName || "মেসার্স হিল ভিউ",
+                                  totalAmount: 1015,
+                                },
+                                {
+                                  id: "f-4",
+                                  fuelType: "মবিল",
+                                  supplyDate: "2026-06-24",
+                                  qtyLiters: 5,
+                                  unit: "লিঃ",
+                                  ratePerLiter: 1000,
+                                  supplierName:
+                                    fuelSupplierName || "মেসার্স হিল ভিউ",
+                                  totalAmount: 5000,
+                                },
+                              ];
+                            });
+                          }
                         }
                       }}
                       className={`w-full px-3 py-2 border rounded-xl focus:outline-none ${
@@ -2303,109 +2600,111 @@ export function ExpensesView({
                       </span>
                     </div>
 
-                    {/* Document Type Radio Selector */}
-                    <div className="pt-1 pb-1">
-                      <label
-                        className={`block font-semibold text-xs mb-2 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
-                      >
-                        {language === "bn"
-                          ? "প্রস্তুতযোগ্য নথির ধরণ নির্বাচন করুন (Document Type) :"
-                          : "Select Document Type to Generate:"}
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {/* Document Type Radio Selector (Only for other 133 series categories; hidden for 133/26) */}
+                    {!(currentCategory?.id === "cat-32" || (currentCategory?.code && (currentCategory.code === "১৩৩/২৬" || currentCategory.code === "133/26"))) && (
+                      <div className="pt-1 pb-1">
                         <label
-                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
-                            motorDocType === "application"
-                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
-                              : isDark
-                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
-                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
-                          }`}
+                          className={`block font-semibold text-xs mb-2 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
                         >
-                          <input
-                            type="radio"
-                            name="motorDocType"
-                            value="application"
-                            checked={motorDocType === "application"}
-                            onChange={() => setMotorDocType("application")}
-                            className="sr-only"
-                          />
-                          <span>✉️</span>
-                          <span>
-                            {language === "bn" ? "আবেদন (ডিফল্ট)" : "Application"}
-                          </span>
+                          {language === "bn"
+                            ? "প্রস্তুতযোগ্য নথির ধরণ নির্বাচন করুন (Document Type) :"
+                            : "Select Document Type to Generate:"}
                         </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                          <label
+                            className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                              motorDocType === "application"
+                                ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                                : isDark
+                                  ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                  : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="motorDocType"
+                              value="application"
+                              checked={motorDocType === "application"}
+                              onChange={() => setMotorDocType("application")}
+                              className="sr-only"
+                            />
+                            <span>✉️</span>
+                            <span>
+                              {language === "bn" ? "আবেদন (ডিফল্ট)" : "Application"}
+                            </span>
+                          </label>
 
-                        <label
-                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
-                            motorDocType === "forwarding"
-                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
-                              : isDark
-                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
-                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="motorDocType"
-                            value="forwarding"
-                            checked={motorDocType === "forwarding"}
-                            onChange={() => setMotorDocType("forwarding")}
-                            className="sr-only"
-                          />
-                          <span>📨</span>
-                          <span>
-                            {language === "bn" ? "ফরোয়ার্ডিং" : "Forwarding"}
-                          </span>
-                        </label>
+                          <label
+                            className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                              motorDocType === "forwarding"
+                                ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                                : isDark
+                                  ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                  : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="motorDocType"
+                              value="forwarding"
+                              checked={motorDocType === "forwarding"}
+                              onChange={() => setMotorDocType("forwarding")}
+                              className="sr-only"
+                            />
+                            <span>📨</span>
+                            <span>
+                              {language === "bn" ? "ফরোয়ার্ডিং" : "Forwarding"}
+                            </span>
+                          </label>
 
-                        <label
-                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
-                            motorDocType === "supplyorder"
-                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
-                              : isDark
-                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
-                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="motorDocType"
-                            value="supplyorder"
-                            checked={motorDocType === "supplyorder"}
-                            onChange={() => setMotorDocType("supplyorder")}
-                            className="sr-only"
-                          />
-                          <span>📦</span>
-                          <span>
-                            {language === "bn" ? "সাপ্লাই অর্ডার" : "Supply Order"}
-                          </span>
-                        </label>
+                          <label
+                            className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                              motorDocType === "supplyorder"
+                                ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                                : isDark
+                                  ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                  : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="motorDocType"
+                              value="supplyorder"
+                              checked={motorDocType === "supplyorder"}
+                              onChange={() => setMotorDocType("supplyorder")}
+                              className="sr-only"
+                            />
+                            <span>📦</span>
+                            <span>
+                              {language === "bn" ? "সাপ্লাই অর্ডার" : "Supply Order"}
+                            </span>
+                          </label>
 
-                        <label
-                          className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
-                            motorDocType === "all"
-                              ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
-                              : isDark
-                                ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
-                                : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="motorDocType"
-                            value="all"
-                            checked={motorDocType === "all"}
-                            onChange={() => setMotorDocType("all")}
-                            className="sr-only"
-                          />
-                          <span>📑</span>
-                          <span>
-                            {language === "bn" ? "সকল নথি (All)" : "All Docs"}
-                          </span>
-                        </label>
+                          <label
+                            className={`flex items-center gap-2 p-2 rounded-lg border text-xs cursor-pointer transition ${
+                              motorDocType === "all"
+                                ? "bg-blue-600 text-white border-blue-600 font-bold shadow-sm"
+                                : isDark
+                                  ? "bg-slate-850 border-slate-700 text-slate-300 hover:bg-slate-800"
+                                  : "bg-white border-slate-300 text-slate-800 hover:bg-slate-50"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="motorDocType"
+                              value="all"
+                              checked={motorDocType === "all"}
+                              onChange={() => setMotorDocType("all")}
+                              className="sr-only"
+                            />
+                            <span>📑</span>
+                            <span>
+                              {language === "bn" ? "সকল নথি (All)" : "All Docs"}
+                            </span>
+                          </label>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {isVehicleFuelOrMaintenanceCategory(currentCategory) && (
                       <div className="grid grid-cols-2 gap-3 pt-1 border-t border-blue-200/50 dark:border-slate-700">
@@ -2436,6 +2735,293 @@ export function ExpensesView({
                             placeholder="ঢাকা-মেট্রো-ঘ-১৪-১১৩২"
                             className={`w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
                           />
+                        </div>
+                      </div>
+                    )}
+
+                    {isVehicleFuelCategory(currentCategory) && (
+                      <div className="pt-2 border-t border-blue-200/50 dark:border-slate-700 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-amber-500 dark:text-amber-400">
+                          <div className="flex items-center gap-1.5">
+                            <span>⛽</span>
+                            <span>জ্বালানী খরচের বিস্তারিত বিবরণী (১৩৩/২৬ মোটর গাড়ি জ্বালানী)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const totalFuelCalc = fuelItems.reduce(
+                                (sum, it) => sum + (Number(it.totalAmount) || 0),
+                                0,
+                              );
+                              if (totalFuelCalc > 0) {
+                                setAmount(String(totalFuelCalc));
+                              }
+                            }}
+                            className="px-2 py-0.5 bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 rounded text-[11px] font-semibold transition"
+                            title="তালিকার মোট টাকা মূল খরচের পরিমাণে বসান"
+                          >
+                            🔄 মোট টাকা মূল বিলে সেট করুন
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                          <div>
+                            <label
+                              className={`block font-semibold text-xs mb-1 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                            >
+                              মাস ও বছর (একাধিক মাস যুক্ত করা যাবে)
+                            </label>
+                            <input
+                              type="text"
+                              value={fuelMonthYear}
+                              onChange={(e) => setFuelMonthYear(e.target.value)}
+                              placeholder="e.g. জুন/২০২৬ বা মে/২০২৬ ও জুন/২০২৬"
+                              className={`w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                            />
+                          </div>
+
+                          <div>
+                            <label
+                              className={`block font-semibold text-xs mb-1 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                            >
+                              ডিফল্ট তেলের ধরণ (Fuel Type)
+                            </label>
+                            <select
+                              value={fuelType}
+                              onChange={(e) => setFuelType(e.target.value)}
+                              className={`w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                            >
+                              <option value="অকটেন">অকটেন (Octane)</option>
+                              <option value="মবিল">মবিল (Mobil)</option>
+                              <option value="পেট্রোল">পেট্রোল (Petrol)</option>
+                              <option value="ডিজেল">ডিজেল (Diesel)</option>
+                              <option value="সিএনজি">সিএনজি (CNG)</option>
+                              <option value="এলপিজি">এলপিজি (LPG)</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label
+                              className={`block font-semibold text-xs mb-1 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                            >
+                              ডিফল্ট সরবরাহকারী প্রতিষ্ঠান
+                            </label>
+                            <input
+                              type="text"
+                              value={fuelSupplierName}
+                              onChange={(e) => setFuelSupplierName(e.target.value)}
+                              placeholder="মেসার্স হিল ভিউ"
+                              className={`w-full px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Fuel Items Dynamic Table */}
+                        <div className="border border-slate-700 rounded-xl overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-slate-800/80 text-slate-200 border-b border-slate-700 font-semibold">
+                              <tr>
+                                <th className="p-2 text-center w-8">#</th>
+                                <th className="p-2 w-24">জ্বালানীর ধরণ</th>
+                                <th className="p-2 min-w-[120px]">সরবরাহের তারিখ</th>
+                                <th className="p-2 text-right w-20">পরিমাণ (লিঃ)</th>
+                                <th className="p-2 text-right w-20">দর (প্রতি লিঃ)</th>
+                                <th className="p-2 min-w-[140px]">সরবরাহকারী প্রতিষ্ঠান</th>
+                                <th className="p-2 text-right w-28">মূল্য (টাকা)</th>
+                                <th className="p-2 text-center w-8"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                              {fuelItems.map((item, idx) => (
+                                <tr key={item.id || idx} className="hover:bg-slate-800/30">
+                                  <td className="p-1.5 text-center text-slate-400 font-mono">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.fuelType || fuelType}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFuelItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], fuelType: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="অকটেন / মবিল"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.supplyDate || item.receiptNoDate || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFuelItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = {
+                                            ...updated[idx],
+                                            supplyDate: val,
+                                            receiptNoDate: val,
+                                          };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="০২/০৬/২০২৬ বা 2026-06-02"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={item.qtyLiters || ""}
+                                      onChange={(e) => {
+                                        const qty = parseFloat(e.target.value) || 0;
+                                        setFuelItems((prev) => {
+                                          const updated = [...prev];
+                                          const rate = Number(updated[idx].ratePerLiter) || 0;
+                                          const tot = Number((qty * rate).toFixed(2));
+                                          updated[idx] = {
+                                            ...updated[idx],
+                                            qtyLiters: qty,
+                                            totalAmount: tot > 0 ? tot : updated[idx].totalAmount,
+                                          };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="20"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-right text-slate-100 font-mono"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={item.ratePerLiter || ""}
+                                      onChange={(e) => {
+                                        const rate = parseFloat(e.target.value) || 0;
+                                        setFuelItems((prev) => {
+                                          const updated = [...prev];
+                                          const qty = Number(updated[idx].qtyLiters) || 0;
+                                          const tot = Number((qty * rate).toFixed(2));
+                                          updated[idx] = {
+                                            ...updated[idx],
+                                            ratePerLiter: rate,
+                                            totalAmount: tot > 0 ? tot : updated[idx].totalAmount,
+                                          };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="145"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-right text-slate-100 font-mono"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.supplierName !== undefined ? item.supplierName : fuelSupplierName}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setFuelItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = {
+                                            ...updated[idx],
+                                            supplierName: val,
+                                          };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="মেসার্স হিল ভিউ"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={item.totalAmount || ""}
+                                      onChange={(e) => {
+                                        const amt = parseFloat(e.target.value) || 0;
+                                        setFuelItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], totalAmount: amt };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="2900"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-right text-emerald-400 font-mono font-bold"
+                                    />
+                                  </td>
+                                  <td className="p-1 text-center">
+                                    {fuelItems.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setFuelItems((prev) => prev.filter((_, i) => i !== idx));
+                                        }}
+                                        className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded transition"
+                                        title="মুছুন"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot className="bg-slate-800/60 font-semibold border-t border-slate-700 text-xs">
+                              <tr>
+                                <td colSpan={3} className="p-2 text-right text-slate-300">
+                                  সর্বমোট:
+                                </td>
+                                <td className="p-2 text-right font-mono text-slate-200">
+                                  {fuelItems
+                                    .reduce((s, it) => s + (Number(it.qtyLiters) || 0), 0)
+                                    .toFixed(2)}{" "}
+                                  লিঃ
+                                </td>
+                                <td className="p-2 text-center">-</td>
+                                <td className="p-2 text-center text-slate-300">মোট=</td>
+                                <td className="p-2 text-right font-mono text-emerald-400 font-bold">
+                                  ৳{" "}
+                                  {fuelItems
+                                    .reduce((s, it) => s + (Number(it.totalAmount) || 0), 0)
+                                    .toLocaleString("en-IN")}
+                                </td>
+                                <td className="p-2"></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFuelItems((prev) => [
+                                ...prev,
+                                {
+                                  id: `f-${Date.now()}`,
+                                  fuelType: fuelType,
+                                  receiptNoDate: "",
+                                  qtyLiters: 0,
+                                  ratePerLiter: 0,
+                                  totalAmount: 0,
+                                  prevPayOrderNoDate: "",
+                                },
+                              ]);
+                            }}
+                            className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 rounded-lg text-xs font-semibold flex items-center gap-1 transition"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> জ্বালানী ভাউচার লাইন যোগ করুন
+                          </button>
+
+                          <div className="text-[11px] text-slate-400">
+                            * এই বিবরণী স্বয়ংক্রিয়ভাবে ১৩৩/২৬ খাতের নোট শিট টেবিলে অন্তর্ভুক্ত হবে।
+                          </div>
                         </div>
                       </div>
                     )}
@@ -5035,10 +5621,19 @@ export function ExpensesView({
                 </button>
                 <button
                   type="submit"
-                  disabled={isDuplicateVoucher || isNegativeBalance}
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-semibold shadow disabled:opacity-50"
+                  disabled={isSaving || isDuplicateVoucher || isNegativeBalance}
+                  className="flex items-center justify-center gap-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white rounded-xl font-semibold shadow disabled:opacity-50 transition-all cursor-pointer"
                 >
-                  {t.save}
+                  {isSaving && (
+                    <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  )}
+                  <span>
+                    {isSaving
+                      ? language === "bn"
+                        ? "সংরক্ষণ হচ্ছে..."
+                        : "Saving..."
+                      : t.save}
+                  </span>
                 </button>
               </div>
             </form>

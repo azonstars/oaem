@@ -152,6 +152,14 @@ export const ExpensesSchema = z.object({
   approvedBy: z.string().optional(),
   approvedAt: z.string().optional(),
   rejectionReason: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  vehicleRegNo: z.string().optional(),
+  motorDocType: z.string().optional(),
+  fuelMonthYear: z.string().optional(),
+  fuelType: z.string().optional(),
+  fuelSupplierName: z.string().optional(),
+  fuelItems: z.any().optional(),
+  maintenancePurpose: z.string().optional(),
 }).strip();
 
 export const NoteTemplatesSchema = z.object({
@@ -166,10 +174,12 @@ export const NoteSheetsSchema = z.object({
   expenseId: z.string().optional(),
   title: z.string().min(1, "নোটশিট শিরোনাম আবশ্যক"),
   content: z.string().min(1, "নোটশিট কনটেন্ট আবশ্যক"),
+  applicationContent: z.string().optional(),
   forwardingContent: z.string().optional(),
   supplyOrderContent: z.string().optional(),
   sanctionNoteSheetContent: z.string().optional(),
   sanctionLetterContent: z.string().optional(),
+  motorDocType: z.string().optional(),
   pdfPath: z.string().optional(),
   status: z.string().optional(),
   createdBy: z.string().optional(),
