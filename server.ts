@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import fs from "fs";
@@ -54,7 +55,7 @@ import {
 } from "./server/notesheet-sync.js";
 
 export const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 export {
   createToken,
