@@ -13,6 +13,7 @@ import {
   QuotationItem,
   BranchDebitEntry,
   FuelExpenseItem,
+  SystemSettings,
 } from "../types";
 import {
   Receipt,
@@ -64,6 +65,7 @@ interface ExpensesViewProps {
     filter: "All" | "Pending" | "Approved" | "Rejected",
   ) => void;
   refreshData?: () => void;
+  systemSettings?: SystemSettings | null;
 }
 
 export function ExpensesView({
@@ -84,6 +86,7 @@ export function ExpensesView({
   statusFilter: propStatusFilter,
   setStatusFilter: propSetStatusFilter,
   refreshData,
+  systemSettings,
 }: ExpensesViewProps) {
   const { t, formatCurrency, language } = useLanguage();
   const { isCustom, isDark } = useTheme();
@@ -5721,6 +5724,7 @@ export function ExpensesView({
         <NoteSheetPreviewModal
           noteSheet={previewNoteSheet}
           categories={categories}
+          systemSettings={systemSettings}
           officeName={
             offices.find((o) => o.id === previewNoteSheet.officeId)?.name
           }

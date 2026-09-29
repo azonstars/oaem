@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { apiFetch } from "../../api";
 import { Database, Save, FolderOpen, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  GlobalDocumentPadHeader,
+  GlobalDocumentWatermark,
+} from "../../utils/documentBranding";
 
 interface MultiItemBillToolProps {
   currentUser: User;
@@ -891,211 +895,230 @@ export function MultiItemBillTool({ currentUser, systemSettings, offices, financ
             {/* Document Content */}
             <div
               id="multi-item-doc-area"
-              className="flex-1 overflow-y-auto p-6 sm:p-10 font-serif leading-relaxed text-sm bg-white"
+              className="flex-1 overflow-y-auto p-6 sm:p-10 font-serif leading-relaxed text-sm bg-white relative min-h-[550px]"
             >
-              {/* PAGE 1: Note Sheet */}
-              {currentModalPage === 0 && (
-                <div className="space-y-4">
-                  <div className="text-center font-bold text-base underline leading-snug">
-                    বিষয় :- {allItemDescs} ক্রয়ের বিল প্রদান প্রসঙ্গে।
-                  </div>
-                  <p className="text-justify leading-relaxed">
-                    অত্র অঞ্চলের শাখা কার্যালয়ের চাহিদার প্রেক্ষিতে {allItemDescs} ক্রয়ের নিমিত্তে ৩ টি প্রতিষ্ঠানের
-                    দরপত্র সংগ্রহ করা হয়। প্রাপ্ত দরপত্রসমূহের মধ্যে সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{primaryV1Name}’
-                    হতে ১৫% মূসক ও ৫% আয়করসহ মোট ৳= {formatPriceBn(grandTotalRaw)} ({numberToWordsBn(grandTotalRaw)}) টাকা
-                    মাত্র মূল্যে পণ্য সরবরাহ গ্রহণ করা হয়েছে।
-                  </p>
+              {/* Official Background Watermark */}
+              <GlobalDocumentWatermark
+                systemSettings={systemSettings}
+                toolId="multi-item-bill"
+                docId={
+                  currentModalPage === 0
+                    ? "multi-item-notesheet"
+                    : currentModalPage === 1
+                      ? "multi-item-order"
+                      : "multi-item-forwarding"
+                }
+              />
 
-                  <table className="w-full border-collapse my-3 text-xs">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th className="border border-slate-700 p-1.5 text-center">ক্রম</th>
-                        <th className="border border-slate-700 p-1.5 text-left">পণ্যের বিবরণ</th>
-                        <th className="border border-slate-700 p-1.5 text-left">দরদাতা প্রতিষ্ঠানের নাম</th>
-                        <th className="border border-slate-700 p-1.5 text-center">একক মূল্য</th>
-                        <th className="border border-slate-700 p-1.5 text-right">মোট মূল্য</th>
-                        <th className="border border-slate-700 p-1.5 text-center">মন্তব্য</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((it, idx) => (
-                        <React.Fragment key={it.id}>
-                          <tr>
-                            <td rowSpan={3} className="border border-slate-700 p-1.5 text-center font-bold">
-                              {toBn(idx + 1)}
-                            </td>
-                            <td rowSpan={3} className="border border-slate-700 p-1.5 text-left">
-                              {toBn(it.item_qty)} ({it.item_qty_words}) টি {it.desc}
-                            </td>
-                            <td className="border border-slate-700 p-1 text-left">{it.v1.name}</td>
-                            <td className="border border-slate-700 p-1 text-center">= {formatPriceBn(it.v1.unit)}</td>
-                            <td className="border border-slate-700 p-1 text-right">= {formatPriceBn(it.v1.price)}</td>
-                            <td className="border border-slate-700 p-1 text-center">{it.v1.note}</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-slate-700 p-1 text-left">{it.v2.name}</td>
-                            <td className="border border-slate-700 p-1 text-center">= {formatPriceBn(it.v2.unit)}</td>
-                            <td className="border border-slate-700 p-1 text-right">= {formatPriceBn(it.v2.price)}</td>
-                            <td className="border border-slate-700 p-1 text-center">{it.v2.note}</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-slate-700 p-1 text-left">{it.v3.name}</td>
-                            <td className="border border-slate-700 p-1 text-center">= {formatPriceBn(it.v3.unit)}</td>
-                            <td className="border border-slate-700 p-1 text-right">= {formatPriceBn(it.v3.price)}</td>
-                            <td className="border border-slate-700 p-1 text-center">{it.v3.note}</td>
-                          </tr>
-                        </React.Fragment>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="font-bold bg-slate-50">
-                        <td colSpan={4} className="border border-slate-700 p-2 text-right">
-                          সর্বমোট (সর্বনিম্ন দরদাতা অনুযায়ী)
-                        </td>
-                        <td className="border border-slate-700 p-2 text-right">= {formatPriceBn(grandTotalRaw)}</td>
-                        <td className="border border-slate-700 p-2 text-center">-</td>
-                      </tr>
-                    </tfoot>
-                  </table>
+              <div className="relative z-10 space-y-4">
+                {/* Official Bank Pad Header */}
+                <GlobalDocumentPadHeader
+                  systemSettings={systemSettings}
+                  officeName={branchName || userOffice || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"}
+                  toolId="multi-item-bill"
+                  docId={
+                    currentModalPage === 0
+                      ? "multi-item-notesheet"
+                      : currentModalPage === 1
+                        ? "multi-item-order"
+                        : "multi-item-forwarding"
+                  }
+                />
 
-                  <p className="text-justify leading-relaxed">
-                    উক্ত দরপত্রসমূহের মধ্যে সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{primaryV1Name}’ হতে মোট ৳=
-                    {formatPriceBn(grandTotalRaw)} ({numberToWordsBn(grandTotalRaw)}) টাকা মাত্র মূল্যে উক্ত সামগ্রী
-                    সরবরাহ গ্রহণ করা হয়েছে। উক্ত বিলটি অনুমোদনের জন্য উপস্থাপন করা হলো।
-                  </p>
-
-                  <div className="pt-6 space-y-4">
-                    <p>
-                      <u>
-                        <b>আঞ্চলিক ব্যবস্থাপক ঃ-</b>
-                      </u>{" "}
-                      অনুমোদিত।
+                {/* PAGE 1: Note Sheet */}
+                {currentModalPage === 0 && (
+                  <div className="space-y-4">
+                    <div className="text-center font-bold text-base underline leading-snug">
+                      বিষয় :- {allItemDescs} ক্রয়ের বিল প্রদান প্রসঙ্গে।
+                    </div>
+                    <p className="text-justify leading-relaxed">
+                      অত্র অঞ্চলের শাখা কার্যালয়ের চাহিদার প্রেক্ষিতে {allItemDescs} ক্রয়ের নিমিত্তে ৩ টি প্রতিষ্ঠানের
+                      দরপত্র সংগ্রহ করা হয়। প্রাপ্ত দরপত্রসমূহের মধ্যে সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{primaryV1Name}’
+                      হতে ১৫% মূসক ও ৫% আয়করসহ মোট ৳= {formatPriceBn(grandTotalRaw)} ({numberToWordsBn(grandTotalRaw)}) টাকা
+                      মাত্র মূল্যে পণ্য সরবরাহ গ্রহণ করা হয়েছে।
                     </p>
-                  </div>
-                </div>
-              )}
 
-              {/* PAGE 2: Supply Order */}
-              {currentModalPage === 1 && (
-                 <div className="space-y-4">
-                   <div className="text-center font-bold text-lg text-emerald-900 border-b pb-2">
-                    {systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক"}
-                  </div>
-                  <div className="text-center text-xs text-slate-600">{branchName}</div>
+                    <table className="w-full border-collapse my-3 text-xs">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th className="border border-slate-700 p-1.5 text-center">ক্রম</th>
+                          <th className="border border-slate-700 p-1.5 text-left">পণ্যের বিবরণ</th>
+                          <th className="border border-slate-700 p-1.5 text-left">দরদাতা প্রতিষ্ঠানের নাম</th>
+                          <th className="border border-slate-700 p-1.5 text-center">একক মূল্য</th>
+                          <th className="border border-slate-700 p-1.5 text-right">মোট মূল্য</th>
+                          <th className="border border-slate-700 p-1.5 text-center">মন্তব্য</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((it, idx) => (
+                          <React.Fragment key={it.id}>
+                            <tr>
+                              <td rowSpan={3} className="border border-slate-700 p-1.5 text-center font-bold">
+                                {toBn(idx + 1)}
+                              </td>
+                              <td rowSpan={3} className="border border-slate-700 p-1.5 text-left">
+                                {toBn(it.item_qty)} ({it.item_qty_words}) টি {it.desc}
+                              </td>
+                              <td className="border border-slate-700 p-1 text-left">{it.v1.name}</td>
+                              <td className="border border-slate-700 p-1 text-center">= {formatPriceBn(it.v1.unit)}</td>
+                              <td className="border border-slate-700 p-1 text-right">= {formatPriceBn(it.v1.price)}</td>
+                              <td className="border border-slate-700 p-1 text-center">{it.v1.note}</td>
+                            </tr>
+                            <tr>
+                              <td className="border border-slate-700 p-1 text-left">{it.v2.name}</td>
+                              <td className="border border-slate-700 p-1 text-center">= {formatPriceBn(it.v2.unit)}</td>
+                              <td className="border border-slate-700 p-1 text-right">= {formatPriceBn(it.v2.price)}</td>
+                              <td className="border border-slate-700 p-1 text-center">{it.v2.note}</td>
+                            </tr>
+                            <tr>
+                              <td className="border border-slate-700 p-1 text-left">{it.v3.name}</td>
+                              <td className="border border-slate-700 p-1 text-center">= {formatPriceBn(it.v3.unit)}</td>
+                              <td className="border border-slate-700 p-1 text-right">= {formatPriceBn(it.v3.price)}</td>
+                              <td className="border border-slate-700 p-1 text-center">{it.v3.note}</td>
+                            </tr>
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="font-bold bg-slate-50">
+                          <td colSpan={4} className="border border-slate-700 p-2 text-right">
+                            সর্বমোট (সর্বনিম্ন দরদাতা অনুযায়ী)
+                          </td>
+                          <td className="border border-slate-700 p-2 text-right">= {formatPriceBn(grandTotalRaw)}</td>
+                          <td className="border border-slate-700 p-2 text-center">-</td>
+                        </tr>
+                      </tfoot>
+                    </table>
 
-                  <div className="flex justify-between text-xs pt-2 border-b pb-1">
-                    <span>{memoNoOrder}</span>
-                    <span>তারিখ : {formattedDate}</span>
-                  </div>
-
-                  <div className="text-xs space-y-0.5">
-                    <p>
-                      <strong>{recipientTitle},</strong>
+                    <p className="text-justify leading-relaxed">
+                      উক্ত দরপত্রসমূহের মধ্যে সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{primaryV1Name}’ হতে মোট ৳=
+                      {formatPriceBn(grandTotalRaw)} ({numberToWordsBn(grandTotalRaw)}) টাকা মাত্র মূল্যে উক্ত সামগ্রী
+                      সরবরাহ গ্রহণ করা হয়েছে। উক্ত বিলটি অনুমোদনের জন্য উপস্থাপন করা হলো।
                     </p>
-                    <p>{recipientOrg}</p>
-                  </div>
 
-                  <div className="text-center font-bold text-sm underline pt-2">
-                    বিষয় : {allItemDescs} সরবরাহের আদেশ।
-                  </div>
-
-                  <p className="text-justify leading-relaxed">
-                    প্রিয় মহোদয়,
-                    <br />
-                    উপর্যুক্ত বিষয়ে আপনার দাখিলকৃত কোটেশনের সর্বনিম্ন দর গৃহীত হওয়ায় নিম্নবর্ণিত শর্ত সাপেক্ষে মালামাল
-                    সরবরাহের আদেশ প্রদান করা হলোঃ
-                  </p>
-
-                  <div className="space-y-1 pl-4 text-xs">
-                    <p>১) আদেশের ৭ (সাত) দিনের মধ্যে মালামাল অত্র কার্যালয়ে সরবরাহ করতে হবে।</p>
-                    <p>২) মালামাল যথাযথভাবে পরীক্ষা-নিরীক্ষার পর সন্তোষজনক পাওয়া গেলে বিল পরিশোধ করা হবে।</p>
-                    <p>৩) সরকারি বিধি মোতাবেক প্রযোজ্য মূসক ও আয়কর কর্তন করা হবে।</p>
-                  </div>
-
-                  <div className="flex justify-end pt-12">
-                    <div className="text-center">
-                      <p>আপনার বিশ্বস্ত,</p>
-                      <div className="h-10"></div>
-                      <p className="font-bold">আঞ্চলিক ব্যবস্থাপক</p>
+                    <div className="pt-6 space-y-4">
+                      <p>
+                        <u>
+                          <b>আঞ্চলিক ব্যবস্থাপক ঃ-</b>
+                        </u>{" "}
+                        অনুমোদিত।
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* PAGE 3: Forwarding Letter */}
-              {currentModalPage === 2 && (
-                 <div className="space-y-4">
-                   <div className="text-center font-bold text-lg text-emerald-900 border-b pb-2">
-                    {systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক"}
-                  </div>
-                  <div className="text-center text-xs text-slate-600">{branchName}</div>
+                {/* PAGE 2: Supply Order */}
+                {currentModalPage === 1 && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-xs pt-2 border-b pb-1">
+                      <span>{memoNoOrder}</span>
+                      <span>তারিখ : {formattedDate}</span>
+                    </div>
 
-                  <div className="flex justify-between text-xs pt-2 border-b pb-1">
-                    <span>{memoNoForward}</span>
-                    <span>তারিখ : {formattedDate}</span>
-                  </div>
+                    <div className="text-xs space-y-0.5">
+                      <p>
+                        <strong>{recipientTitle},</strong>
+                      </p>
+                      <p>{recipientOrg}</p>
+                    </div>
 
-                  <div className="text-xs space-y-0.5">
-                    <p>ব্যবস্থাপক</p>
-                    <p>{systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক"}</p>
-                    <p>রাঙ্গামাটি শাখা, রাঙ্গামাটি।</p>
-                  </div>
+                    <div className="text-center font-bold text-sm underline pt-2">
+                      বিষয় : {allItemDescs} সরবরাহের আদেশ।
+                    </div>
 
-                  <div className="text-center font-bold text-sm underline pt-2">
-                    বিষয় : {allItemDescs} ক্রয়ের বিল পরিশোধ প্রসঙ্গে।
-                  </div>
+                    <p className="text-justify leading-relaxed">
+                      প্রিয় মহোদয়,
+                      <br />
+                      উপর্যুক্ত বিষয়ে আপনার দাখিলকৃত কোটেশনের সর্বনিম্ন দর গৃহীত হওয়ায় নিম্নবর্ণিত শর্ত সাপেক্ষে মালামাল
+                      সরবরাহের আদেশ প্রদান করা হলোঃ
+                    </p>
 
-                  <p className="text-justify leading-relaxed">
-                    জনাব,
-                    <br />
-                    উপর্যুক্ত বিষয়ে জানানো যাচ্ছে যে, সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{primaryV1Name}’ হতে সরবরাহকৃত মালামালের
-                    মোট বিল বাবদ ৳= {formatPriceBn(grandTotalRaw)} ({numberToWordsBn(grandTotalRaw)}) টাকা মাত্র নিম্নোক্ত
-                    খাতসমূহে ডেবিট ও ক্রেডিট করার জন্য অনুরোধ করা হলোঃ
-                  </p>
+                    <div className="space-y-1 pl-4 text-xs">
+                      <p>১) আদেশের ৭ (সাত) দিনের মধ্যে মালামাল অত্র কার্যালয়ে সরবরাহ করতে হবে।</p>
+                      <p>২) মালামাল যথাযথভাবে পরীক্ষা-নিরীক্ষার পর সন্তোষজনক পাওয়া গেলে বিল পরিশোধ করা হবে।</p>
+                      <p>৩) সরকারি বিধি মোতাবেক প্রযোজ্য মূসক ও আয়কর কর্তন করা হবে।</p>
+                    </div>
 
-                  <table className="w-full border-collapse my-3 text-xs">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th colSpan={3} className="border border-slate-700 p-1.5 text-center">
-                          ডেবিট (Debit)
-                        </th>
-                        <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          ক্রেডিট (Credit)
-                        </th>
-                      </tr>
-                      <tr className="bg-slate-50">
-                        <th className="border border-slate-700 p-1 text-left">হিসাব খাত</th>
-                        <th className="border border-slate-700 p-1 text-left">বিবরণ</th>
-                        <th className="border border-slate-700 p-1 text-right">টাকা</th>
-                        <th className="border border-slate-700 p-1 text-left">হিসাব খাত</th>
-                        <th className="border border-slate-700 p-1 text-right">টাকা</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {branches.map((br) => {
-                        const bObj = DEFAULT_BRANCH_LIST.find((b) => b.code === br.code);
-                        return (
-                          <tr key={br.id}>
-                            <td className="border border-slate-700 p-1">১১১৪- {bObj?.name}</td>
-                            <td className="border border-slate-700 p-1">{allItemDescs}</td>
-                            <td className="border border-slate-700 p-1 text-right">{formatPriceBn(br.amt)}</td>
-                            <td className="border border-slate-700 p-1">PO (পে-অর্ডার)</td>
-                            <td className="border border-slate-700 p-1 text-right">{formatPriceBn(br.amt)}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-
-                  <div className="flex justify-end pt-12">
-                    <div className="text-center">
-                      <p>আপনার বিশ্বস্ত,</p>
-                      <div className="h-10"></div>
-                      <p className="font-bold">আঞ্চলিক ব্যবস্থাপক</p>
+                    <div className="flex justify-end pt-12">
+                      <div className="text-center">
+                        <p>আপনার বিশ্বস্ত,</p>
+                        <div className="h-10"></div>
+                        <p className="font-bold">আঞ্চলিক ব্যবস্থাপক</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* PAGE 3: Forwarding Letter */}
+                {currentModalPage === 2 && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-xs pt-2 border-b pb-1">
+                      <span>{memoNoForward}</span>
+                      <span>তারিখ : {formattedDate}</span>
+                    </div>
+
+                    <div className="text-xs space-y-0.5">
+                      <p>ব্যবস্থাপক</p>
+                      <p>{systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক"}</p>
+                      <p>রাঙ্গামাটি শাখা, রাঙ্গামাটি।</p>
+                    </div>
+
+                    <div className="text-center font-bold text-sm underline pt-2">
+                      বিষয় : {allItemDescs} ক্রয়ের বিল পরিশোধ প্রসঙ্গে।
+                    </div>
+
+                    <p className="text-justify leading-relaxed">
+                      জনাব,
+                      <br />
+                      উপর্যুক্ত বিষয়ে জানানো যাচ্ছে যে, সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{primaryV1Name}’ হতে সরবরাহকৃত মালামালের
+                      মোট বিল বাবদ ৳= {formatPriceBn(grandTotalRaw)} ({numberToWordsBn(grandTotalRaw)}) টাকা মাত্র নিম্নোক্ত
+                      খাতসমূহে ডেবিট ও ক্রেডিট করার জন্য অনুরোধ করা হলোঃ
+                    </p>
+
+                    <table className="w-full border-collapse my-3 text-xs">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th colSpan={3} className="border border-slate-700 p-1.5 text-center">
+                            ডেবিট (Debit)
+                          </th>
+                          <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            ক্রেডিট (Credit)
+                          </th>
+                        </tr>
+                        <tr className="bg-slate-50">
+                          <th className="border border-slate-700 p-1 text-left">হিসাব খাত</th>
+                          <th className="border border-slate-700 p-1 text-left">বিবরণ</th>
+                          <th className="border border-slate-700 p-1 text-right">টাকা</th>
+                          <th className="border border-slate-700 p-1 text-left">হিসাব খাত</th>
+                          <th className="border border-slate-700 p-1 text-right">টাকা</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {branches.map((br) => {
+                          const bObj = DEFAULT_BRANCH_LIST.find((b) => b.code === br.code);
+                          return (
+                            <tr key={br.id}>
+                              <td className="border border-slate-700 p-1">১১১৪- {bObj?.name}</td>
+                              <td className="border border-slate-700 p-1">{allItemDescs}</td>
+                              <td className="border border-slate-700 p-1 text-right">{formatPriceBn(br.amt)}</td>
+                              <td className="border border-slate-700 p-1">PO (পে-অর্ডার)</td>
+                              <td className="border border-slate-700 p-1 text-right">{formatPriceBn(br.amt)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+
+                    <div className="flex justify-end pt-12">
+                      <div className="text-center">
+                        <p>আপনার বিশ্বস্ত,</p>
+                        <div className="h-10"></div>
+                        <p className="font-bold">আঞ্চলিক ব্যবস্থাপক</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Modal Bottom Pagination Controls */}

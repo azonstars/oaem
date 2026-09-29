@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { User } from "../types";
+import { User, SystemSettings } from "../types";
 import {
   Upload,
   Trash2,
@@ -20,10 +20,15 @@ import {
 } from "lucide-react";
 import { apiFetch } from "../api";
 import { useTheme } from "../context/ThemeContext";
+import {
+  GlobalDocumentWatermark,
+  getCleanInstitutionName,
+} from "../utils/documentBranding";
 
 interface MiscellaneousViewProps {
   currentUser: User | null;
   language: "bn" | "en";
+  systemSettings?: SystemSettings | null;
 }
 
 interface FormTemplate {
@@ -48,6 +53,7 @@ interface OverlayField {
 export function MiscellaneousView({
   currentUser,
   language,
+  systemSettings: initialSystemSettings,
 }: MiscellaneousViewProps) {
   const { theme, isCustom } = useTheme();
   const isDark = theme === "dark";
@@ -56,8 +62,16 @@ export function MiscellaneousView({
   const [uploadTitle, setUploadTitle] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadType, setUploadType] = useState<"image" | "word">("image");
-  const [systemSettings, setSystemSettings] = useState<any>(null);
+  const [systemSettings, setSystemSettings] = useState<any>(
+    initialSystemSettings || null
+  );
   const [offices, setOffices] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (initialSystemSettings) {
+      setSystemSettings(initialSystemSettings);
+    }
+  }, [initialSystemSettings]);
 
   const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(
     null,
@@ -139,12 +153,13 @@ export function MiscellaneousView({
   const renderLetterhead = (isPrint: boolean = false) => {
     const officeName = getOfficeName();
     const officeAddress = getOfficeAddress();
-    const institution =
+    const rawInstitution =
+      systemSettings?.brandingPolicy?.institutionName ||
       systemSettings?.institutionName ||
-      (language === "bn"
-        ? "ফ্লোবোর্ড এন্টারপ্রাইজ প্ল্যাটফর্ম"
-        : "FlowBoard Enterprise Platform");
-    const logo = systemSettings?.logoUrl;
+      "বাংলাদেশ কৃষি ব্যাংক";
+    const institution = getCleanInstitutionName(rawInstitution);
+    const logo =
+      systemSettings?.brandingPolicy?.logoUrl || systemSettings?.logoUrl;
 
     return (
       <div
@@ -1385,16 +1400,25 @@ export function MiscellaneousView({
 
                 {/* Right Side: A4 Page Styled Print Preview Sheet */}
                 <div className="flex-1 p-6 bg-slate-900/10 overflow-y-auto flex justify-center items-start">
-                  <div className="w-full max-w-[210mm] min-h-[297mm] p-12 bg-white shadow-xl rounded-lg text-slate-900 font-serif leading-relaxed text-sm select-none border border-slate-200">
-                    {/* Dynamic Official Government Letterhead/Pad */}
-                    {renderLetterhead(false)}
-
-                    {/* Form content with dynamic highlighted variables */}
-                    <div
-                      className="text-slate-800 font-sans"
-                      style={{ lineHeight: "1.8", fontSize: "15px" }}
-                      dangerouslySetInnerHTML={{ __html: renderWordPreview() }}
+                  <div className="w-full max-w-[210mm] min-h-[297mm] p-12 bg-white shadow-xl rounded-lg text-slate-900 font-serif leading-relaxed text-sm select-none border border-slate-200 relative">
+                    {/* Official Bank Watermark */}
+                    <GlobalDocumentWatermark
+                      systemSettings={systemSettings}
+                      toolId="miscellaneous"
+                      docId="word-template"
                     />
+
+                    <div className="relative z-10">
+                      {/* Dynamic Official Government Letterhead/Pad */}
+                      {renderLetterhead(false)}
+
+                      {/* Form content with dynamic highlighted variables */}
+                      <div
+                        className="text-slate-800 font-sans"
+                        style={{ lineHeight: "1.8", fontSize: "15px" }}
+                        dangerouslySetInnerHTML={{ __html: renderWordPreview() }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1468,14 +1492,23 @@ export function MiscellaneousView({
 
       {/* HIDDEN PRINT-ONLY Crisp Word Template Container (renders only when printing Word Letter) */}
       {selectedTemplate && selectedTemplate.fileType === "word" && (
-        <div className="hidden print-word-container">
-          {/* Include Official Dynamic Letterhead/Pad on Printed Sheet! */}
-          {renderLetterhead(true)}
-
-          <div
-            className="print-word-text font-sans mt-6"
-            dangerouslySetInnerHTML={{ __html: renderWordPrintPreview() }}
+        <div className="hidden print-word-container relative">
+          {/* Official Bank Watermark */}
+          <GlobalDocumentWatermark
+            systemSettings={systemSettings}
+            toolId="miscellaneous"
+            docId="word-template"
           />
+
+          <div className="relative z-10">
+            {/* Include Official Dynamic Letterhead/Pad on Printed Sheet! */}
+            {renderLetterhead(true)}
+
+            <div
+              className="print-word-text font-sans mt-6"
+              dangerouslySetInnerHTML={{ __html: renderWordPrintPreview() }}
+            />
+          </div>
         </div>
       )}
     </div>

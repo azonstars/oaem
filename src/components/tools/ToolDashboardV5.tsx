@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { safeStorage } from "../../utils/storage";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { StockProTool } from "./StockProTool";
 import { ConferenceNoteTool } from "./ConferenceNoteTool";
@@ -50,7 +51,7 @@ export function ToolDashboardV5({
   // Starred tools state
   const [starredTools, setStarredTools] = useState<Record<number, boolean>>(() => {
     try {
-      const saved = localStorage.getItem("flowboard_tool_stars_v5");
+      const saved = safeStorage.getItem("flowboard_tool_stars_v5");
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -61,7 +62,7 @@ export function ToolDashboardV5({
     e.stopPropagation();
     const updated = { ...starredTools, [toolId]: !starredTools[toolId] };
     setStarredTools(updated);
-    localStorage.setItem("flowboard_tool_stars_v5", JSON.stringify(updated));
+    safeStorage.setItem("flowboard_tool_stars_v5", JSON.stringify(updated));
   };
 
   // StockPro Live Card dynamic stats

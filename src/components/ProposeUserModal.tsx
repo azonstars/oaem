@@ -18,8 +18,8 @@ export function ProposeUserModal({
   officeName,
 }: ProposeUserModalProps) {
   const { language } = useLanguage();
-  const { theme, isDark } = useTheme();
-  const isOcean = theme === "ocean";
+  const { isDark, isCustom } = useTheme();
+  const isOcean = isCustom;
 
   const [proposalName, setProposalName] = useState("");
   const [proposalUserId, setProposalUserId] = useState("");

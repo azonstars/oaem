@@ -5,6 +5,7 @@ import {
   Office,
   Category,
   FinancialYear,
+  SystemSettings,
 } from "../types";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -29,6 +30,7 @@ interface PostFactoProposalsViewProps {
   categories: Category[];
   financialYears: FinancialYear[];
   selectedFY: string;
+  systemSettings?: SystemSettings | null;
 }
 
 export function PostFactoProposalsView({
@@ -38,6 +40,7 @@ export function PostFactoProposalsView({
   categories,
   financialYears: _financialYears,
   selectedFY,
+  systemSettings,
 }: PostFactoProposalsViewProps) {
   const { t: _t, language, formatCurrency } = useLanguage();
   const { isDark: _isDark, isCustom: _isCustom } = useTheme();
@@ -56,7 +59,7 @@ export function PostFactoProposalsView({
 
   const [previewNoteSheet, setPreviewNoteSheet] = useState<any | null>(null);
   const [previewInitialTab, setPreviewInitialTab] = useState<
-    "notesheet" | "forwarding" | "supplyorder" | "sanctionletter"
+    "notesheet" | "forwarding" | "supplyorder" | "sanctionletter" | "sanctionnotesheet"
   >("notesheet");
 
   const [showModal, setShowModal] = useState(false);
@@ -1788,6 +1791,7 @@ export function PostFactoProposalsView({
           key={`${previewNoteSheet.id}-${previewInitialTab}`}
           noteSheet={previewNoteSheet}
           categories={categories}
+          systemSettings={systemSettings}
           officeName={
             offices.find((o) => o.id === previewNoteSheet.officeId)?.name
           }

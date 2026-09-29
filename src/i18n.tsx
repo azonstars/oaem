@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from "react";
+import { safeStorage } from "./utils/storage";
 
 export type Language = "bn" | "en";
 
@@ -78,7 +79,9 @@ export interface Translations {
   formulaNote: string;
 
   allocationTitle: string;
+  allocationsTitle: string;
   allocationSubtitle: string;
+  allocationsSubtitle: string;
   additionalAllocationTitle: string;
   additionalAllocationSubtitle: string;
   adjustmentTitle: string;
@@ -93,6 +96,7 @@ export interface Translations {
   allocatedAmount: string;
   allocatedBy: string;
   csvBulkUpload: string;
+  importCsv: string;
 
   expensesTitle: string;
   expensesSubtitle: string;
@@ -296,7 +300,9 @@ const translations: Record<Language, Translations> = {
       "হিসাব সূত্র: প্রারম্ভিক স্থিতি + বরাদ্দ + অতিরিক্ত বরাদ্দ ± সমন্বয় - ব্যয় = অবশিষ্ট স্থিতি",
 
     allocationTitle: "বাজেট বরাদ্দ ব্যবস্থাপনা",
+    allocationsTitle: "বাজেট বরাদ্দ ব্যবস্থাপনা",
     allocationSubtitle: "বিভিন্ন অফিস ও খাতের জন্য সরকারি বরাদ্দ নির্ধারণ করুন",
+    allocationsSubtitle: "বিভিন্ন অফিস ও খাতের জন্য সরকারি বরাদ্দ নির্ধারণ করুন",
     additionalAllocationTitle: "অতিরিক্ত বরাদ্দ",
     additionalAllocationSubtitle:
       "জরুরী বা সংশোধিত অতিরিক্ত বাজেট বরাদ্দ এন্ট্রি",
@@ -312,6 +318,7 @@ const translations: Record<Language, Translations> = {
     allocatedAmount: "বরাদ্দের পরিমাণ (টাকা)",
     allocatedBy: "অনুমোদনকারী কর্মকর্তা",
     csvBulkUpload: "সিএসভি ফাইল আপলোড",
+    importCsv: "সিএসভি ইম্পোর্ট",
 
     expensesTitle: "দৈনন্দিন অফিস ব্যয় এন্ট্রি",
     expensesSubtitle:
@@ -521,7 +528,9 @@ const translations: Record<Language, Translations> = {
       "Formula: Opening Balance + Allocation + Additional Allocation ± Adjustment - Expense = Available Balance",
 
     allocationTitle: "Budget Allocation Management",
+    allocationsTitle: "Budget Allocation Management",
     allocationSubtitle: "Allocate funds across offices and expenditure heads",
+    allocationsSubtitle: "Allocate funds across offices and expenditure heads",
     additionalAllocationTitle: "Additional Allocation",
     additionalAllocationSubtitle:
       "Manage supplementary and revised budget allocations",
@@ -538,6 +547,7 @@ const translations: Record<Language, Translations> = {
     allocatedAmount: "Allocated Amount (BDT)",
     allocatedBy: "Allocating Officer",
     csvBulkUpload: "Bulk CSV Upload",
+    importCsv: "Import CSV",
 
     expensesTitle: "Expense Voucher Entry",
     expensesSubtitle:
@@ -687,13 +697,13 @@ const LanguageContext = createContext<LanguageContextType | undefined>(
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem("app_lang");
+    const saved = safeStorage.getItem("app_lang");
     return saved === "en" || saved === "bn" ? saved : "bn";
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem("app_lang", lang);
+    safeStorage.setItem("app_lang", lang);
   };
 
   const t = translations[language];

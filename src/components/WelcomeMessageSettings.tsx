@@ -91,8 +91,8 @@ export function WelcomeMessageSettings({
   saveSuccessMsg,
 }: WelcomeMessageSettingsProps) {
   const { language, t } = useLanguage();
-  const { theme, isCustom, isDark } = useTheme();
-  const isOcean = theme === "ocean";
+  const { isCustom, isDark } = useTheme();
+  const isOcean = isCustom;
 
   const [previewSlot, setPreviewSlot] = useState<
     "morning" | "afternoon" | "evening" | "night"

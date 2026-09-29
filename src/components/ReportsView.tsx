@@ -20,6 +20,10 @@ import {
   Square,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
+import {
+  getCleanInstitutionName,
+  GlobalDocumentWatermark,
+} from "../utils/documentBranding";
 
 interface ReportsViewProps {
   allocations: Allocation[];
@@ -663,15 +667,22 @@ export function ReportsView({
       ? offices.find((o) => o.id === filterOffice)?.name
       : "All Offices";
 
+    const reportLogo =
+      systemSettings?.brandingPolicy?.logoUrl || systemSettings?.logoUrl;
+    const cleanInstName = getCleanInstitutionName(
+      systemSettings?.brandingPolicy?.institutionName ||
+        systemSettings?.institutionName
+    );
+
     return (
       <div
         className="hidden print:flex flex-col items-center justify-center mb-6 w-full text-center report-print-header"
         data-print-header="true"
       >
         <div className="flex items-center justify-center gap-4 mb-3">
-          {systemSettings?.logoUrl ? (
+          {reportLogo ? (
             <img
-              src={systemSettings.logoUrl}
+              src={reportLogo}
               alt="Logo"
               className="w-16 h-16 object-contain"
               referrerPolicy="no-referrer"
@@ -712,8 +723,7 @@ export function ReportsView({
           )}
           <div className="text-left">
             <h1 className="text-xl font-bold text-slate-900 mb-0.5 tracking-tight">
-              {systemSettings?.institutionName ||
-                "বাংলাদেশ কৃষি ব্যাংক / BANGLADESH KRISHI BANK"}
+              {cleanInstName}
             </h1>
             <p className="text-[13px] text-slate-700">
               {systemSettings?.webAppName ||
@@ -928,8 +938,16 @@ export function ReportsView({
         </div>
 
         {/* Report Content */}
-        <div className="flex-1 overflow-y-auto p-6 print:p-0 print:m-0 print:overflow-visible print:w-full">
-          {renderPrintHeader()}
+        <div className="flex-1 overflow-y-auto p-6 print:p-0 print:m-0 print:overflow-visible print:w-full relative min-h-[500px]">
+          {/* Global Watermark */}
+          <GlobalDocumentWatermark
+            systemSettings={systemSettings}
+            toolId="reports"
+            docId={reportType}
+          />
+
+          <div className="relative z-10 w-full">
+            {renderPrintHeader()}
 
           {reportType === "COMBINED_PDF" ? (
             <div>
@@ -989,6 +1007,7 @@ export function ReportsView({
               {reportType === "PENDING_NOTESHEET" && renderExpenseTable(true)}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

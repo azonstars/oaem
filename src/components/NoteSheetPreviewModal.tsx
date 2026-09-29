@@ -41,10 +41,19 @@ import {
   ContentPosition,
   PageSize,
   Category,
+  SystemSettings,
 } from "../types";
 import { useLanguage } from "../i18n";
 import { sanitizeHtml } from "../utils/sanitize";
 import { apiFetch } from "../api";
+import {
+  GlobalDocumentWatermark,
+  getGlobalBankPadHeaderHtml,
+  getGlobalBankWatermarkHtml,
+  getCleanInstitutionName,
+  isDocumentLogoEnabled,
+  isDocumentWatermarkEnabled,
+} from "../utils/documentBranding";
 
 interface NoteSheetPreviewModalProps {
   key?: string;
@@ -56,6 +65,7 @@ interface NoteSheetPreviewModalProps {
   categories?: Category[];
   onUpdateNoteSheet?: () => void;
   currentUser?: any;
+  systemSettings?: SystemSettings | null;
   initialTab?:
     | "notesheet"
     | "forwarding"
@@ -177,6 +187,7 @@ export function NoteSheetPreviewModal({
   categories = [],
   onUpdateNoteSheet,
   currentUser,
+  systemSettings,
   initialTab,
 }: NoteSheetPreviewModalProps) {
   const { t, language } = useLanguage();
@@ -364,26 +375,15 @@ export function NoteSheetPreviewModal({
         year: "numeric",
       })
       .replace(/\//g, "-");
+    const padHeader = getGlobalBankPadHeaderHtml(
+      systemSettings,
+      offName,
+      "budget-expense",
+      "forwarding"
+    );
     return `
     <div style="line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%;">
-      <div class="pad-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 12px; width: 100%;">
-        <div style="width: 70px; display: flex; align-items: center; justify-content: flex-start;">
-          <svg width="50" height="50" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="6"/>
-            <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" stroke-width="1.5" stroke-dasharray="3,2"/>
-            <path d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82" fill="none" stroke="#006a4e" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="50" cy="22" r="3" fill="#f42a41"/>
-          </svg>
-        </div>
-        <div style="flex: 1; text-align: center; padding: 0 10px;">
-          <div class="pad-header-title" style="font-size: 20pt; font-weight: bold; color: #000; line-height: 1.1;">বাংলাদেশ কৃষি ব্যাংক</div>
-          <div class="pad-header-subtitle" style="font-size: 12.5pt; font-weight: bold; color: #000; margin-top: 2px;">${offName}</div>
-        </div>
-        <div style="width: 125px; text-align: right; line-height: 1.2;">
-          <div class="pad-header-tagline" style="font-size: 10.5pt; font-weight: bold; color: #000;">গণমানুষের ব্যাংক</div>
-          <div class="pad-header-url" style="font-size: 8.5pt; color: #222; margin-top: 2px;">www.krishibank.gov.bd</div>
-        </div>
-      </div>
+      ${padHeader}
       <div style="display: flex; justify-content: space-between; margin-bottom: 14pt;">
         <div><strong>সূত্র নং:</strong> আঃ কাঃ (বাংলা) প্রশা-১/২০২৫-২০২৬/</div>
         <div><strong>তারিখ:</strong> ${dateStr} খ্রিঃ</div>
@@ -418,26 +418,15 @@ export function NoteSheetPreviewModal({
         year: "numeric",
       })
       .replace(/\//g, "-");
+    const padHeader = getGlobalBankPadHeaderHtml(
+      systemSettings,
+      offName,
+      "budget-expense",
+      "supplyorder"
+    );
     return `
     <div style="line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%;">
-      <div class="pad-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 12px; width: 100%;">
-        <div style="width: 70px; display: flex; align-items: center; justify-content: flex-start;">
-          <svg width="50" height="50" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="6"/>
-            <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" stroke-width="1.5" stroke-dasharray="3,2"/>
-            <path d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82" fill="none" stroke="#006a4e" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="50" cy="22" r="3" fill="#f42a41"/>
-          </svg>
-        </div>
-        <div style="flex: 1; text-align: center; padding: 0 10px;">
-          <div class="pad-header-title" style="font-size: 20pt; font-weight: bold; color: #000; line-height: 1.1;">বাংলাদেশ কৃষি ব্যাংক</div>
-          <div class="pad-header-subtitle" style="font-size: 12.5pt; font-weight: bold; color: #000; margin-top: 2px;">${offName}</div>
-        </div>
-        <div style="width: 125px; text-align: right; line-height: 1.2;">
-          <div class="pad-header-tagline" style="font-size: 10.5pt; font-weight: bold; color: #000;">গণমানুষের ব্যাংক</div>
-          <div class="pad-header-url" style="font-size: 8.5pt; color: #222; margin-top: 2px;">www.krishibank.gov.bd</div>
-        </div>
-      </div>
+      ${padHeader}
       <div style="display: flex; justify-content: space-between; margin-bottom: 14pt;">
         <div><strong>সূত্র নং:</strong> সূত্র নং-প্রশ-১(৪০)/২০২৬-২০২৭/</div>
         <div><strong>তারিখ:</strong> ${dateStr} খ্রিঃ</div>
@@ -1160,6 +1149,73 @@ export function NoteSheetPreviewModal({
       "$1",
     );
 
+    // Clean "/ Bangladesh Krishi Bank" or English translations from pad-header-title or anywhere in headers
+    raw = raw.replace(
+      /(class=["']pad-header-title["'][^>]*>)([\s\S]*?)(<\/div>)/gi,
+      (_match, p1, p2, p3) => `${p1}${getCleanInstitutionName(p2)}${p3}`
+    );
+    raw = raw.replace(/\/[\s]*Bangladesh Krishi Bank/gi, "");
+    raw = raw.replace(/\/[\s]*BANGLADESH KRISHI BANK/gi, "");
+
+    // Synchronize Watermark according to policy
+    const watermarkEnabled = isDocumentWatermarkEnabled(
+      systemSettings,
+      "budget-expense",
+      activeDocTab
+    );
+    if (!watermarkEnabled) {
+      // Remove any watermark container from raw
+      raw = raw.replace(/<div class="watermark-container"[^>]*>[\s\S]*?<\/div>/gi, "");
+    } else {
+      const globalWatermark = getGlobalBankWatermarkHtml(
+        systemSettings,
+        "budget-expense",
+        activeDocTab
+      );
+      if (raw.includes("watermark-container")) {
+        raw = raw.replace(
+          /<div class="watermark-container"[^>]*>[\s\S]*?<\/div>/gi,
+          globalWatermark
+        );
+      } else {
+        // Prepend watermark if not present in raw
+        raw = globalWatermark + raw;
+      }
+    }
+
+    // Synchronize Logo / Pad Header according to policy
+    const logoEnabled = isDocumentLogoEnabled(
+      systemSettings,
+      "budget-expense",
+      activeDocTab
+    );
+    const logoUrl = systemSettings?.brandingPolicy?.logoUrl || systemSettings?.logoUrl;
+
+    if (!logoEnabled) {
+      // Hide logo in header if disabled
+      raw = raw.replace(
+        /<div style="width:\s*70px;[^"]*">[\s\S]*?<\/div>/i,
+        `<div style="width: 70px;"></div>`
+      );
+    } else if (logoUrl && logoUrl.trim() !== "") {
+      const logoImgHtml = `<div style="width: 70px; display: flex; align-items: center; justify-content: flex-start;"><img src="${logoUrl}" alt="Logo" style="max-height: 55px; max-width: 65px; object-fit: contain; display: block;" /></div>`;
+      if (raw.includes("width: 70px") || raw.includes("pad-header")) {
+        raw = raw.replace(
+          /<div style="width:\s*70px;[^"]*">[\s\S]*?<\/div>/i,
+          logoImgHtml
+        );
+      }
+    } else {
+      // Default SVG emblem
+      const defaultEmblem = `<div style="width: 70px; display: flex; align-items: center; justify-content: flex-start;"><svg width="55" height="55" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="6"/><circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" stroke-width="1.5" stroke-dasharray="3,2"/><path d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82" fill="none" stroke="#006a4e" stroke-width="3" stroke-linecap="round"/><circle cx="50" cy="22" r="3" fill="#f42a41"/></svg></div>`;
+      if (raw.includes("width: 70px")) {
+        raw = raw.replace(
+          /<div style="width:\s*70px;[^"]*">[\s\S]*?<\/div>/i,
+          defaultEmblem
+        );
+      }
+    }
+
     if (
       !raw.includes("<p>") &&
       !raw.includes("<table") &&
@@ -1185,6 +1241,11 @@ export function NoteSheetPreviewModal({
       activeDocTab === "sanctionnotesheet";
 
     const govtHeaderHtml = "";
+    const watermarkHtml = getGlobalBankWatermarkHtml(
+      systemSettings,
+      "budget-expense",
+      activeDocTab
+    );
 
     const signaturesHtml =
       settings.includeSignatures &&
@@ -1218,11 +1279,11 @@ export function NoteSheetPreviewModal({
       `
         : "";
 
-    return { formattedContent, govtHeaderHtml, signaturesHtml };
+    return { formattedContent, govtHeaderHtml, signaturesHtml, watermarkHtml };
   };
 
   const handlePrint = () => {
-    const { formattedContent, govtHeaderHtml, signaturesHtml } =
+    const { formattedContent, govtHeaderHtml, signaturesHtml, watermarkHtml } =
       getFullDocumentHtml(false);
 
     try {
@@ -1547,9 +1608,10 @@ export function NoteSheetPreviewModal({
                 </div>
               `
                   : `
-                <div class="page-wrapper">
+                <div class="page-wrapper" style="position: relative;">
+                  ${watermarkHtml}
                   ${positionStyles.spacerTopFlex > 0 ? `<div class="spacer-top"></div>` : ""}
-                  <div class="content-container">
+                  <div class="content-container" style="position: relative; z-index: 1;">
                     ${govtHeaderHtml}
                     <div class="sheet-body">
                       ${formattedContent}
@@ -1806,9 +1868,10 @@ export function NoteSheetPreviewModal({
             </div>
           `
               : `
-            <div class="page-wrapper">
+            <div class="page-wrapper" style="position: relative;">
+              ${watermarkHtml}
               ${positionStyles.spacerTopFlex > 0 ? `<div class="spacer-top"></div>` : ""}
-              <div class="content-container">
+              <div class="content-container" style="position: relative; z-index: 1;">
                 ${govtHeaderHtml}
                 <div class="sheet-body">
                   ${formattedContent}
@@ -4417,8 +4480,15 @@ export function NoteSheetPreviewModal({
                           flexDirection: "column",
                           boxSizing: "border-box",
                         }}
-                        className="relative z-0"
+                        className="relative z-0 min-h-full"
                       >
+                        {/* Official Bank Watermark */}
+                        <GlobalDocumentWatermark
+                          systemSettings={systemSettings}
+                          toolId="budget-expense"
+                          docId={activeDocTab}
+                        />
+
                         {/* Top Spacer for Upper Middle / Center / Lower Middle / Bottom */}
                         {positionStyles.spacerTopFlex > 0 && (
                           <div

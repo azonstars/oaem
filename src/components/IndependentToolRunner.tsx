@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { safeStorage } from "../utils/storage";
 import {
   FlowBoardTool,
   User,
@@ -167,6 +168,7 @@ export function IndependentToolRunner({
         <MiscellaneousView
           currentUser={currentUser}
           language={language}
+          systemSettings={systemSettings}
         />
       </div>
     );
@@ -190,7 +192,7 @@ export function IndependentToolRunner({
 
   const [activeTab, setActiveTab] = useState<"workspace" | "notes" | "calculator" | "info">("workspace");
   const [workspaceNotes, setWorkspaceNotes] = useState<string>(() => {
-    return localStorage.getItem(`flowboard_tool_notes_${tool.id}`) || "";
+    return safeStorage.getItem(`flowboard_tool_notes_${tool.id}`) || "";
   });
   const [savedStatus, setSavedStatus] = useState(false);
 
@@ -199,7 +201,7 @@ export function IndependentToolRunner({
   const [calcResult, setCalcResult] = useState<string | null>(null);
 
   const handleSaveNotes = () => {
-    localStorage.setItem(`flowboard_tool_notes_${tool.id}`, workspaceNotes);
+    safeStorage.setItem(`flowboard_tool_notes_${tool.id}`, workspaceNotes);
     setSavedStatus(true);
     setTimeout(() => setSavedStatus(false), 2000);
   };

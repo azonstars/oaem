@@ -12,25 +12,28 @@ export default defineConfig(() => {
       },
     },
     build: {
+      target: 'es2020',
       rollupOptions: {
         output: {
           manualChunks(id) {
             if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom') || id.includes('react-router-dom')) {
-                return 'vendor-react';
+              if (id.includes('jspdf') || id.includes('xlsx') || id.includes('mammoth')) {
+                return 'docs-vendor';
               }
-              if (id.includes('recharts') || id.includes('jspdf') || id.includes('xlsx')) {
-                return 'vendor-charts-docs';
+              if (id.includes('recharts')) {
+                return 'charts-vendor';
+              }
+              if (id.includes('jodit')) {
+                return 'editor-vendor';
               }
               if (id.includes('lucide-react')) {
-                return 'vendor-icons';
+                return 'icons-vendor';
               }
-              return 'vendor-misc';
             }
           },
         },
       },
-      chunkSizeWarningLimit: 1000,
+      chunkSizeWarningLimit: 2000,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.

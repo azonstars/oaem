@@ -454,7 +454,11 @@ export function getBankPadHeaderHtml(officeName?: string): string {
   const settingsList = getSheetData("Settings");
   const appSettings =
     settingsList && settingsList.length > 0 ? settingsList[0] : null;
-  const logoUrl = appSettings?.logoUrl;
+  const branding = appSettings?.brandingPolicy;
+  if (branding && branding.showLogo === false) {
+    return "";
+  }
+  const logoUrl = branding?.logoUrl || appSettings?.logoUrl;
 
   const logoElement =
     logoUrl && typeof logoUrl === "string" && logoUrl.trim() !== ""
@@ -466,27 +470,30 @@ export function getBankPadHeaderHtml(officeName?: string): string {
         <circle cx="50" cy="22" r="3" fill="#f42a41"/>
       </svg>`;
 
-  const rawInstName = appSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক";
+  const rawInstName = branding?.institutionName || appSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক";
   const cleanedInstName =
     rawInstName
-      .replace(/\/Bangladesh Krishi Bank/gi, "")
+      .replace(/\/[\s]*Bangladesh Krishi Bank/gi, "")
+      .replace(/\/[\s]*BANGLADESH KRISHI BANK/gi, "")
       .replace(/\/[\s]*[a-zA-Z\s]+/g, "")
       .trim() || "বাংলাদেশ কৃষি ব্যাংক";
 
-  const displayOffice = officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি।";
+  const displayOffice = officeName || branding?.officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি।";
+  const slogan = branding?.slogan || "গণমানুষের ব্যাংক";
+  const websiteUrl = branding?.websiteUrl || "www.krishibank.gov.bd";
 
   return `
-    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 12px; width: 100%;">
+    <div class="pad-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #000; padding-bottom: 6px; margin-bottom: 12px; width: 100%;">
       <div style="width: 70px; display: flex; align-items: center; justify-content: flex-start;">
         ${logoElement}
       </div>
       <div style="flex: 1; text-align: center; padding: 0 10px;">
-        <div style="font-size: 20pt; font-weight: bold; color: #000; line-height: 1.1;">${cleanedInstName}</div>
-        <div style="font-size: 12.5pt; font-weight: bold; color: #000; margin-top: 2px;">${displayOffice}</div>
+        <div class="pad-header-title" style="font-size: 1.6em; font-weight: bold; color: #000; line-height: 1.1;">${cleanedInstName}</div>
+        <div class="pad-header-subtitle" style="font-size: 1.1em; font-weight: bold; color: #000; margin-top: 2px;">${displayOffice}</div>
       </div>
       <div style="width: 125px; text-align: right; line-height: 1.2;">
-        <div style="font-size: 10.5pt; font-weight: bold; color: #000;">গণমানুষের ব্যাংক</div>
-        <div style="font-size: 8.5pt; color: #222; margin-top: 2px;">www.krishibank.gov.bd</div>
+        <div class="pad-header-tagline" style="font-size: 0.9em; font-weight: bold; color: #000;">${slogan}</div>
+        <div class="pad-header-url" style="font-size: 0.75em; color: #222; margin-top: 2px;">${websiteUrl}</div>
       </div>
     </div>
   `;
@@ -496,12 +503,17 @@ export function getBankWatermarkHtml(): string {
   const settingsList = getSheetData("Settings");
   const appSettings =
     settingsList && settingsList.length > 0 ? settingsList[0] : null;
-  const logoUrl = appSettings?.logoUrl;
+  const branding = appSettings?.brandingPolicy;
+  if (branding && branding.showWatermark === false) {
+    return "";
+  }
+  const logoUrl = branding?.logoUrl || appSettings?.logoUrl;
+  const opacity = branding?.watermarkOpacity ?? 0.065;
 
   const logoWatermarkContent =
     logoUrl && typeof logoUrl === "string" && logoUrl.trim() !== ""
-      ? `<img src="${logoUrl}" alt="Watermark" style="max-height: 280px; max-width: 280px; width: 280px; height: 280px; object-fit: contain; filter: grayscale(100%); opacity: 0.07; display: block;" />`
-      : `<svg width="280" height="280" viewBox="0 0 100 100" style="opacity: 0.065; display: block;">
+      ? `<img src="${logoUrl}" alt="Watermark" style="max-height: 280px; max-width: 280px; width: 280px; height: 280px; object-fit: contain; filter: grayscale(100%); opacity: ${opacity}; display: block;" />`
+      : `<svg width="280" height="280" viewBox="0 0 100 100" style="opacity: ${opacity}; display: block;">
         <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" stroke-width="5"/>
         <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" stroke-width="1.5" stroke-dasharray="3,2"/>
         <path d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82" fill="none" stroke="#006a4e" stroke-width="3" stroke-linecap="round"/>
@@ -1809,11 +1821,13 @@ export function generateMotorFuelSupplyOrderHtml(
     formatDateToDDMMYYYY(expense.voucherDate || expense.expenseDate || new Date().toISOString().split("T")[0])
   );
 
-  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.6; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%; padding: 10px 5px;">
-  <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 8px; margin-bottom: 16px;">
-    <div style="font-size: 1.4em; font-weight: bold; color: #000; line-height: 1.2;">বাংলাদেশ কৃষি ব্যাংক</div>
-    <div style="font-size: 1.1em; font-weight: bold; color: #000; margin-top: 3px;">${offName}</div>
-  </div>
+  const padHeader = getBankPadHeaderHtml(office?.name);
+  const watermarkHtml = getBankWatermarkHtml();
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 11pt; line-height: 1.6; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%; padding: 10px 5px;">
+  ${watermarkHtml}
+  <div style="position: relative; z-index: 1;">
+    ${padHeader}
 
   <div style="display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 11pt;">
     <div><strong>সূত্র নংঃ</strong> ${supplyOrderNo}</div>
@@ -1951,7 +1965,7 @@ export function generateMotorVehicleForwardingHtml(
   _financialYear: any,
   _balanceInfo: any,
 ): string {
-  const offName = office?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি।";
+  const _offName = office?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি।";
   
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
@@ -1996,11 +2010,13 @@ export function generateMotorVehicleForwardingHtml(
     ? `অত্র কার্যালয়ের গাড়ীর ${purposeText} বাবদ`
     : `অত্র কার্যালয়ের ${purposeText || _category?.name || "প্রয়োজনীয় কার্যক্রম"} বাবদ`;
 
-  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%; padding: 10px 5px;">
-  <div style="text-align: center; margin-bottom: 22px;">
-    <div style="font-size: 1.35em; font-weight: bold; color: #000; line-height: 1.2;">বাংলাদেশ কৃষি ব্যাংক</div>
-    <div style="font-size: 1.1em; font-weight: bold; color: #000; margin-top: 3px;">${offName}</div>
-  </div>
+  const padHeader = getBankPadHeaderHtml(office?.name);
+  const watermarkHtml = getBankWatermarkHtml();
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 11pt; line-height: 1.5; color: #000; background: #fff; width: 100%; box-sizing: border-box; position: relative; min-height: 100%; padding: 10px 5px;">
+  ${watermarkHtml}
+  <div style="position: relative; z-index: 1;">
+    ${padHeader}
 
   <div style="text-align: center; font-weight: bold; margin-bottom: 24px; text-decoration: underline;">
     বিষয় : ভ্রমণ অগ্রিম/ বিল মূল্য/ খরচের অগ্রিম/ খরচের পুরঃভরণ পাওয়ার আবেদন ।

@@ -2075,10 +2075,21 @@ app.put("/api/settings", requireAuth, async (req, res) => {
 
     const result = await withSheetLock(["Settings"], async () => {
       const data = getSheetData("Settings");
+      const updatedSettings = { ...req.body };
+      if (updatedSettings.brandingPolicy?.logoUrl && !updatedSettings.logoUrl) {
+        updatedSettings.logoUrl = updatedSettings.brandingPolicy.logoUrl;
+      } else if (updatedSettings.logoUrl && updatedSettings.brandingPolicy && !updatedSettings.brandingPolicy.logoUrl) {
+        updatedSettings.brandingPolicy.logoUrl = updatedSettings.logoUrl;
+      }
       if (data.length === 0) {
-        data.push({ id: "set-1", ...req.body });
+        data.push({ id: "set-1", ...updatedSettings });
       } else {
-        data[0] = { ...data[0], ...req.body };
+        data[0] = { ...data[0], ...updatedSettings };
+        if (data[0].brandingPolicy?.logoUrl && !data[0].logoUrl) {
+          data[0].logoUrl = data[0].brandingPolicy.logoUrl;
+        } else if (data[0].logoUrl && data[0].brandingPolicy && !data[0].brandingPolicy.logoUrl) {
+          data[0].brandingPolicy.logoUrl = data[0].logoUrl;
+        }
       }
       await saveSheetData("Settings", data);
 
@@ -2400,19 +2411,35 @@ async function startServer() {
     console.warn("NoteSheet startup sync warning:", _e);
   }
 
-  if (
-    process.env.NODE_ENV !== "production" &&
-    process.env.NODE_ENV !== "test"
-  ) {
+  const distPath = path.join(process.cwd(), "dist");
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    (fs.existsSync(path.join(distPath, "index.html")) &&
+      process.env.NODE_ENV !== "development" &&
+      process.env.NODE_ENV !== "test" &&
+      !process.env.DISABLE_HMR);
+
+  if (!isProduction && process.env.NODE_ENV !== "test") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else if (process.env.NODE_ENV === "production") {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
+  } else {
+    app.use(
+      express.static(distPath, {
+        maxAge: "1d",
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith("index.html")) {
+            res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+          }
+        },
+      }),
+    );
     app.get("*", (req, res) => {
+      if (req.path.startsWith("/api/")) {
+        return res.status(404).json({ error: "Endpoint not found" });
+      }
       res.sendFile(path.join(distPath, "index.html"));
     });
   }

@@ -81,9 +81,9 @@ export function SettingsView({
   flowTools = DEFAULT_FLOW_TOOLS,
   onOpenCentralManagement,
 }: SettingsViewProps) {
-  const { theme } = useTheme();
+  const { theme, isCustom } = useTheme();
   const { t, language } = useLanguage();
-  const isOcean = theme === "ocean";
+  const isOcean = isCustom;
   const isDark = theme === "dark";
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -399,10 +399,18 @@ export function SettingsView({
     e.preventDefault();
     setIsSaving(true);
     try {
+      const payloadToSave = {
+        ...settingsForm,
+        brandingPolicy: {
+          ...(settingsForm.brandingPolicy || {}),
+          logoUrl: settingsForm.logoUrl,
+          institutionName: settingsForm.institutionName,
+        },
+      };
       const res = await apiFetch(`/api/settings/${settingsForm.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(settingsForm),
+        body: JSON.stringify(payloadToSave),
       });
       if (res.ok) {
         setSaveSuccessMsg(

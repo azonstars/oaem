@@ -41,9 +41,9 @@ interface DbStatus {
 }
 
 export function DatabaseSettingsTab({ currentUser }: DatabaseSettingsTabProps) {
-  const { theme } = useTheme();
+  const { theme, isCustom } = useTheme();
   const { language } = useLanguage();
-  const isOcean = theme === "ocean";
+  const isOcean = isCustom;
   const isDark = theme === "dark";
 
   if (currentUser?.role !== "Super Admin") {

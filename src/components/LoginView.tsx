@@ -1,4 +1,5 @@
 import { apiFetch } from "../api";
+import { safeStorage } from "../utils/storage";
 import React, { useState, useEffect } from "react";
 import { User, SystemSettings } from "../types";
 import {
@@ -61,7 +62,7 @@ export function LoginView({ onLoginSuccess, systemSettings }: LoginViewProps) {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        if (data.token) localStorage.setItem("govt_app_token", data.token);
+        if (data.token) safeStorage.setItem("govt_app_token", data.token);
         onLoginSuccess(data.user);
       } else {
         setError(

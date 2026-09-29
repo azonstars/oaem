@@ -2,6 +2,10 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { apiFetch } from "../../api";
 import {
+  GlobalDocumentPadHeader,
+  GlobalDocumentWatermark,
+} from "../../utils/documentBranding";
+import {
   LayoutDashboard,
   Package,
   Users,
@@ -1622,12 +1626,16 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
       {/* Modal / Print Invoice Preview */}
       {viewingInvoice && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto print:shadow-none print:max-h-none print:p-0">
-            <div className="text-center border-b pb-4">
-              <h2 className="text-xl font-black text-slate-900">{orgSettings.orgName}</h2>
-              <p className="text-sm text-slate-600">{orgSettings.officeName}</p>
-              <p className="text-xs text-slate-400">{orgSettings.email}</p>
-            </div>
+          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto print:shadow-none print:max-h-none print:p-0 relative">
+            {/* Global Dynamic Watermark */}
+            <GlobalDocumentWatermark systemSettings={systemSettings} />
+
+            <div className="relative z-10 space-y-6">
+              {/* Global Dynamic Pad Header */}
+              <GlobalDocumentPadHeader
+                systemSettings={systemSettings}
+                officeName={orgSettings.officeName}
+              />
 
             <div className="flex justify-between text-xs font-semibold">
               <span>চালান নম্বর: #{viewingInvoice.id}</span>
@@ -1693,6 +1701,7 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
               </div>
             </div>
 
+            </div>
             <div className="flex justify-end gap-2 pt-4 border-t print:hidden">
               <button
                 onClick={() => window.print()}

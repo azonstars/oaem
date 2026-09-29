@@ -1,137 +1,196 @@
 [
   {
     "id": "sys-1",
-    "institutionName": "বাংলাদেশ কৃষি ব্যাংক / Bangladesh Krishi Bank",
-    "logoUrl": "",
-    "webAppName": "FlowBoard Enterprise Workspace Management Suite",
-    "description": "স্বতন্ত্র টুলস ও মডুলার প্রজেক্ট ম্যানেজমেন্ট ওয়ার্কস্পেস",
+    "institutionName": "বাংলাদেশ কৃষি ব্যাংক",
+    "logoUrl": "https://i.ibb.co.com/q848dh6/BKB-LOGO.png",
+    "webAppName": "Office Allocation & Expense Management System",
+    "description": "আঞ্চলিক কার্যালয়, রাঙ্গামাটি",
     "notices": [],
     "roleToolAccess": {
-      "Super Admin": {
-        "budget-expense": "full",
-        "stockpro": "full",
-        "conference-note": "full",
-        "multi-item-bill": "full",
-        "stationery-bill": "full",
-        "miscellaneous": "full",
-        "office-monitoring": "full"
-      },
       "Admin": {
         "budget-expense": "full",
         "stockpro": "full",
         "conference-note": "full",
         "multi-item-bill": "full",
-        "stationery-bill": "full",
-        "miscellaneous": "full",
-        "office-monitoring": "full"
+        "stationery-bill": "full"
       },
       "Head Office Admin": {
         "budget-expense": "full",
         "stockpro": "full",
         "conference-note": "full",
         "multi-item-bill": "full",
-        "stationery-bill": "full",
-        "miscellaneous": "full",
-        "office-monitoring": "full"
+        "stationery-bill": "full"
       },
       "Moderator": {
         "budget-expense": "full",
         "stockpro": "operate",
         "conference-note": "operate",
         "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
-      },
-      "Divisional Admin": {
-        "budget-expense": "operate",
-        "stockpro": "operate",
-        "conference-note": "operate",
-        "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "full"
-      },
-      "Divisional Moderator": {
-        "budget-expense": "operate",
-        "stockpro": "operate",
-        "conference-note": "operate",
-        "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
-      },
-      "Regional Admin": {
-        "budget-expense": "operate",
-        "stockpro": "operate",
-        "conference-note": "operate",
-        "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "full"
-      },
-      "Regional Moderator": {
-        "budget-expense": "operate",
-        "stockpro": "operate",
-        "conference-note": "operate",
-        "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
-      },
-      "Branch Admin": {
-        "budget-expense": "operate",
-        "stockpro": "operate",
-        "conference-note": "operate",
-        "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
-      },
-      "Branch User": {
-        "budget-expense": "operate",
-        "stockpro": "operate",
-        "conference-note": "operate",
-        "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
+        "stationery-bill": "operate"
       },
       "Head Office User": {
         "budget-expense": "operate",
         "stockpro": "operate",
         "conference-note": "operate",
         "multi-item-bill": "operate",
-        "stationery-bill": "operate",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
+        "stationery-bill": "operate"
       },
       "Sub-office User": {
         "budget-expense": "operate",
         "stockpro": "operate",
         "conference-note": "none",
         "multi-item-bill": "none",
-        "stationery-bill": "none",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
+        "stationery-bill": "none"
       },
       "User": {
         "budget-expense": "operate",
         "stockpro": "operate",
         "conference-note": "none",
         "multi-item-bill": "none",
-        "stationery-bill": "none",
-        "miscellaneous": "operate",
-        "office-monitoring": "operate"
+        "stationery-bill": "none"
       },
       "Report Viewer": {
         "budget-expense": "view",
         "stockpro": "none",
         "conference-note": "none",
         "multi-item-bill": "none",
-        "stationery-bill": "none",
-        "miscellaneous": "view",
-        "office-monitoring": "view"
+        "stationery-bill": "none"
+      }
+    },
+    "showNoticeBar": false,
+    "loginLogoUrl": "",
+    "requireExpenseApproval": true,
+    "brandingPolicy": {
+      "institutionName": "বাংলাদেশ কৃষি ব্যাংক",
+      "officeName": "আঞ্চলিক কার্যালয়, রাঙ্গামাটি",
+      "slogan": "গণমানুষের ব্যাংক",
+      "websiteUrl": "www.krishibank.gov.bd",
+      "logoUrl": "https://i.ibb.co.com/q848dh6/BKB-LOGO.png",
+      "showLogo": true,
+      "showWatermark": true,
+      "watermarkOpacity": 0.065,
+      "defaultPageSize": "A4",
+      "documentRules": {
+        "budget-expense:form1-forwarding": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:form1-supplyorder": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:form1-notesheet": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:motor-fuel-forwarding": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:motor-fuel-supplyorder": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:motor-vehicle-forwarding": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:postfacto-forwarding": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:postfacto-supplyorder": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "budget-expense:postfacto-sanction": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "stockpro:stockpro-challan": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "stockpro:stockpro-requisition": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "conference-note:conf-notesheet": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "conference-note:conf-resolution": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "conference-note:conf-forwarding": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "multi-item-bill:multi-cs": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "multi-item-bill:multi-supplyorder": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "multi-item-bill:multi-forwarding": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "stationery-bill:stationery-supplyorder": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "stationery-bill:stationery-challan": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "stationery-bill:stationery-notesheet": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "miscellaneous:misc-bankpad": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "miscellaneous:misc-certificate": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "office-monitoring:monitoring-report": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        },
+        "office-monitoring:monitoring-receipt": {
+          "logoHeaderEnabled": true,
+          "watermarkEnabled": true,
+          "a4LayoutEnabled": true
+        }
       }
     }
   }

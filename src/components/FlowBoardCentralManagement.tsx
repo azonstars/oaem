@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import {
   ArrowLeft,
   Shield,
@@ -31,6 +31,13 @@ import {
   ShieldCheck,
   Upload,
   Image as ImageIcon,
+  Stamp,
+  Eye,
+  Printer,
+  Sparkles,
+  Package,
+  ArrowUpRight,
+  CheckCheck,
 } from "lucide-react";
 import {
   User,
@@ -44,12 +51,307 @@ import {
   getRoleToolAccess,
   getUserToolAccess,
   setGlobalRoleToolAccess,
+  BrandingDocumentRule,
 } from "../types";
 import { DEFAULT_FLOW_TOOLS } from "../config/flowTools";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
 import { apiFetch } from "../api";
 import { ProposeUserModal } from "./ProposeUserModal";
+import { getCleanInstitutionName } from "../utils/documentBranding";
+
+export interface ToolDocumentSpec {
+  id: string;
+  name: string;
+  nameBn: string;
+  description: string;
+  descriptionBn: string;
+  sampleSubject?: string;
+  sampleBody?: string;
+}
+
+export interface ToolDocumentGroup {
+  toolId: string;
+  toolName: string;
+  toolNameBn: string;
+  icon: string;
+  color: string;
+  routeOrTab?: string;
+  category: "finance" | "documents" | "compliance" | "analytics" | "custom";
+  documents: ToolDocumentSpec[];
+}
+
+export const TOOL_DOCUMENT_CATALOG: Record<string, ToolDocumentGroup> = {
+  "budget-expense": {
+    toolId: "budget-expense",
+    toolName: "Office Allocation & Expense Management",
+    toolNameBn: "অফিস বরাদ্দ ও ব্যয় ব্যবস্থাপনা সিস্টেম",
+    icon: "Coins",
+    color: "#059669",
+    routeOrTab: "dashboard",
+    category: "finance",
+    documents: [
+      {
+        id: "form1-forwarding",
+        name: "Form-1 Forwarding Letter",
+        nameBn: "ফর্ম-১ ফরোয়ার্ডিং পত্র",
+        description: "Official memo & forwarding letter for stationery and branch supplies distribution.",
+        descriptionBn: "অত্র অঞ্চলাধীন শাখাসমূহের জন্য স্টেশনারী মালামাল প্রেরণ সংক্রান্ত ফরোয়ার্ডিং পত্র।",
+        sampleSubject: "বিষয়ঃ অত্র কার্যালয় ও অত্র অঞ্চলাধীন শাখাসমূহের জন্য মুদ্রিত স্টেশনারী দ্রব্যাদি সরবরাহকরণ প্রসঙ্গে।",
+      },
+      {
+        id: "form1-supplyorder",
+        name: "Form-1 Supply Order",
+        nameBn: "ফর্ম-১ সাপ্লাই অর্ডার / কার্যাদেশ",
+        description: "Procurement supply order letter issued to supplier/bidder.",
+        descriptionBn: "নির্বাচিত সরবরাহকারী প্রতিষ্ঠানের বরাবরে মালামাল সরবরাহের আনুষ্ঠানিক কার্যাদেশ।",
+        sampleSubject: "বিষয়ঃ অনুমোদিত কোটেশনের আলোকে প্রয়োজনীয় মালামাল সরবরাহ আদেশ (Supply Order)।",
+      },
+      {
+        id: "form1-notesheet",
+        name: "Form-1 Approval Note Sheet",
+        nameBn: "ফর্ম-১ ব্যয় অনুমোদন নোটশিট",
+        description: "Official note sheet and approval sanction draft.",
+        descriptionBn: "ব্যয় ও বরাদ্দ সংস্থান সংক্রান্ত অফিশিয়াল নোটশিট ও প্রশাসনিক অনুমোদন ড্রাফট।",
+        sampleSubject: "বিষয়ঃ প্রশাসনিক ও আর্থিক ব্যয় অনুমোদন প্রসঙ্গে।",
+      },
+      {
+        id: "motor-fuel-forwarding",
+        name: "Motor Fuel Forwarding Letter",
+        nameBn: "মোটর ফুয়েল ফরোয়ার্ডিং পত্র",
+        description: "Fuel and POL reimbursement forwarding letter to audit/finance.",
+        descriptionBn: "অফিসিয়াল গাড়ীর জ্বালানী (তেল/সিএনজি) বিল পরিশোধ ও ফরোয়ার্ডিং পত্র।",
+        sampleSubject: "বিষয়ঃ অত্র কার্যালয়ের ব্যবহৃত গাড়ীর জ্বালানী বিলের আর্থিক সম্মতি গ্রহণ ও ফরোয়ার্ডিং প্রসঙ্গে।",
+      },
+      {
+        id: "motor-fuel-supplyorder",
+        name: "Motor Fuel Supply Order",
+        nameBn: "মোটর ফুয়েল জ্বালানী সরবরাহ আদেশ",
+        description: "Official fuel supply order issued to designated petrol pump station.",
+        descriptionBn: "নির্দিষ্ট পেট্রোল পাম্প ফিলিং স্টেশনের বরাবরে গাড়ীর জ্বালানী সরবরাহ আদেশ।",
+        sampleSubject: "বিষয়ঃ অত্র কার্যালয়ের ব্যবহৃত গাড়ীর জ্বালানী সরবরাহের আদেশ (Supply Order)।",
+      },
+      {
+        id: "motor-vehicle-forwarding",
+        name: "Motor Vehicle Maintenance Forwarding",
+        nameBn: "মোটর ভেহিকেল সার্ভিসিং ফরোয়ার্ডিং",
+        description: "Vehicle maintenance, servicing and repair billing forwarding letter.",
+        descriptionBn: "অফিসিয়াল গাড়ী মেরামত, চাকা ও যন্ত্রাংশ প্রতিস্থাপন বিল ফরোয়ার্ডিং পত্র।",
+        sampleSubject: "বিষয়ঃ অত্র কার্যালয়ের ব্যবহৃত গাড়ীর মেরামত ও পার্টস প্রতিস্থাপন বিলের আর্থিক সম্মতি গ্রহণ প্রসঙ্গে।",
+      },
+      {
+        id: "postfacto-forwarding",
+        name: "Post-Facto Sanction Forwarding",
+        nameBn: "খরচোত্তর অনুমোদন ফরোয়ার্ডিং",
+        description: "Forwarding letter for post-facto expenditure approval.",
+        descriptionBn: "জরুরি প্রশাসনিক কার্যক্রমের খরচোত্তর আর্থিক সম্মতি ও মঞ্জুরি ফরোয়ার্ডিং পত্র।",
+        sampleSubject: "বিষয়ঃ খরচোত্তর আর্থিক সম্মতি ও ব্যয় মঞ্জুরি গ্রহণ প্রসঙ্গে।",
+      },
+      {
+        id: "postfacto-supplyorder",
+        name: "Post-Facto Work Order",
+        nameBn: "খরচোত্তর কার্যাদেশ / সরবরাহ পত্র",
+        description: "Supply/work order record for post-facto expenditures.",
+        descriptionBn: "খরচোত্তর কার্যাবলীর সরবরাহ ও সম্পাদন পত্র রেকর্ড।",
+        sampleSubject: "বিষয়ঃ সম্পাদিত জরুরি কাজের কার্যাদেশ নথি।",
+      },
+      {
+        id: "postfacto-sanction",
+        name: "Post-Facto Sanction Letter",
+        nameBn: "খরচোত্তর আর্থিক মঞ্জুরি পত্র",
+        description: "Official financial sanction approval letter from approving authority.",
+        descriptionBn: "যথাযথ কর্তৃপক্ষ কর্তৃক অনুমোদিত আর্থিক সম্মতি ও মঞ্জুরি আদেশ পত্র।",
+        sampleSubject: "বিষয়ঃ খরচোত্তর আর্থিক মঞ্জুরি আদেশ প্রদান প্রসঙ্গে।",
+      },
+    ],
+  },
+  "stockpro": {
+    toolId: "stockpro",
+    toolName: "StockPro Inventory & Voucher Tracker",
+    toolNameBn: "স্টকপ্রো ইনভেন্টরি ট্র্যাকার",
+    icon: "Package",
+    color: "#3b82f6",
+    routeOrTab: "stockpro",
+    category: "finance",
+    documents: [
+      {
+        id: "stockpro-challan",
+        name: "Delivery Challan & Invoice",
+        nameBn: "মালামাল বিতরণ চালান ও ইনভয়েস",
+        description: "Stock distribution challan, item ledger, and branch acknowledgement invoice.",
+        descriptionBn: "শাখা বা গ্রাহকের বরাবরে কেন্দ্রীয় গুদাম হতে মালামাল ডেলিভারি চালান ও প্রাপ্তি স্বীকারপত্র।",
+        sampleSubject: "চালান বিবরণী ও মালামাল সরবরাহ ডেলিভারি রসিদ।",
+      },
+      {
+        id: "stockpro-requisition",
+        name: "Stock Requisition Voucher",
+        nameBn: "স্টক রিকুইজিশন ভাউচার",
+        description: "Branch inventory demand and stock ledger verification requisition voucher.",
+        descriptionBn: "শাখা হতে প্রেরিত মালামালের চাহিদা ও মজুদ নিরীক্ষা ভাউচার।",
+        sampleSubject: "মালামাল চাহিদা পত্র ও স্টক বরাদ্দ রিকুইজিশন।",
+      },
+    ],
+  },
+  "conference-note": {
+    toolId: "conference-note",
+    toolName: "Conference Bill & Note Generator",
+    toolNameBn: "সভার নোট জেনারেটর",
+    icon: "FileSpreadsheet",
+    color: "#d97706",
+    routeOrTab: "conference-note",
+    category: "documents",
+    documents: [
+      {
+        id: "conf-notesheet",
+        name: "Conference Expense Note Sheet",
+        nameBn: "কনফারেন্স ও সভার ব্যয় নোট শিট",
+        description: "Official meeting expense and refreshments approval note pad.",
+        descriptionBn: "শাখা ব্যবস্থাপক সম্মেলন ও সভার আপ্যায়ন ব্যয় অনুমোদন নোটশিট।",
+        sampleSubject: "বিষয়ঃ শাখা ব্যবস্থাপক সম্মেলন ও পর্যালোচনা সভার ব্যয় নির্বাহের অনুমোদন প্রসঙ্গে।",
+      },
+      {
+        id: "conf-resolution",
+        name: "Meeting Minutes & Resolution",
+        nameBn: "সভার কার্যবিবরণী ও সিদ্ধান্ত",
+        description: "Official agenda minutes, resolution summary and signatures page.",
+        descriptionBn: "সম্মেলনের বিস্তারিত কার্যবিবরণী, গৃহীত সিদ্ধান্ত ও স্বাক্ষর পেপার।",
+        sampleSubject: "বিষয়ঃ অনুষ্ঠিত পর্যালোচনা সভার কার্যবিবরণী ও রেজুলেশন।",
+      },
+      {
+        id: "conf-forwarding",
+        name: "Conference Forwarding Pad",
+        nameBn: "কনফারেন্স ফরোয়ার্ডিং প্যাড",
+        description: "Forwarding letter to head office or division for conference bill sanction.",
+        descriptionBn: "সভার বিল অনুমোদনের নিমিত্তে প্রধান কার্যালয়/বিভাগে প্রেরিত ফরোয়ার্ডিং পত্র।",
+        sampleSubject: "বিষয়ঃ অনুষ্ঠিত সভার বিলের আর্থিক সম্মতি গ্রহণের ফরোয়ার্ডিং পত্র।",
+      },
+    ],
+  },
+  "multi-item-bill": {
+    toolId: "multi-item-bill",
+    toolName: "Multi-Item Bill & CS Generator",
+    toolNameBn: "বহু-আইটেম বিল ও কোটেশন বিবরণী",
+    icon: "Receipt",
+    color: "#0891b2",
+    routeOrTab: "multi-item-bill",
+    category: "finance",
+    documents: [
+      {
+        id: "multi-cs",
+        name: "Comparative Statement (CS)",
+        nameBn: "তুলনামূলক বিবরণী (CS)",
+        description: "Multi-bidder price comparison evaluation sheet.",
+        descriptionBn: "একাধিক দরদাতার কোটেশন মূল্যায়ন ও সর্বনিম্ন দরদাতা নির্ধারণ বিবরণী (CS)।",
+        sampleSubject: "বিষয়ঃ উন্মুক্ত কোটেশন মূল্যায়নের তুলনামূলক বিবরণী (CS)।",
+      },
+      {
+        id: "multi-supplyorder",
+        name: "Multi-Item Supply Order",
+        nameBn: "মাল্টি-আইটেম কার্যাদেশ",
+        description: "Detailed procurement work order issued to lowest evaluated bidder.",
+        descriptionBn: "আইটেমভিত্তিক দর ও স্পেসিফিকেশনসহ নির্বাচিত দরদাতাকে কার্যাদেশ প্রদান।",
+        sampleSubject: "বিষয়ঃ দরপত্রের আলোকে মালামাল সরবরাহের কার্যাদেশ প্রদান।",
+      },
+      {
+        id: "multi-forwarding",
+        name: "Multi-Item Forwarding Letter",
+        nameBn: "মাল্টি-আইটেম ফরোয়ার্ডিং পত্র",
+        description: "Billing forwarding memo to regional audit/accounts officer.",
+        descriptionBn: "বিল পরিশোধ ও নিরীক্ষা সম্মতির জন্য ফরোয়ার্ডিং পত্র।",
+        sampleSubject: "বিষয়ঃ ক্রয়কৃত মালামালের বিলের আর্থিক সম্মতি গ্রহণের ফরোয়ার্ডিং পত্র।",
+      },
+    ],
+  },
+  "stationery-bill": {
+    toolId: "stationery-bill",
+    toolName: "Printed Stationery & Work Order Challan",
+    toolNameBn: "মুদ্রিত স্টেশনারী ও কার্যাদেশ চালান",
+    icon: "Printer",
+    color: "#8b5cf6",
+    routeOrTab: "stationery-bill",
+    category: "documents",
+    documents: [
+      {
+        id: "stationery-supplyorder",
+        name: "Printing Supply Order",
+        nameBn: "মুদ্রিত স্টেশনারী কার্যাদেশ",
+        description: "Work order for printing bank registers, vouchers, and ledgers.",
+        descriptionBn: "ব্যাংক ফরম, রেজিস্টার ও লেজার বই মুদ্রণের জন্য প্রেস কার্যাদেশ।",
+        sampleSubject: "বিষয়ঃ অত্র অঞ্চলের শাখাসমূহের জন্য প্রয়োজনীয় ফরম ও খাতা মুদ্রণের কার্যাদেশ।",
+      },
+      {
+        id: "stationery-challan",
+        name: "Delivery Challan",
+        nameBn: "মুদ্রিত মালামাল চালান পত্র",
+        description: "Delivery challan and stock entry verification voucher.",
+        descriptionBn: "প্রেস হতে প্রাপ্ত মুদ্রিত রেজিস্টার ও ভাউচারের চালান ভেরিফিকেশন।",
+        sampleSubject: "বিষয়ঃ মুদ্রিত স্টেশনারী মালামাল গ্রহণ ও ডেলিভারি চালান।",
+      },
+      {
+        id: "stationery-notesheet",
+        name: "Printing Approval Note Sheet",
+        nameBn: "মুদ্রণ ব্যয় অনুমোদন নোটশিট",
+        description: "Administrative expense note sheet for printing stationery.",
+        descriptionBn: "বার্ষিক মুদ্রণ ব্যয় অনুমোদন সংক্রান্ত প্রশাসনিক নোটশিট।",
+        sampleSubject: "বিষয়ঃ মুদ্রিত সামগ্রী ক্রয় বাবদ ব্যয় অনুমোদন প্রসঙ্গে।",
+      },
+    ],
+  },
+  "miscellaneous": {
+    toolId: "miscellaneous",
+    toolName: "Miscellaneous & Form Overlay Studio",
+    toolNameBn: "বিবিধ ও ফর্ম ওভারলে স্টুডিও",
+    icon: "Layers",
+    color: "#6366f1",
+    routeOrTab: "miscellaneous",
+    category: "documents",
+    documents: [
+      {
+        id: "misc-bankpad",
+        name: "Official Bank Pad Overlay",
+        nameBn: "অফিসিয়াল ব্যাংক প্যাড ও জলছাপ ওভারলে",
+        description: "Standard official pad layout for custom letters and announcements.",
+        descriptionBn: "কাস্টম চিঠি, সার্কুলার ও বিজ্ঞপ্তির জন্য প্রমিত ব্যাংক প্যাড ও জলছাপ।",
+        sampleSubject: "বিষয়ঃ বিবিধ আনুষ্ঠানিক বিজ্ঞপ্তি ও প্রশাসনিক নির্দেশনা।",
+      },
+      {
+        id: "misc-certificate",
+        name: "Official Certificate & Memo",
+        nameBn: "কাস্টম অফিস স্মারক ও প্রত্যয়ন পত্র",
+        description: "Official certification, authorization, and administrative memo overlay.",
+        descriptionBn: "কর্মকর্তা/শাখার প্রত্যয়নপত্র ও বিশেষ স্মারক ড্রাফটিং ফরম্যাট।",
+        sampleSubject: "বিষয়ঃ অফিস প্রত্যয়ন পত্র ও প্রশাসনিক স্মারক।",
+      },
+    ],
+  },
+  "office-monitoring": {
+    toolId: "office-monitoring",
+    toolName: "Office Monitoring Management System",
+    toolNameBn: "অফিস মনিটরিং ম্যানেজমেন্ট সিস্টেম",
+    icon: "ShieldCheck",
+    color: "#cc785c",
+    routeOrTab: "office-monitoring",
+    category: "compliance",
+    documents: [
+      {
+        id: "monitoring-report",
+        name: "Inspection & Monitoring Report",
+        nameBn: "পরিদর্শন ও মনিটরিং প্রতিবেদন",
+        description: "Comprehensive branch performance, audit score, and monitoring summary report.",
+        descriptionBn: "শাখা পরিদর্শন, অডিট স্কোর ও কেন্দ্রীয় মনিটরিং প্রতিবেদন নথি।",
+        sampleSubject: "বিষয়ঃ শাখা পরিদর্শন ও সার্বিক কার্যসম্পাদন মনিটরিং প্রতিবেদন।",
+      },
+      {
+        id: "monitoring-receipt",
+        name: "Branch Submission Receipt",
+        nameBn: "শাখা দাখিলপত্র রশিদ",
+        description: "Official acknowledgment receipt for branch compliance submissions.",
+        descriptionBn: "শাখা কর্তৃক দাখিলকৃত রিটার্ন ও কমপ্লায়েন্স তথ্যের আনুষ্ঠানিক রসিদ।",
+        sampleSubject: "বিষয়ঃ শাখা তথ্য দাখিল ও কমপ্লায়েন্স প্রাপ্তিস্বীকার পত্র।",
+      },
+    ],
+  },
+};
 
 interface FlowBoardCentralManagementProps {
   currentUser: User;
@@ -123,12 +425,109 @@ export function FlowBoardCentralManagement({
     return result;
   };
 
-  const [activeTab, setActiveTab] = useState<"rbac" | "role-permissions" | "tools" | "audit" | "policy">("rbac");
+  const [activeTab, setActiveTab] = useState<"rbac" | "role-permissions" | "tools" | "branding-watermark" | "audit" | "policy">("rbac");
   const [roleToolAccessDraft, setRoleToolAccessDraft] = useState<Record<string, Record<string, ToolAccessLevel>>>(
     () => buildRoleToolAccessMap(systemSettings?.roleToolAccess, tools)
   );
   const [isSavingRolePermissions, setIsSavingRolePermissions] = useState(false);
   const [rolePermissionsSuccessMsg, setRolePermissionsSuccessMsg] = useState("");
+
+  // Branding & Watermark Policy State
+  const defaultBrandingRules = useMemo(() => {
+    const rules: Record<string, BrandingDocumentRule> = {};
+    Object.values(TOOL_DOCUMENT_CATALOG).forEach((toolSpec) => {
+      toolSpec.documents.forEach((doc) => {
+        const key = `${toolSpec.toolId}:${doc.id}`;
+        rules[key] = {
+          logoHeaderEnabled: true,
+          watermarkEnabled: true,
+          a4LayoutEnabled: true,
+        };
+      });
+    });
+    return rules;
+  }, []);
+
+  const [brandingRulesDraft, setBrandingRulesDraft] = useState<Record<string, BrandingDocumentRule>>(() => {
+    const saved = systemSettings?.brandingPolicy?.documentRules;
+    return saved ? { ...defaultBrandingRules, ...saved } : defaultBrandingRules;
+  });
+
+  const [brandingHeaderDraft, setBrandingHeaderDraft] = useState({
+    institutionName: systemSettings?.brandingPolicy?.institutionName || systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক",
+    officeName: systemSettings?.brandingPolicy?.officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি",
+    slogan: systemSettings?.brandingPolicy?.slogan || "গণমানুষের ব্যাংক",
+    websiteUrl: systemSettings?.brandingPolicy?.websiteUrl || "www.krishibank.gov.bd",
+    logoUrl: systemSettings?.brandingPolicy?.logoUrl || systemSettings?.logoUrl || "",
+    showLogo: systemSettings?.brandingPolicy?.showLogo ?? true,
+    showWatermark: systemSettings?.brandingPolicy?.showWatermark ?? true,
+    watermarkOpacity: systemSettings?.brandingPolicy?.watermarkOpacity ?? 0.065,
+    defaultPageSize: systemSettings?.brandingPolicy?.defaultPageSize || "A4",
+  });
+
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+      alert(
+        language === "bn"
+          ? "ছবির সাইজ সর্বোচ্চ ৩ মেগাবাইট হতে পারবে।"
+          : "Image size must be less than 3MB."
+      );
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      setBrandingHeaderDraft((prev) => ({ ...prev, logoUrl: base64 }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const [isSavingBranding, setIsSavingBranding] = useState(false);
+  const [brandingSuccessMsg, setBrandingSuccessMsg] = useState("");
+  const [selectedBrandingToolFilter, setSelectedBrandingToolFilter] = useState<string>("all");
+  const [brandingSearchQuery, setBrandingSearchQuery] = useState<string>("");
+  const [previewDocModal, setPreviewDocModal] = useState<{
+    toolId: string;
+    docId: string;
+    docName: string;
+    docNameBn: string;
+    sampleSubject?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (systemSettings?.brandingPolicy) {
+      if (systemSettings.brandingPolicy.documentRules) {
+        setBrandingRulesDraft((prev) => ({
+          ...defaultBrandingRules,
+          ...prev,
+          ...systemSettings.brandingPolicy?.documentRules,
+        }));
+      }
+      setBrandingHeaderDraft({
+        institutionName: systemSettings.brandingPolicy.institutionName || systemSettings.institutionName || "বাংলাদেশ কৃষি ব্যাংক",
+        officeName: systemSettings.brandingPolicy.officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি",
+        slogan: systemSettings.brandingPolicy.slogan || "গণমানুষের ব্যাংক",
+        websiteUrl: systemSettings.brandingPolicy.websiteUrl || "www.krishibank.gov.bd",
+        logoUrl: systemSettings.brandingPolicy.logoUrl || systemSettings.logoUrl || "",
+        showLogo: systemSettings.brandingPolicy.showLogo ?? true,
+        showWatermark: systemSettings.brandingPolicy.showWatermark ?? true,
+        watermarkOpacity: systemSettings.brandingPolicy.watermarkOpacity ?? 0.065,
+        defaultPageSize: systemSettings.brandingPolicy.defaultPageSize || "A4",
+      });
+    } else if (systemSettings) {
+      setBrandingHeaderDraft((prev) => ({
+        ...prev,
+        institutionName: systemSettings.institutionName || prev.institutionName,
+        logoUrl: systemSettings.logoUrl || prev.logoUrl,
+      }));
+    }
+  }, [systemSettings, defaultBrandingRules]);
 
   useEffect(() => {
     setRoleToolAccessDraft(buildRoleToolAccessMap(systemSettings?.roleToolAccess, tools));
@@ -589,6 +988,96 @@ export function FlowBoardCentralManagement({
     }));
   };
 
+  const handleSaveBranding = async () => {
+    setIsSavingBranding(true);
+    setBrandingSuccessMsg("");
+    try {
+      const updatedSettings: SystemSettings = {
+        ...(systemSettings || ({} as SystemSettings)),
+        institutionName: brandingHeaderDraft.institutionName || "বাংলাদেশ কৃষি ব্যাংক",
+        logoUrl: brandingHeaderDraft.logoUrl,
+        brandingPolicy: {
+          institutionName: brandingHeaderDraft.institutionName,
+          officeName: brandingHeaderDraft.officeName,
+          slogan: brandingHeaderDraft.slogan,
+          websiteUrl: brandingHeaderDraft.websiteUrl,
+          logoUrl: brandingHeaderDraft.logoUrl,
+          showLogo: brandingHeaderDraft.showLogo,
+          showWatermark: brandingHeaderDraft.showWatermark,
+          watermarkOpacity: brandingHeaderDraft.watermarkOpacity,
+          defaultPageSize: brandingHeaderDraft.defaultPageSize as any,
+          documentRules: brandingRulesDraft,
+        },
+      };
+
+      const res = await apiFetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedSettings),
+      });
+
+      if (!res.ok) throw new Error("Failed to save branding settings");
+      setBrandingSuccessMsg(
+        language === "bn"
+          ? "লোগো, হেডার ও জলছাপ পলিসি সফলভাবে সংরক্ষিত হয়েছে!"
+          : "Logo, header, and watermark policy saved successfully!"
+      );
+      if (onRefreshData) {
+        onRefreshData();
+      }
+      setTimeout(() => setBrandingSuccessMsg(""), 3500);
+    } catch (err: any) {
+      console.error(err);
+      alert(language === "bn" ? "সংরক্ষণ করতে ব্যর্থ হয়েছে" : "Failed to save branding policy");
+    } finally {
+      setIsSavingBranding(false);
+    }
+  };
+
+  const handleToggleDocRule = (
+    key: string,
+    field: "logoHeaderEnabled" | "watermarkEnabled" | "a4LayoutEnabled"
+  ) => {
+    setBrandingRulesDraft((prev) => ({
+      ...prev,
+      [key]: {
+        ...(prev[key] || { logoHeaderEnabled: true, watermarkEnabled: true, a4LayoutEnabled: true }),
+        [field]: !prev[key]?.[field],
+      },
+    }));
+  };
+
+  const handleToggleToolAll = (toolId: string, enable: boolean) => {
+    const toolGroup = TOOL_DOCUMENT_CATALOG[toolId];
+    if (!toolGroup) return;
+    setBrandingRulesDraft((prev) => {
+      const next = { ...prev };
+      toolGroup.documents.forEach((doc) => {
+        const key = `${toolId}:${doc.id}`;
+        next[key] = {
+          logoHeaderEnabled: enable,
+          watermarkEnabled: enable,
+          a4LayoutEnabled: enable,
+        };
+      });
+      return next;
+    });
+  };
+
+  const handleToggleGlobalAll = (enable: boolean) => {
+    setBrandingRulesDraft((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((k) => {
+        next[k] = {
+          logoHeaderEnabled: enable,
+          watermarkEnabled: enable,
+          a4LayoutEnabled: enable,
+        };
+      });
+      return next;
+    });
+  };
+
   const getOfficeName = (id: string) => {
     return offices.find((o) => o.id === id)?.name || id;
   };
@@ -609,6 +1098,14 @@ export function FlowBoardCentralManagement({
         return <FileCheck2 className={className} />;
       case "ShieldCheck":
         return <ShieldCheck className={className} />;
+      case "Package":
+        return <Package className={className} />;
+      case "Printer":
+        return <Printer className={className} />;
+      case "Stamp":
+        return <Stamp className={className} />;
+      case "Layers":
+        return <Layers className={className} />;
       default:
         return <Boxes className={className} />;
     }
@@ -755,6 +1252,19 @@ export function FlowBoardCentralManagement({
           >
             <Layers className="w-4 h-4" />
             <span>{language === "bn" ? "টুলস ও মডিউল রেজিস্ট্রি" : "Tools & Modules Registry"}</span>
+          </button>
+
+          <button
+            id="central-tab-branding-watermark"
+            onClick={() => setActiveTab("branding-watermark")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
+              activeTab === "branding-watermark"
+                ? "bg-emerald-600 text-white shadow-sm font-bold"
+                : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700/80 border border-slate-200 dark:border-slate-700/60"
+            }`}
+          >
+            <Stamp className="w-4 h-4" />
+            <span>{language === "bn" ? "লোগো ও জলছাপ পলিসি" : "Logo & Watermark Policy"}</span>
           </button>
 
           <button
@@ -1561,6 +2071,624 @@ export function FlowBoardCentralManagement({
         )}
 
         {/* ======================================================== */}
+        {/* TAB: BRANDING & WATERMARK POLICY (LATEST DEDICATED ENGINE) */}
+        {/* ======================================================== */}
+        {activeTab === "branding-watermark" && (
+          <div className="space-y-6">
+            {/* Top Overview & Save Bar */}
+            <div className="bg-gradient-to-r from-emerald-900/90 via-teal-900/90 to-slate-900 text-white p-6 rounded-2xl shadow-lg border border-emerald-500/30 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="space-y-1.5 max-w-3xl">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-400/40 text-emerald-300">
+                    <Stamp className="w-5 h-5" />
+                  </div>
+                  <h2 className="text-base sm:text-lg font-bold">
+                    {language === "bn"
+                      ? "লোগো, হেডার ও জলছাপ পলিসি ইঞ্জিন (Global Branding & Watermark Engine)"
+                      : "Global Header & Watermark Branding Engine"}
+                  </h2>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400 text-slate-950">
+                    Enterprise A4
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {language === "bn"
+                    ? "সিস্টেমের যেকোনো টুলে প্রস্তুতকৃত ফরোয়ার্ডিং, সাপ্লাই অর্ডার, কার্যাদেশ, চালান ও নোটশিটের অফিসিয়াল হেডার (১.৬em : ১.১em অনুপাত) এবং জলছাপ নির্দিষ্ট নথিতে সক্রিয় বা নিষ্ক্রিয় করুন। এখান থেকে সরাসরি যেকোনো টুলে রিডাইরেক্ট করে লাইভ পরীক্ষা করা যাবে।"
+                    : "Centrally configure official pad headers and watermark overlays for Forwarding, Supply Orders, Challans, and Note Sheets across all registered tools."}
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => handleToggleGlobalAll(true)}
+                  className="px-3 py-2 rounded-xl border border-emerald-400/40 bg-emerald-800/40 hover:bg-emerald-700/50 text-emerald-200 text-xs font-semibold transition-all flex items-center gap-1.5"
+                  title="Enable everywhere"
+                >
+                  <CheckCheck className="w-3.5 h-3.5" />
+                  <span>{language === "bn" ? "সবগুলোতে চালু" : "Enable All"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToggleGlobalAll(false)}
+                  className="px-3 py-2 rounded-xl border border-rose-400/30 bg-rose-900/30 hover:bg-rose-800/40 text-rose-200 text-xs font-semibold transition-all flex items-center gap-1.5"
+                  title="Disable everywhere"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>{language === "bn" ? "সবগুলোতে বন্ধ" : "Disable All"}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveBranding}
+                  disabled={isSavingBranding}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  {isSavingBranding ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                  <span>
+                    {isSavingBranding
+                      ? language === "bn"
+                        ? "সংরক্ষণ হচ্ছে..."
+                        : "Saving..."
+                      : language === "bn"
+                        ? "পলিসি সংরক্ষণ করুন"
+                        : "Save Policy"}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {brandingSuccessMsg && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn shadow-sm">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span className="font-semibold">{brandingSuccessMsg}</span>
+              </div>
+            )}
+
+            {/* Quick Metrics & Preset Specs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {Object.values(TOOL_DOCUMENT_CATALOG).reduce((acc, t) => acc + t.documents.length, 0)}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    {language === "bn" ? "মোট সমর্থিত নথি (৭টি টুল)" : "Registered Documents"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {(Object.values(brandingRulesDraft) as BrandingDocumentRule[]).filter((r) => r.logoHeaderEnabled).length}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    {language === "bn" ? "লোগো হেডার সক্রিয়" : "Active Headers"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400">
+                  <Stamp className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {(Object.values(brandingRulesDraft) as BrandingDocumentRule[]).filter((r) => r.watermarkEnabled).length}
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    {language === "bn" ? "জলছাপ সক্রিয়" : "Active Watermarks"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400">
+                  <Printer className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    {brandingHeaderDraft.defaultPageSize || "A4"} Standard
+                  </div>
+                  <div className="text-[11px] text-slate-500 font-medium">
+                    {language === "bn" ? "ডিফল্ট প্রিন্ট সাইজ" : "Default Paper Size"}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Global Header & Watermark Customization Card */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span>{language === "bn" ? "গ্লোবাল ব্যাংক প্যাড ও জলছাপ কনফিগারেশন" : "Global Pad & Watermark Specifications"}</span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {language === "bn"
+                      ? "এখানে নির্ধারিত শিরোনাম ও স্লোগান সমস্ত টুলে আনুপাতিক স্কেলিংয়ে রেন্ডার হবে।"
+                      : "Configured texts and watermark opacity will be proportionately applied to all approved documents."}
+                  </p>
+                </div>
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-semibold border border-emerald-200 dark:border-emerald-800">
+                  {language === "bn" ? "অনুপাত: ১.৬em (শীর্ষ) / ১.১em (অফিস)" : "Ratio: 1.6em (Bank) / 1.1em (Office)"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "bn" ? "প্রতিষ্ঠানের নাম (১.৬em বড়)" : "Institution Name (1.6em)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={brandingHeaderDraft.institutionName}
+                    onChange={(e) => setBrandingHeaderDraft({ ...brandingHeaderDraft, institutionName: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    placeholder="বাংলাদেশ কৃষি ব্যাংক"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "bn" ? "অফিসের নাম / সাব-হেডার (১.১em)" : "Office Name / Sub-header (1.1em)"}
+                  </label>
+                  <input
+                    type="text"
+                    value={brandingHeaderDraft.officeName}
+                    onChange={(e) => setBrandingHeaderDraft({ ...brandingHeaderDraft, officeName: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    placeholder="আঞ্চলিক কার্যালয়, রাঙ্গামাটি"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "bn" ? "অফিশিয়াল স্লোগান" : "Official Tagline / Slogan"}
+                  </label>
+                  <input
+                    type="text"
+                    value={brandingHeaderDraft.slogan}
+                    onChange={(e) => setBrandingHeaderDraft({ ...brandingHeaderDraft, slogan: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    placeholder="গণমানুষের ব্যাংক"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "bn" ? "অফিশিয়াল ওয়েবসাইট পোর্টাল" : "Website Portal"}
+                  </label>
+                  <input
+                    type="text"
+                    value={brandingHeaderDraft.websiteUrl}
+                    onChange={(e) => setBrandingHeaderDraft({ ...brandingHeaderDraft, websiteUrl: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    placeholder="www.krishibank.gov.bd"
+                  />
+                </div>
+              </div>
+
+              {/* Logo Upload & Custom Emblem Section */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                      {language === "bn" ? "অফিসিয়াল লোগো / এম্বলিম আপলোড ও ব্যবস্থাপনা" : "Official Logo & Custom Emblem Management"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    PNG, JPG, SVG, WebP (Max 3MB)
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  {/* Logo Preview Box */}
+                  <div className="w-16 h-16 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 flex items-center justify-center p-1.5 shrink-0 shadow-sm relative overflow-hidden">
+                    {brandingHeaderDraft.logoUrl ? (
+                      <img
+                        src={brandingHeaderDraft.logoUrl}
+                        alt="Logo Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <svg width="44" height="44" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" strokeWidth="6" />
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" strokeWidth="1.5" strokeDasharray="3,2" />
+                        <path
+                          d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82"
+                          fill="none"
+                          stroke="#006a4e"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                        <circle cx="50" cy="22" r="3" fill="#f42a41" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Actions & URL Input */}
+                  <div className="flex-1 space-y-2.5 w-full">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <input
+                        type="file"
+                        ref={logoFileInputRef}
+                        onChange={handleLogoFileUpload}
+                        accept="image/png, image/jpeg, image/svg+xml, image/webp"
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => logoFileInputRef.current?.click()}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{language === "bn" ? "নতুন লোগো আপলোড করুন" : "Upload New Logo"}</span>
+                      </button>
+
+                      {brandingHeaderDraft.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setBrandingHeaderDraft((prev) => ({ ...prev, logoUrl: "" }))}
+                          className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-rose-200 dark:border-rose-800 flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{language === "bn" ? "ডিফল্ট এম্বলিমে রিসেট করুন" : "Reset to Default"}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={brandingHeaderDraft.logoUrl}
+                        onChange={(e) => setBrandingHeaderDraft({ ...brandingHeaderDraft, logoUrl: e.target.value })}
+                        placeholder={language === "bn" ? "অথবা সরাসরি লোগো ছবির লিংক/URL পেস্ট করুন..." : "Or paste direct logo image URL..."}
+                        className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sliders & Toggles */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div>
+                  <div className="flex justify-between items-center text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    <span>{language === "bn" ? "জলছাপের অস্বচ্ছতা (Opacity)" : "Watermark Opacity"}</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-mono">
+                      {Math.round(brandingHeaderDraft.watermarkOpacity * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.02"
+                    max="0.25"
+                    step="0.005"
+                    value={brandingHeaderDraft.watermarkOpacity}
+                    onChange={(e) =>
+                      setBrandingHeaderDraft({
+                        ...brandingHeaderDraft,
+                        watermarkOpacity: parseFloat(e.target.value),
+                      })
+                    }
+                    className="w-full accent-emerald-600 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    {language === "bn" ? "ডিফল্ট পেপার ফরম্যাট" : "Default Paper Size"}
+                  </label>
+                  <select
+                    value={brandingHeaderDraft.defaultPageSize}
+                    onChange={(e) =>
+                      setBrandingHeaderDraft({
+                        ...brandingHeaderDraft,
+                        defaultPageSize: e.target.value as any,
+                      })
+                    }
+                    className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none"
+                  >
+                    <option value="A4">A4 (210mm × 297mm) - Recommended</option>
+                    <option value="Legal">Legal (8.5" × 14")</option>
+                    <option value="Letter">Letter (8.5" × 11")</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-4 pt-4">
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={brandingHeaderDraft.showLogo}
+                      onChange={(e) =>
+                        setBrandingHeaderDraft({ ...brandingHeaderDraft, showLogo: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-emerald-600 accent-emerald-600"
+                    />
+                    <span>{language === "bn" ? "লোগো এম্বলিম দৃশ্যমান" : "Show Emblem Logo"}</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <input
+                      type="checkbox"
+                      checked={brandingHeaderDraft.showWatermark}
+                      onChange={(e) =>
+                        setBrandingHeaderDraft({ ...brandingHeaderDraft, showWatermark: e.target.checked })
+                      }
+                      className="w-4 h-4 rounded text-emerald-600 accent-emerald-600"
+                    />
+                    <span>{language === "bn" ? "জলছাপ সক্রিয়" : "Watermark Enabled"}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none flex-wrap">
+                <button
+                  onClick={() => setSelectedBrandingToolFilter("all")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    selectedBrandingToolFilter === "all"
+                      ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 shadow-sm"
+                      : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  {language === "bn" ? "সকল টুলস" : "All Tools"}
+                </button>
+                {Object.values(TOOL_DOCUMENT_CATALOG).map((tg) => (
+                  <button
+                    key={tg.toolId}
+                    onClick={() => setSelectedBrandingToolFilter(tg.toolId)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      selectedBrandingToolFilter === tg.toolId
+                        ? "bg-emerald-600 text-white shadow-sm"
+                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    {renderToolIcon(tg.icon, "w-3.5 h-3.5")}
+                    <span>{language === "bn" ? tg.toolNameBn : tg.toolName}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="relative min-w-[220px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={brandingSearchQuery}
+                  onChange={(e) => setBrandingSearchQuery(e.target.value)}
+                  placeholder={language === "bn" ? "ডকুমেন্টের নাম বা ধরন অনুসন্ধান..." : "Search documents..."}
+                  className="w-full pl-9 pr-3.5 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                />
+              </div>
+            </div>
+
+            {/* Tool-by-Tool & Document-by-Document Assignment Matrix */}
+            <div className="space-y-6">
+              {Object.values(TOOL_DOCUMENT_CATALOG)
+                .filter(
+                  (tg) => selectedBrandingToolFilter === "all" || selectedBrandingToolFilter === tg.toolId
+                )
+                .map((toolGroup) => {
+                  const filteredDocs = toolGroup.documents.filter((doc) => {
+                    if (!brandingSearchQuery) return true;
+                    const q = brandingSearchQuery.toLowerCase();
+                    return (
+                      doc.name.toLowerCase().includes(q) ||
+                      doc.nameBn.toLowerCase().includes(q) ||
+                      doc.description.toLowerCase().includes(q) ||
+                      doc.descriptionBn.toLowerCase().includes(q)
+                    );
+                  });
+
+                  if (filteredDocs.length === 0) return null;
+
+                  const activeInTool = toolGroup.documents.filter(
+                    (d) => brandingRulesDraft[`${toolGroup.toolId}:${d.id}`]?.logoHeaderEnabled
+                  ).length;
+
+                  return (
+                    <div
+                      key={toolGroup.toolId}
+                      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden"
+                    >
+                      {/* Tool Header */}
+                      <div className="p-4 sm:px-6 bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="p-2.5 rounded-xl text-white shadow-sm flex items-center justify-center"
+                            style={{ backgroundColor: toolGroup.color }}
+                          >
+                            {renderToolIcon(toolGroup.icon, "w-5 h-5")}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                                {language === "bn" ? toolGroup.toolNameBn : toolGroup.toolName}
+                              </h4>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                                {toolGroup.category}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500">
+                              {activeInTool}/{toolGroup.documents.length}{" "}
+                              {language === "bn" ? "নথিতে লোগো হেডার সক্রিয়" : "documents active"}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Direct Redirect / Launch Button & Tool Batch Toggles */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => handleToggleToolAll(toolGroup.toolId, true)}
+                            className="px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[11px] font-semibold hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                          >
+                            {language === "bn" ? "সব চালু" : "Enable All"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleToolAll(toolGroup.toolId, false)}
+                            className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                          >
+                            {language === "bn" ? "সব বন্ধ" : "Disable All"}
+                          </button>
+
+                          {/* DIRECT REDIRECT / LAUNCH BUTTON */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (onSelectTool) {
+                                onSelectTool(toolGroup.toolId, toolGroup.routeOrTab);
+                              }
+                            }}
+                            className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                            title={language === "bn" ? "সরাসরি এই টুলে প্রবেশ করুন" : "Launch & Open this Tool"}
+                          >
+                            <ArrowUpRight className="w-3.5 h-3.5" />
+                            <span>{language === "bn" ? "সরাসরি টুলে যান" : "Open Tool"}</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Documents Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs">
+                          <thead>
+                            <tr className="border-b border-slate-100 dark:border-slate-800 bg-slate-100/40 dark:bg-slate-800/30 text-slate-500 font-semibold text-[11px]">
+                              <th className="py-2.5 px-4 sm:px-6">{language === "bn" ? "নথি ও বিবরণ" : "Document & Description"}</th>
+                              <th className="py-2.5 px-3 text-center">{language === "bn" ? "লোগো হেডার" : "Logo Header"}</th>
+                              <th className="py-2.5 px-3 text-center">{language === "bn" ? "জলছাপ" : "Watermark"}</th>
+                              <th className="py-2.5 px-3 text-center">{language === "bn" ? "A4 সাইজ" : "A4 Layout"}</th>
+                              <th className="py-2.5 px-4 text-right">{language === "bn" ? "অ্যাকশন" : "Action"}</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                            {filteredDocs.map((doc) => {
+                              const key = `${toolGroup.toolId}:${doc.id}`;
+                              const rule = brandingRulesDraft[key] || {
+                                logoHeaderEnabled: true,
+                                watermarkEnabled: true,
+                                a4LayoutEnabled: true,
+                              };
+
+                              return (
+                                <tr
+                                  key={doc.id}
+                                  className="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                                >
+                                  <td className="py-3 px-4 sm:px-6">
+                                    <div className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                      <FileText className="w-4 h-4 text-slate-400" />
+                                      <span>{language === "bn" ? doc.nameBn : doc.name}</span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 mt-0.5">
+                                      {language === "bn" ? doc.descriptionBn : doc.description}
+                                    </p>
+                                  </td>
+
+                                  {/* Logo Header Toggle */}
+                                  <td className="py-3 px-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleDocRule(key, "logoHeaderEnabled")}
+                                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                                        rule.logoHeaderEnabled
+                                          ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700"
+                                      }`}
+                                    >
+                                      {rule.logoHeaderEnabled
+                                        ? language === "bn"
+                                          ? "✓ সক্রিয়"
+                                          : "✓ Active"
+                                        : language === "bn"
+                                          ? "✕ বন্ধ"
+                                          : "✕ Off"}
+                                    </button>
+                                  </td>
+
+                                  {/* Watermark Toggle */}
+                                  <td className="py-3 px-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleDocRule(key, "watermarkEnabled")}
+                                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                                        rule.watermarkEnabled
+                                          ? "bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-800"
+                                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700"
+                                      }`}
+                                    >
+                                      {rule.watermarkEnabled
+                                        ? language === "bn"
+                                          ? "✓ সক্রিয়"
+                                          : "✓ Active"
+                                        : language === "bn"
+                                          ? "✕ বন্ধ"
+                                          : "✕ Off"}
+                                    </button>
+                                  </td>
+
+                                  {/* A4 Layout Toggle */}
+                                  <td className="py-3 px-3 text-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleDocRule(key, "a4LayoutEnabled")}
+                                      className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all cursor-pointer ${
+                                        rule.a4LayoutEnabled
+                                          ? "bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-300 dark:border-sky-800"
+                                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 border border-slate-200 dark:border-slate-700"
+                                      }`}
+                                    >
+                                      {rule.a4LayoutEnabled ? "A4" : "Normal"}
+                                    </button>
+                                  </td>
+
+                                  {/* Live Preview Button */}
+                                  <td className="py-3 px-4 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setPreviewDocModal({
+                                          toolId: toolGroup.toolId,
+                                          docId: doc.id,
+                                          docName: doc.name,
+                                          docNameBn: doc.nameBn,
+                                          sampleSubject: doc.sampleSubject,
+                                        })
+                                      }
+                                      className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-semibold transition-colors inline-flex items-center gap-1 cursor-pointer"
+                                      title="Live Preview"
+                                    >
+                                      <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                      <span>{language === "bn" ? "প্রিভিউ" : "Preview"}</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
+
+        {/* ======================================================== */}
         {/* TAB 4: HUB POLICIES & SETTINGS                           */}
         {/* ======================================================== */}
         {activeTab === "policy" && (
@@ -1606,6 +2734,85 @@ export function FlowBoardCentralManagement({
                   onChange={(e) => setPolicyDraft({ ...policyDraft, webAppName: e.target.value })}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                 />
+              </div>
+
+              {/* Official Institutional Logo & Document Branding Direct Section */}
+              <div className="p-4 rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                      <Stamp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>{language === "bn" ? "অফিসিয়াল প্রাতিষ্ঠানিক লোগো ও জলছাপ পলিসি" : "Official Logo & Watermark Policy"}</span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {language === "bn"
+                        ? "সকল টুলের ডকুমেন্টের প্যাড হেডার ও জলছাপের কেন্দ্রীয় লোগো পরিচালনা করুন।"
+                        : "Manage global logo & watermark applied across all documents."}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("branding-watermark")}
+                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span>{language === "bn" ? "লোগো ও জলছাপ পলিসি ট্যাবে যান" : "Open Branding Tab"}</span>
+                    <ArrowUpRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-1">
+                  <div className="w-16 h-16 rounded-2xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 p-2 flex items-center justify-center shrink-0 shadow-sm">
+                    {brandingHeaderDraft.logoUrl ? (
+                      <img
+                        src={brandingHeaderDraft.logoUrl}
+                        alt="Logo Preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <svg width="40" height="40" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" strokeWidth="6" />
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" strokeWidth="1.5" strokeDasharray="3,2" />
+                        <path
+                          d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82"
+                          fill="none"
+                          stroke="#006a4e"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                        <circle cx="50" cy="22" r="3" fill="#f42a41" />
+                      </svg>
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-2 w-full">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => logoFileInputRef.current?.click()}
+                        className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{language === "bn" ? "নতুন প্রাতিষ্ঠানিক লোগো আপলোড করুন" : "Upload Official Logo"}</span>
+                      </button>
+
+                      {brandingHeaderDraft.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setBrandingHeaderDraft((prev) => ({ ...prev, logoUrl: "" }))}
+                          className="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 text-xs font-medium border border-rose-500/30 transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{language === "bn" ? "ডিফল্ট এম্বলিমে রিসেট" : "Reset"}</span>
+                        </button>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-500">
+                      {brandingHeaderDraft.logoUrl
+                        ? (language === "bn" ? "✅ কাস্টম লোগো আপলোড করা রয়েছে এবং সকল ডকুমেন্টের হেডার ও জলছাপে সিংক হচ্ছে।" : "Custom logo is active and synced across document headers and watermarks.")
+                        : (language === "bn" ? "ℹ️ বর্তমানে ডিফল্ট অফিসিয়াল এম্বলিম কার্যকর রয়েছে।" : "Default official emblem is active.")}
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Login Page Logo Customization */}
@@ -2261,6 +3468,270 @@ export function FlowBoardCentralManagement({
             if (onRefreshData) onRefreshData();
           }}
         />
+      )}
+
+      {/* Live Document Preview Modal with Global Header & Watermark */}
+      {previewDocModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 flex flex-col max-h-[92vh] overflow-hidden">
+            {/* Modal Header Bar */}
+            <div className="p-4 px-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400">
+                  <Stamp className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                      {language === "bn" ? previewDocModal.docNameBn : previewDocModal.docName}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                      {TOOL_DOCUMENT_CATALOG[previewDocModal.toolId]?.toolNameBn || previewDocModal.toolId}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    {language === "bn"
+                      ? "A4 সাইজে গ্লোবাল হেডার (১.৬em : ১.১em) ও জলছাপ লাইভ প্রিভিউ"
+                      : "A4 Live Preview with Proportional 1.6em / 1.1em Header & Watermark"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {/* Direct Redirect to Tool */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const toolSpec = TOOL_DOCUMENT_CATALOG[previewDocModal.toolId];
+                    if (onSelectTool && toolSpec) {
+                      setPreviewDocModal(null);
+                      onSelectTool(toolSpec.toolId, toolSpec.routeOrTab);
+                    }
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <ArrowUpRight className="w-3.5 h-3.5" />
+                  <span>{language === "bn" ? "সরাসরি এই টুলে যান" : "Open Tool"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewDocModal(null)}
+                  className="p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body: Realistic Simulated A4 Document */}
+            <div className="flex-1 p-4 sm:p-8 overflow-y-auto bg-slate-100 dark:bg-slate-950 flex justify-center">
+              <div
+                className="bg-white text-black p-8 sm:p-12 rounded-lg shadow-xl max-w-[760px] w-full min-h-[900px] relative font-['Hind_Siliguri','Kalpurush',sans-serif] leading-relaxed select-none"
+                style={{ fontSize: "11pt" }}
+              >
+                {/* Official Circular Watermark Overlay */}
+                {brandingHeaderDraft.showWatermark && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-0"
+                    style={{ opacity: brandingHeaderDraft.watermarkOpacity }}
+                  >
+                    {brandingHeaderDraft.logoUrl ? (
+                      <img
+                        src={brandingHeaderDraft.logoUrl}
+                        alt="Watermark Logo"
+                        style={{
+                          maxHeight: "280px",
+                          maxWidth: "280px",
+                          width: "280px",
+                          height: "280px",
+                          objectFit: "contain",
+                          filter: "grayscale(100%)",
+                          display: "block",
+                        }}
+                      />
+                    ) : (
+                      <svg width="320" height="320" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" strokeWidth="5" />
+                        <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" strokeWidth="1.5" strokeDasharray="3,2" />
+                        <path
+                          d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82"
+                          fill="none"
+                          stroke="#006a4e"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                        />
+                        <circle cx="50" cy="22" r="3" fill="#f42a41" />
+                      </svg>
+                    )}
+                  </div>
+                )}
+
+                {/* Content Container (Layered above watermark) */}
+                <div className="relative z-10 space-y-6">
+                  {/* Official Global Bank Pad Header */}
+                  {brandingHeaderDraft.showLogo && (
+                    <div className="flex justify-between items-center border-b-[1.5px] border-black pb-2 mb-4 w-full">
+                      {/* Left: Official Emblem or Uploaded Custom Logo */}
+                      <div className="w-[70px] flex items-center justify-start">
+                        {brandingHeaderDraft.logoUrl ? (
+                          <img
+                            src={brandingHeaderDraft.logoUrl}
+                            alt="Logo"
+                            className="w-[56px] h-[56px] object-contain"
+                          />
+                        ) : (
+                          <svg width="56" height="56" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="46" fill="none" stroke="#006a4e" strokeWidth="6" />
+                            <circle cx="50" cy="50" r="38" fill="none" stroke="#006a4e" strokeWidth="1.5" strokeDasharray="3,2" />
+                            <path
+                              d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82"
+                              fill="none"
+                              stroke="#006a4e"
+                              strokeWidth="3"
+                              strokeLinecap="round"
+                            />
+                            <circle cx="50" cy="22" r="3" fill="#f42a41" />
+                          </svg>
+                        )}
+                      </div>
+
+                      {/* Center: Large Proportional Titles */}
+                      <div className="flex-1 text-center px-2">
+                        <div
+                          className="font-bold text-black leading-[1.1]"
+                          style={{ fontSize: "1.6em" }}
+                        >
+                          {getCleanInstitutionName(brandingHeaderDraft.institutionName)}
+                        </div>
+                        <div
+                          className="font-bold text-black mt-0.5"
+                          style={{ fontSize: "1.1em" }}
+                        >
+                          {brandingHeaderDraft.officeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"}
+                        </div>
+                      </div>
+
+                      {/* Right: Slogan & Web URL */}
+                      <div className="w-[130px] text-right leading-[1.2]">
+                        <div
+                          className="font-bold text-black"
+                          style={{ fontSize: "0.9em" }}
+                        >
+                          {brandingHeaderDraft.slogan || "গণমানুষের ব্যাংক"}
+                        </div>
+                        <div
+                          className="text-[#222] mt-0.5"
+                          style={{ fontSize: "0.75em" }}
+                        >
+                          {brandingHeaderDraft.websiteUrl || "www.krishibank.gov.bd"}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Document Meta / Reference & Date Bar */}
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-800 border-b border-dashed border-slate-300 pb-2">
+                    <div>
+                      <strong>স্মারক / সূত্র নং:</strong> আঃ কাঃ (বাংলা) প্রশা-১(৪)/২০২৬-২০২৭/
+                    </div>
+                    <div>
+                      <strong>তারিখ:</strong> {new Date().toLocaleDateString("bn-BD")}
+                    </div>
+                  </div>
+
+                  {/* Document Subject Line */}
+                  <div className="font-bold text-slate-950 text-sm underline pt-1">
+                    {previewDocModal.sampleSubject || "বিষয়ঃ দাপ্তরিক কার্যক্রম ও আর্থিক অনুমোদন সংক্রান্ত পত্র।"}
+                  </div>
+
+                  {/* Sample Body Content */}
+                  <div className="space-y-3 text-justify text-xs leading-relaxed text-slate-900">
+                    <p>
+                      উপর্যুক্ত বিষয়ের প্রেক্ষিতে জানানো যাচ্ছে যে, অত্র অঞ্চলের দাপ্তরিক প্রয়োজনীয়তা ও বিধি মোতাবেক
+                      মালামাল সরবরাহ, বিল ভাউচার নিরীক্ষা এবং প্রশাসনিক কার্যক্রম সুষ্ঠুভাবে সম্পাদনের লক্ষ্যে প্রয়োজনীয়
+                      নথিপত্র প্রস্তুতপূর্বক পরবর্তী প্রয়োজনীয় ব্যবস্থা গ্রহণের জন্য প্রেরণ করা হলো।
+                    </p>
+
+                    {/* Sample Table Preview */}
+                    <div className="pt-2">
+                      <table className="w-full border-collapse border border-slate-400 text-xs">
+                        <thead>
+                          <tr className="bg-slate-100 text-center font-bold">
+                            <th className="border border-slate-400 p-1.5">ক্রমিক</th>
+                            <th className="border border-slate-400 p-1.5 text-left">বিবরণ / আইটেমের নাম</th>
+                            <th className="border border-slate-400 p-1.5">পরিমাণ</th>
+                            <th className="border border-slate-400 p-1.5 text-right">মোট প্রাক্কলিত মূল্য (৳)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td className="border border-slate-400 p-1.5 text-center">০১</td>
+                            <td className="border border-slate-400 p-1.5">মুদ্রিত সামগ্রী ও অফিসিয়াল রেজিস্টার সরবরাহ</td>
+                            <td className="border border-slate-400 p-1.5 text-center">০৫ টি শাখা</td>
+                            <td className="border border-slate-400 p-1.5 text-right font-mono">৳ ২৫,৪৫০/-</td>
+                          </tr>
+                          <tr>
+                            <td className="border border-slate-400 p-1.5 text-center">০২</td>
+                            <td className="border border-slate-400 p-1.5">জ্বালানী ও পরিবহন আনুষঙ্গিক ব্যয় সংস্থান</td>
+                            <td className="border border-slate-400 p-1.5 text-center">১ মাস</td>
+                            <td className="border border-slate-400 p-1.5 text-right font-mono">৳ ১২,৮০০/-</td>
+                          </tr>
+                          <tr className="font-bold bg-slate-50">
+                            <td colSpan={3} className="border border-slate-400 p-1.5 text-right">
+                              সর্বমোট (ভ্যাট ও ট্যাক্সসহ):
+                            </td>
+                            <td className="border border-slate-400 p-1.5 text-right font-mono">৳ ৩৮,২৫০/-</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p className="pt-2">
+                      এমতাবস্থায়, অত্র অঞ্চলের কার্যক্রম সুষ্ঠুভাবে পরিচালনার নিমিত্তে বর্ণিত বিল ও নথির উপর যথাযথ আর্থিক
+                      সম্মতি ও প্রশাসনিক অনুমোদন প্রদানের জন্য অনুরোধ করা হলো।
+                    </p>
+                  </div>
+
+                  {/* Signatures & Seal Section */}
+                  <div className="pt-16 grid grid-cols-2 gap-8 text-center text-xs font-bold text-slate-900">
+                    <div>
+                      <div className="border-t border-slate-800 pt-1.5 inline-block min-w-[160px]">
+                        প্রস্তুতকারী কর্মকর্তা
+                      </div>
+                      <div className="text-[10px] text-slate-600 font-normal">আঞ্চলিক কার্যালয়, রাঙ্গামাটি</div>
+                    </div>
+
+                    <div>
+                      <div className="border-t border-slate-800 pt-1.5 inline-block min-w-[160px]">
+                        আঞ্চলিক ব্যবস্থাপক
+                      </div>
+                      <div className="text-[10px] text-slate-600 font-normal">বাংলাদেশ কৃষি ব্যাংক</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 px-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between">
+              <div className="text-xs text-slate-500">
+                {language === "bn"
+                  ? "✓ এই নথিতে গ্লোবাল হেডার ও জলছাপ সক্রিয় রয়েছে।"
+                  : "✓ Global header and watermark active on this document."}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPreviewDocModal(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  {language === "bn" ? "বন্ধ করুন" : "Close"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

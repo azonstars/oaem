@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { safeStorage } from "../utils/storage";
 
 export type AppTheme = "light" | "dark" | "custom";
 
@@ -16,7 +17,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<AppTheme>(() => {
     try {
-      const saved = localStorage.getItem("app_theme") as AppTheme;
+      const saved = safeStorage.getItem("app_theme") as AppTheme;
       if (saved && ["light", "dark", "custom"].includes(saved)) {
         return saved;
       }
@@ -30,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const setTheme = (newTheme: AppTheme) => {
     setThemeState(newTheme);
     try {
-      localStorage.setItem("app_theme", newTheme);
+      safeStorage.setItem("app_theme", newTheme);
     } catch (e) {
       console.warn("Could not save theme to localStorage", e);
     }

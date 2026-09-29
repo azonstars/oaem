@@ -353,6 +353,25 @@ export interface WelcomeMessageConfig {
   night?: WelcomeMessageSlot;
 }
 
+export interface BrandingDocumentRule {
+  logoHeaderEnabled: boolean;
+  watermarkEnabled: boolean;
+  a4LayoutEnabled: boolean;
+}
+
+export interface BrandingPolicyConfig {
+  institutionName?: string;
+  officeName?: string;
+  slogan?: string;
+  websiteUrl?: string;
+  logoUrl?: string;
+  showLogo?: boolean;
+  showWatermark?: boolean;
+  watermarkOpacity?: number;
+  defaultPageSize?: PageSize;
+  documentRules?: Record<string, BrandingDocumentRule>;
+}
+
 export interface SystemSettings {
   id: string;
   institutionName: string;
@@ -368,6 +387,7 @@ export interface SystemSettings {
   financialYearStartMonth?: number;
   financialYearEndMonth?: number;
   roleToolAccess?: Record<string, Record<string, ToolAccessLevel>>;
+  brandingPolicy?: BrandingPolicyConfig;
 }
 
 export interface Allocation {
@@ -412,6 +432,7 @@ export interface QuotationSupplier {
 export interface QuotationItem {
   itemDescription: string;
   specification: string;
+  model?: string;
   qty: number;
   unit: string;
   unitPrice: number;

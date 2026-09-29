@@ -7,6 +7,7 @@ import {
   Office,
   User,
   Category,
+  SystemSettings,
 } from "../types";
 import {
   FileText,
@@ -38,6 +39,7 @@ interface NoteSheetsViewProps {
   onDeleteNoteSheet: (id: string) => void;
   onAddTemplate?: (template: Omit<NoteTemplate, "id">) => void;
   isHeadOffice: boolean;
+  systemSettings?: SystemSettings | null;
   refreshData?: () => void;
 }
 
@@ -53,6 +55,7 @@ export function NoteSheetsView({
   onDeleteNoteSheet,
   onAddTemplate,
   isHeadOffice,
+  systemSettings,
   refreshData,
 }: NoteSheetsViewProps) {
   const { t, language } = useLanguage();
@@ -612,6 +615,7 @@ export function NoteSheetsView({
         <NoteSheetPreviewModal
           noteSheet={selectedNoteSheet}
           categories={categories}
+          systemSettings={systemSettings}
           officeName={
             offices.find((o) => o.id === selectedNoteSheet.officeId)?.name
           }

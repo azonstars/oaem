@@ -37,6 +37,7 @@ import { AppFooter } from "./components/AppFooter";
 import { FlowBoardHub } from "./components/FlowBoardHub";
 import { FlowBoardCentralManagement } from "./components/FlowBoardCentralManagement";
 import { IndependentToolRunner } from "./components/IndependentToolRunner";
+import { safeStorage } from "./utils/storage";
 import { DEFAULT_FLOW_TOOLS } from "./config/flowTools";
 import { useTheme } from "./context/ThemeContext";
 import { useLanguage } from "./i18n";
@@ -47,16 +48,16 @@ export default function App() {
   const { language } = useLanguage();
 
   const [activeToolId, setActiveToolId] = useState<string | null>(() => {
-    return localStorage.getItem("flowboard_active_tool") || null;
+    return safeStorage.getItem("flowboard_active_tool") || null;
   });
 
   const [flowTools, setFlowTools] = useState<FlowBoardTool[]>(DEFAULT_FLOW_TOOLS);
 
   const [currentTab, setCurrentTab] = useState<string>(() => {
-    return localStorage.getItem("govt_app_tab") || "dashboard";
+    return safeStorage.getItem("govt_app_tab") || "dashboard";
   });
   const [selectedFY, setSelectedFY] = useState<string>(() => {
-    return localStorage.getItem("govt_app_fy") || "";
+    return safeStorage.getItem("govt_app_fy") || "";
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -82,12 +83,12 @@ export default function App() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [expensesStatusFilter, setExpensesStatusFilter] = useState<
-    "all" | "Draft" | "Submitted" | "Approved" | "Rejected"
-  >("all");
+    "All" | "Pending" | "Approved" | "Rejected"
+  >("All");
 
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     try {
-      const saved = localStorage.getItem("govt_app_user");
+      const saved = safeStorage.getItem("govt_app_user");
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -96,32 +97,32 @@ export default function App() {
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem("govt_app_user", JSON.stringify(currentUser));
+      safeStorage.setItem("govt_app_user", JSON.stringify(currentUser));
     } else {
-      localStorage.removeItem("govt_app_user");
-      localStorage.removeItem("govt_app_tab");
-      localStorage.removeItem("govt_app_token");
-      localStorage.removeItem("flowboard_active_tool");
+      safeStorage.removeItem("govt_app_user");
+      safeStorage.removeItem("govt_app_tab");
+      safeStorage.removeItem("govt_app_token");
+      safeStorage.removeItem("flowboard_active_tool");
     }
   }, [currentUser]);
 
   useEffect(() => {
     if (currentTab) {
-      localStorage.setItem("govt_app_tab", currentTab);
+      safeStorage.setItem("govt_app_tab", currentTab);
     }
   }, [currentTab]);
 
   useEffect(() => {
     if (activeToolId) {
-      localStorage.setItem("flowboard_active_tool", activeToolId);
+      safeStorage.setItem("flowboard_active_tool", activeToolId);
     } else {
-      localStorage.removeItem("flowboard_active_tool");
+      safeStorage.removeItem("flowboard_active_tool");
     }
   }, [activeToolId]);
 
   useEffect(() => {
     if (selectedFY) {
-      localStorage.setItem("govt_app_fy", selectedFY);
+      safeStorage.setItem("govt_app_fy", selectedFY);
     }
   }, [selectedFY]);
 
@@ -213,7 +214,7 @@ export default function App() {
         const dynamicFy = fy.find(
           (f: FinancialYear) => f.name === expectedFyName,
         );
-        const savedFy = localStorage.getItem("govt_app_fy");
+        const savedFy = safeStorage.getItem("govt_app_fy");
 
         if (savedFy && fy.some((f: FinancialYear) => f.id === savedFy)) {
           resolvedFy = savedFy;
@@ -492,10 +493,10 @@ export default function App() {
 
   const activeFY = financialYears.find((fy) => fy.id === selectedFY);
   const statsSummary = {
-    totalAllocated: allocations.reduce((sum, a) => sum + (a.amount || 0), 0),
+    totalAllocated: allocations.reduce((sum, a) => sum + ((a as any).allocatedAmount || (a as any).amount || 0), 0),
     totalSpent: expenses.reduce((sum, e) => sum + (e.amount || 0), 0),
     totalExpenses: expenses.length,
-    pendingProposals: expenses.filter((e) => e.status === "Submitted").length,
+    pendingProposals: expenses.filter((e) => e.status === "Pending").length,
     totalNoteSheets: noteSheets.length,
     activeFYName: activeFY?.name || "2025-2026",
   };
@@ -717,6 +718,7 @@ export default function App() {
                     categories={categories}
                     financialYears={financialYears}
                     selectedFY={selectedFY}
+                    systemSettings={systemSettings}
                   />
                 )}
                 {currentTab === "postfacto-sanction" && (
@@ -727,6 +729,7 @@ export default function App() {
                     categories={categories}
                     financialYears={financialYears}
                     selectedFY={selectedFY}
+                    systemSettings={systemSettings}
                   />
                 )}
                 {currentTab === "expenses" && (
@@ -748,6 +751,7 @@ export default function App() {
                     statusFilter={expensesStatusFilter}
                     setStatusFilter={setExpensesStatusFilter}
                     refreshData={fetchAllData}
+                    systemSettings={systemSettings}
                   />
                 )}
                 {currentTab === "reports" && (
@@ -769,6 +773,7 @@ export default function App() {
                   <MiscellaneousView
                     currentUser={currentUser}
                     language={language as "bn" | "en"}
+                    systemSettings={systemSettings}
                   />
                 )}
                 {currentTab === "notesheets" && (
@@ -784,6 +789,7 @@ export default function App() {
                     onDeleteNoteSheet={handleDeleteNoteSheet}
                     onAddTemplate={handleAddTemplate}
                     isHeadOffice={isHeadOffice}
+                    systemSettings={systemSettings}
                     refreshData={fetchAllData}
                   />
                 )}

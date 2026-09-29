@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { apiFetch } from "../../api";
 import { Database, Save, FolderOpen, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  GlobalDocumentPadHeader,
+  GlobalDocumentWatermark,
+} from "../../utils/documentBranding";
 
 interface ConferenceNoteToolProps {
   currentUser: User;
@@ -849,11 +853,27 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
             </div>
 
             {/* Modal Document Body */}
-            <div className="flex-1 overflow-y-auto bg-white p-6 sm:p-10 font-serif leading-relaxed text-sm">
-              <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-xs text-amber-800 mb-4 flex items-center gap-2">
-                <span>✏️</span>
-                <span>যেকোনো লেখায় সরাসরি ক্লিক করে এডিট করতে পারবেন।</span>
-              </div>
+            <div className="flex-1 overflow-y-auto bg-white p-6 sm:p-10 font-serif leading-relaxed text-sm relative min-h-[550px]">
+              {/* Official Background Watermark */}
+              <GlobalDocumentWatermark
+                systemSettings={systemSettings}
+                toolId="conference-note"
+                docId={activeTab === "note" ? "conf-notesheet" : "conf-application"}
+              />
+
+              <div className="relative z-10 space-y-4">
+                {/* Official Bank Pad Header */}
+                <GlobalDocumentPadHeader
+                  systemSettings={systemSettings}
+                  officeName={applicantOffice || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"}
+                  toolId="conference-note"
+                  docId={activeTab === "note" ? "conf-notesheet" : "conf-application"}
+                />
+
+                <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-xs text-amber-800 mb-4 flex items-center gap-2">
+                  <span>✏️</span>
+                  <span>যেকোনো লেখায় সরাসরি ক্লিক করে এডিট করতে পারবেন।</span>
+                </div>
 
               {/* Note Tab */}
               {activeTab === "note" && (
@@ -1061,6 +1081,7 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
                   </div>
                 </div>
               )}
+              </div>
             </div>
 
             {/* Modal Footer */}

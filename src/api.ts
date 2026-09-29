@@ -1,8 +1,10 @@
+import { safeStorage } from "./utils/storage";
+
 export async function apiFetch(
   url: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const token = localStorage.getItem("govt_app_token");
+  const token = safeStorage.getItem("govt_app_token");
   const headers = new Headers(options.headers || {});
 
   if (token) {
@@ -12,8 +14,8 @@ export async function apiFetch(
   const res = await fetch(url, { ...options, headers });
 
   if (res.status === 401 && url !== "/api/auth/login") {
-    localStorage.removeItem("govt_app_token");
-    localStorage.removeItem("govt_app_user");
+    safeStorage.removeItem("govt_app_token");
+    safeStorage.removeItem("govt_app_user");
     window.dispatchEvent(new CustomEvent("auth-unauthorized"));
   }
 

@@ -2,6 +2,10 @@ import React, { useState, useEffect } from "react";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { apiFetch } from "../../api";
 import { Database, Save, FolderOpen, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  GlobalDocumentPadHeader,
+  GlobalDocumentWatermark,
+} from "../../utils/documentBranding";
 
 interface StationeryBillToolProps {
   currentUser: User;
@@ -735,166 +739,178 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
             </div>
 
             {/* Document Content */}
-            <div className="flex-1 overflow-y-auto p-6 sm:p-10 font-serif leading-relaxed text-sm bg-white">
-              {/* PAGE 1: Note Sheet */}
-              {currentModalPage === 0 && (
-                <div className="space-y-4">
-                  <div className="text-center font-bold text-base underline leading-snug">
-                    বিষয় :- অঞ্চলাধীন শাখাসমূহের জন্য মুদ্রিত স্টেশনারী সামগ্রী মুদ্রণ বাবদ বিল প্রদান প্রসঙ্গে ।
-                  </div>
-                  <p className="text-justify leading-relaxed">
-                    অত্র অঞ্চলাধীন শাখাসমূহের চাহিদার প্রেক্ষিতে নিম্নোক্ত {toBn(items.length)} টি আইটেমের মুদ্রিত
-                    স্টেশনারী দ্রব্যাদি ক্রয়/মুদ্রণ প্রক্রিয়ায় স্থানীয় ৩ (তিন) টি সরবরাহকারী প্রতিষ্ঠান হতে কোটেশন চাওয়া
-                    হয়। প্রাপ্ত ৩ টি দরপত্রের তুলনামূলক বিবরণী পর্যালোচনা করে সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{v1Name.split(",")[0]}’
-                    হতে {vatTaxStr} মোট ৳= {formatPriceBn(grandTotalV1)} ({numberToWordsBn(grandTotalV1)}) টাকা মাত্র
-                    মূল্যে মালামাল মুদ্রণ ও সরবরাহ গ্রহণ করা হয়েছে।
-                  </p>
+            <div className="flex-1 overflow-y-auto p-6 sm:p-10 font-serif leading-relaxed text-sm bg-white relative min-h-[550px]">
+              {/* Official Background Watermark */}
+              <GlobalDocumentWatermark
+                systemSettings={systemSettings}
+                toolId="stationery-bill"
+                docId={currentModalPage === 0 ? "stationery-notesheet" : "stationery-order"}
+              />
 
-                  <table className="w-full border-collapse my-3 text-xs">
-                    <thead>
-                      <tr className="bg-slate-100">
-                        <th rowSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          ক্রম
-                        </th>
-                        <th rowSpan={2} className="border border-slate-700 p-1.5 text-left">
-                          দ্রব্যাদির বিবরণ
-                        </th>
-                        <th rowSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          পরিমাণ
-                        </th>
-                        <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          {v1Name.split(",")[0]}
-                        </th>
-                        <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          {v2Name.split(",")[0]}
-                        </th>
-                        <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          {v3Name.split(",")[0]}
-                        </th>
-                        <th rowSpan={2} className="border border-slate-700 p-1.5 text-center">
-                          মন্তব্য
-                        </th>
-                      </tr>
-                      <tr className="bg-slate-50">
-                        <th className="border border-slate-700 p-1">একক দর</th>
-                        <th className="border border-slate-700 p-1">মোট</th>
-                        <th className="border border-slate-700 p-1">একক দর</th>
-                        <th className="border border-slate-700 p-1">মোট</th>
-                        <th className="border border-slate-700 p-1">একক দর</th>
-                        <th className="border border-slate-700 p-1">মোট</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {items.map((it, idx) => (
-                        <tr key={it.id}>
-                          <td className="border border-slate-700 p-1 text-center">{toBn(idx + 1)}</td>
-                          <td className="border border-slate-700 p-1 text-left">{it.desc}</td>
-                          <td className="border border-slate-700 p-1 text-center">
-                            {toBn(it.qty)} {it.unit}
-                          </td>
-                          <td className="border border-slate-700 p-1 text-right">{formatPriceBn(it.v1_up)}</td>
-                          <td className="border border-slate-700 p-1 text-right">
-                            {formatPriceBn(it.v1_up * it.qty)}
-                          </td>
-                          <td className="border border-slate-700 p-1 text-right">{formatPriceBn(it.v2_up)}</td>
-                          <td className="border border-slate-700 p-1 text-right">
-                            {formatPriceBn(it.v2_up * it.qty)}
-                          </td>
-                          <td className="border border-slate-700 p-1 text-right">{formatPriceBn(it.v3_up)}</td>
-                          <td className="border border-slate-700 p-1 text-right">
-                            {formatPriceBn(it.v3_up * it.qty)}
-                          </td>
-                          <td className="border border-slate-700 p-1 text-center font-bold text-blue-900">
-                            {it.v1_note}
-                          </td>
+              <div className="relative z-10 space-y-4">
+                {/* Official Bank Pad Header */}
+                <GlobalDocumentPadHeader
+                  systemSettings={systemSettings}
+                  officeName={branchName || userOffice || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"}
+                  toolId="stationery-bill"
+                  docId={currentModalPage === 0 ? "stationery-notesheet" : "stationery-order"}
+                />
+
+                {/* PAGE 1: Note Sheet */}
+                {currentModalPage === 0 && (
+                  <div className="space-y-4">
+                    <div className="text-center font-bold text-base underline leading-snug">
+                      বিষয় :- অঞ্চলাধীন শাখাসমূহের জন্য মুদ্রিত স্টেশনারী সামগ্রী মুদ্রণ বাবদ বিল প্রদান প্রসঙ্গে ।
+                    </div>
+                    <p className="text-justify leading-relaxed">
+                      অত্র অঞ্চলাধীন শাখাসমূহের চাহিদার প্রেক্ষিতে নিম্নোক্ত {toBn(items.length)} টি আইটেমের মুদ্রিত
+                      স্টেশনারী দ্রব্যাদি ক্রয়/মুদ্রণ প্রক্রিয়ায় স্থানীয় ৩ (তিন) টি সরবরাহকারী প্রতিষ্ঠান হতে কোটেশন চাওয়া
+                      হয়। প্রাপ্ত ৩ টি দরপত্রের তুলনামূলক বিবরণী পর্যালোচনা করে সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{v1Name.split(",")[0]}’
+                      হতে {vatTaxStr} মোট ৳= {formatPriceBn(grandTotalV1)} ({numberToWordsBn(grandTotalV1)}) টাকা মাত্র
+                      মূল্যে মালামাল মুদ্রণ ও সরবরাহ গ্রহণ করা হয়েছে।
+                    </p>
+
+                    <table className="w-full border-collapse my-3 text-xs">
+                      <thead>
+                        <tr className="bg-slate-100">
+                          <th rowSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            ক্রম
+                          </th>
+                          <th rowSpan={2} className="border border-slate-700 p-1.5 text-left">
+                            দ্রব্যাদির বিবরণ
+                          </th>
+                          <th rowSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            পরিমাণ
+                          </th>
+                          <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            {v1Name.split(",")[0]}
+                          </th>
+                          <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            {v2Name.split(",")[0]}
+                          </th>
+                          <th colSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            {v3Name.split(",")[0]}
+                          </th>
+                          <th rowSpan={2} className="border border-slate-700 p-1.5 text-center">
+                            মন্তব্য
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr className="font-bold bg-slate-100">
-                        <td colSpan={3} className="border border-slate-700 p-2 text-right">
-                          {vatTaxStr} সর্বমোট =
-                        </td>
-                        <td colSpan={2} className="border border-slate-700 p-2 text-right font-black text-blue-950">
-                          ৳ {formatPriceBn(grandTotalV1)}
-                        </td>
-                        <td colSpan={2} className="border border-slate-700 p-2 text-right">
-                          ৳ {formatPriceBn(items.reduce((s, it) => s + it.v2_up * it.qty, 0))}
-                        </td>
-                        <td colSpan={2} className="border border-slate-700 p-2 text-right">
-                          ৳ {formatPriceBn(items.reduce((s, it) => s + it.v3_up * it.qty, 0))}
-                        </td>
-                        <td className="border border-slate-700 p-2 text-center">-</td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                        <tr className="bg-slate-50">
+                          <th className="border border-slate-700 p-1">একক দর</th>
+                          <th className="border border-slate-700 p-1">মোট</th>
+                          <th className="border border-slate-700 p-1">একক দর</th>
+                          <th className="border border-slate-700 p-1">মোট</th>
+                          <th className="border border-slate-700 p-1">একক দর</th>
+                          <th className="border border-slate-700 p-1">মোট</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {items.map((it, idx) => (
+                          <tr key={it.id}>
+                            <td className="border border-slate-700 p-1 text-center">{toBn(idx + 1)}</td>
+                            <td className="border border-slate-700 p-1 text-left">{it.desc}</td>
+                            <td className="border border-slate-700 p-1 text-center">
+                              {toBn(it.qty)} {it.unit}
+                            </td>
+                            <td className="border border-slate-700 p-1 text-right">{formatPriceBn(it.v1_up)}</td>
+                            <td className="border border-slate-700 p-1 text-right">
+                              {formatPriceBn(it.v1_up * it.qty)}
+                            </td>
+                            <td className="border border-slate-700 p-1 text-right">{formatPriceBn(it.v2_up)}</td>
+                            <td className="border border-slate-700 p-1 text-right">
+                              {formatPriceBn(it.v2_up * it.qty)}
+                            </td>
+                            <td className="border border-slate-700 p-1 text-right">{formatPriceBn(it.v3_up)}</td>
+                            <td className="border border-slate-700 p-1 text-right">
+                              {formatPriceBn(it.v3_up * it.qty)}
+                            </td>
+                            <td className="border border-slate-700 p-1 text-center font-bold text-blue-900">
+                              {it.v1_note}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="font-bold bg-slate-100">
+                          <td colSpan={3} className="border border-slate-700 p-2 text-right">
+                            {vatTaxStr} সর্বমোট =
+                          </td>
+                          <td colSpan={2} className="border border-slate-700 p-2 text-right font-black text-blue-950">
+                            ৳ {formatPriceBn(grandTotalV1)}
+                          </td>
+                          <td colSpan={2} className="border border-slate-700 p-2 text-right">
+                            ৳ {formatPriceBn(items.reduce((s, it) => s + it.v2_up * it.qty, 0))}
+                          </td>
+                          <td colSpan={2} className="border border-slate-700 p-2 text-right">
+                            ৳ {formatPriceBn(items.reduce((s, it) => s + it.v3_up * it.qty, 0))}
+                          </td>
+                          <td className="border border-slate-700 p-2 text-center">-</td>
+                        </tr>
+                      </tfoot>
+                    </table>
 
-                  <p className="text-justify leading-relaxed">
-                    অতএব, বর্ণিত দ্রব্যাদির সরবরাহ গ্রহণপূর্বক সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{v1Name.split(",")[0]}’ কে{" "}
-                    {vatTaxStr} মোট ৳= {formatPriceBn(grandTotalV1)} ({numberToWordsBn(grandTotalV1)}) টাকা মাত্র বিল
-                    প্রদানের সুপারিশ করা হলো।
-                  </p>
-
-                  <div className="pt-6 space-y-4">
-                    <p>
-                      <u>
-                        <b>আঞ্চলিক ব্যবস্থাপক ঃ-</b>
-                      </u>{" "}
-                      অনুমোদিত।
+                    <p className="text-justify leading-relaxed">
+                      অতএব, বর্ণিত দ্রব্যাদির সরবরাহ গ্রহণপূর্বক সর্বনিম্ন দরদাতা প্রতিষ্ঠান ‘{v1Name.split(",")[0]}’ কে{" "}
+                      {vatTaxStr} মোট ৳= {formatPriceBn(grandTotalV1)} ({numberToWordsBn(grandTotalV1)}) টাকা মাত্র বিল
+                      প্রদানের সুপারিশ করা হলো।
                     </p>
-                  </div>
-                </div>
-              )}
 
-              {/* PAGE 2: Work Order */}
-              {currentModalPage === 1 && (
-                <div className="space-y-4">
-                  <div className="text-center font-bold text-lg text-blue-950 border-b pb-2">
-                    {systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক"}
-                  </div>
-                  <div className="text-center text-xs text-slate-600">{branchName}</div>
-
-                  <div className="flex justify-between text-xs pt-2 border-b pb-1">
-                    <span>{memoOrder}</span>
-                    <span>তারিখ : {formattedDate}</span>
-                  </div>
-
-                  <div className="text-xs space-y-0.5">
-                    <p>
-                      <strong>{recipientTitle},</strong>
-                    </p>
-                    <p>{v1Name}</p>
-                  </div>
-
-                  <div className="text-center font-bold text-sm underline pt-2">
-                    বিষয় ঃ মনোহরী দ্রব্যাদি মুদ্রণ ও সরবরাহের কার্যাদেশ ।
-                  </div>
-
-                  <p className="text-justify leading-relaxed">
-                    প্রিয় মহোদয়,
-                    <br />
-                    আপনার দাখিলকৃত {woQuoteDate} তারিখের কোটেশনে প্রস্তাবিত দর সর্বনিম্ন বিবেচিত হওয়ায় নিম্নবর্ণিত শর্তাবলী
-                    অনুযায়ী দ্রব্যাদি মুদ্রণপূর্বক অত্র কার্যালয়ে সরবরাহের কার্যাদেশ প্রদান করা হলো ঃ
-                  </p>
-
-                  <div className="space-y-1.5 pl-4 text-xs">
-                    <p>১। অত্র কার্যালয় কর্তৃক সরবরাহকৃত নমুনা অনুযায়ী দ্রব্যাদি নির্ভুল মুদ্রণ করতে হবে।</p>
-                    <p>২। নিম্নমানের কাগজ, কালি বা বাঁধাই গ্রহণীয় হবে না।</p>
-                    <p>৩। কার্যাদেশ প্রদানের ৭ (সাত) দিনের মধ্যে দ্রব্যাদি অত্র কার্যালয়ে সরবরাহ করতে হবে।</p>
-                    <p>৪। মালামাল সরবরাহের পর যথাযথ যাচাই সাপেক্ষে বিল অনুমোদন ও পরিশোধ করা হবে।</p>
-                    <p>৫। সরকারি বিধি মোতাবেক বিল হতে {toBn(vatRate)}% হারে মূসক ও {toBn(taxRate)}% হারে আয়কর কর্তন করা হবে।</p>
-                    <p>৬। কোনো প্রকার শর্ত লঙ্ঘন হলে কার্যাদেশ বাতিল করার অধিকার কর্তৃপক্ষ সংরক্ষণ করে।</p>
-                  </div>
-
-                  <div className="flex justify-end pt-12">
-                    <div className="text-center">
-                      <p>আপনার বিশ্বস্ত,</p>
-                      <div className="h-10"></div>
-                      <p className="font-bold">আঞ্চলিক ব্যবস্থাপক</p>
+                    <div className="pt-6 space-y-4">
+                      <p>
+                        <u>
+                          <b>আঞ্চলিক ব্যবস্থাপক ঃ-</b>
+                        </u>{" "}
+                        অনুমোদিত।
+                      </p>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* PAGE 2: Work Order */}
+                {currentModalPage === 1 && (
+                  <div className="space-y-4">
+                    <div className="flex justify-between text-xs pt-2 border-b pb-1">
+                      <span>{memoOrder}</span>
+                      <span>তারিখ : {formattedDate}</span>
+                    </div>
+
+                    <div className="text-xs space-y-0.5">
+                      <p>
+                        <strong>{recipientTitle},</strong>
+                      </p>
+                      <p>{v1Name}</p>
+                    </div>
+
+                    <div className="text-center font-bold text-sm underline pt-2">
+                      বিষয় ঃ মনোহরী দ্রব্যাদি মুদ্রণ ও সরবরাহের কার্যাদেশ ।
+                    </div>
+
+                    <p className="text-justify leading-relaxed">
+                      প্রিয় মহোদয়,
+                      <br />
+                      আপনার দাখিলকৃত {woQuoteDate} তারিখের কোটেশনে প্রস্তাবিত দর সর্বনিম্ন বিবেচিত হওয়ায় নিম্নবর্ণিত শর্তাবলী
+                      অনুযায়ী দ্রব্যাদি মুদ্রণপূর্বক অত্র কার্যালয়ে সরবরাহের কার্যাদেশ প্রদান করা হলো ঃ
+                    </p>
+
+                    <div className="space-y-1.5 pl-4 text-xs">
+                      <p>১। অত্র কার্যালয় কর্তৃক সরবরাহকৃত নমুনা অনুযায়ী দ্রব্যাদি নির্ভুল মুদ্রণ করতে হবে।</p>
+                      <p>২। নিম্নমানের কাগজ, কালি বা বাঁধাই গ্রহণীয় হবে না।</p>
+                      <p>৩। কার্যাদেশ প্রদানের ৭ (সাত) দিনের মধ্যে দ্রব্যাদি অত্র কার্যালয়ে সরবরাহ করতে হবে।</p>
+                      <p>৪। মালামাল সরবরাহের পর যথাযথ যাচাই সাপেক্ষে বিল অনুমোদন ও পরিশোধ করা হবে।</p>
+                      <p>৫। সরকারি বিধি মোতাবেক বিল হতে {toBn(vatRate)}% হারে মূসক ও {toBn(taxRate)}% হারে আয়কর কর্তন করা হবে।</p>
+                      <p>৬। কোনো প্রকার শর্ত লঙ্ঘন হলে কার্যাদেশ বাতিল করার অধিকার কর্তৃপক্ষ সংরক্ষণ করে।</p>
+                    </div>
+
+                    <div className="flex justify-end pt-12">
+                      <div className="text-center">
+                        <p>আপনার বিশ্বস্ত,</p>
+                        <div className="h-10"></div>
+                        <p className="font-bold">আঞ্চলিক ব্যবস্থাপক</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Modal Footer Controls */}
