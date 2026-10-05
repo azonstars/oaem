@@ -2,6 +2,7 @@ import {
   getSheetData,
   saveSheetData,
   getAvailableBalance,
+  getPostFactoBalanceInfo,
 } from "./data-store.js";
 import { isCategory134 } from "./utils.js";
 import {
@@ -256,19 +257,21 @@ export async function syncNoteSheetForPostFactoProposal(
         (o.name && o.name.includes("আঞ্চলিক কার্যালয়")),
     ) || office;
 
-  const branchBalanceInfo = getAvailableBalance(
+  const branchBalanceInfo = getPostFactoBalanceInfo(
     proposal.financialYearId,
     proposal.officeId,
     proposal.categoryId,
+    proposal.id,
+    false,
   );
 
-  const sanctionBalanceInfo = is134
-    ? getAvailableBalance(
-        proposal.financialYearId,
-        regionalOffice.id,
-        proposal.categoryId,
-      )
-    : branchBalanceInfo;
+  const sanctionBalanceInfo = getPostFactoBalanceInfo(
+    proposal.financialYearId,
+    proposal.officeId,
+    proposal.categoryId,
+    proposal.id,
+    is134,
+  );
 
   const content = generatePostFactoNoteSheetHtml(
     proposal,

@@ -685,9 +685,10 @@ sheetsList.forEach((sheet) => {
         }
 
         const lockedSheets =
-          sheet === "Expenses"
+          sheet === "Expenses" || sheet === "PostFactoProposals"
             ? [
                 "Expenses",
+                "PostFactoProposals",
                 "NoteSheets",
                 "Categories",
                 "Offices",
@@ -926,9 +927,10 @@ sheetsList.forEach((sheet) => {
         }
 
         const lockedSheets =
-          sheet === "Expenses"
+          sheet === "Expenses" || sheet === "PostFactoProposals"
             ? [
                 "Expenses",
+                "PostFactoProposals",
                 "NoteSheets",
                 "Categories",
                 "Offices",

@@ -523,6 +523,21 @@ export interface Expense {
   fuelType?: string;
   fuelSupplierName?: string;
   fuelItems?: FuelExpenseItem[];
+  photocopyQuantity?: number;
+  photocopyUnitRate?: number;
+  telephoneMonthYear?: string;
+  telephoneItems?: TelephoneExpenseItem[];
+  expenseMonthYear?: string;
+}
+
+export interface TelephoneExpenseItem {
+  id?: string;
+  telephoneType?: string;
+  telephoneNumber?: string;
+  billMonth?: string;
+  periodFrom?: string;
+  periodTo?: string;
+  amount?: number;
 }
 
 export interface NoteSheet {

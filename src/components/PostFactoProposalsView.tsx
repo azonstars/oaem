@@ -335,8 +335,15 @@ export function PostFactoProposalsView({
       !ns.forwardingContent ||
       !ns.forwardingContent.includes("watermark-container") ||
       !ns.forwardingContent.includes("pad-header") ||
+      !ns.supplyOrderContent ||
+      !ns.supplyOrderContent.includes("watermark-container") ||
+      (tab === "supplyorder" &&
+        Boolean(proposal.letterNo || proposal.workOrderNo || proposal.letterDate || proposal.workOrderDate || proposal.tenderDate) &&
+        (ns.supplyOrderContent.includes(".../.../......") || ns.supplyOrderContent.includes("/...<") || ns.supplyOrderContent.includes("/...<strong") || ns.supplyOrderContent.includes("/...<div"))) ||
       (proposal.status === "Sanctioned" &&
-        (!ns.sanctionLetterContent || !ns.sanctionNoteSheetContent))
+        (!ns.sanctionLetterContent ||
+          !ns.sanctionNoteSheetContent ||
+          (proposal.taxRate && !ns.sanctionLetterContent.includes("ট্যাক্স"))))
     ) {
       try {
         const res = await apiFetch(
@@ -794,6 +801,8 @@ export function PostFactoProposalsView({
                                 sanctionedAmount: p.totalAmount,
                                 sanctionType:
                                   p.sanctionType || "budget_allocation",
+                                letterNo: p.letterNo || "",
+                                letterDate: p.letterDate || "",
                               });
                               setShowSanctionModal(true);
                             }}
@@ -1157,6 +1166,8 @@ export function PostFactoProposalsView({
                           sanctionDate: new Date().toISOString().split("T")[0],
                           sanctionedAmount: p.totalAmount,
                           sanctionType: p.sanctionType || "budget_allocation",
+                          letterNo: p.letterNo || "",
+                          letterDate: p.letterDate || "",
                         });
                         setShowSanctionModal(true);
                       }}

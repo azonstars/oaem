@@ -1,5 +1,5 @@
 import { apiFetch } from "../api";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { NoteTemplate, Category } from "../types";
 import {
   FileText,
@@ -179,6 +179,103 @@ export function NoteTemplatesView({
     setUploadStatus(null);
     setShowModal(true);
   };
+
+  const joditConfig = useMemo(
+    () => ({
+      readonly: false,
+      minHeight: 380,
+      height: 440,
+      placeholder:
+        language === "bn"
+          ? "এখানে টেমপ্লেট লিখুন (এইচটিএমএল বা টেক্সট)..."
+          : "Start typing...",
+      defaultActionOnPaste: "insert_as_html" as any,
+      askBeforePasteHTML: false,
+      askBeforePasteFromWord: false,
+      showCharsCounter: false,
+      showWordsCounter: false,
+      showXPathInStatusbar: false,
+      buttons: [
+        "source",
+        "|",
+        "bold",
+        "italic",
+        "underline",
+        "strikethrough",
+        "|",
+        "font",
+        "fontsize",
+        "brush",
+        "paragraph",
+        "|",
+        "align",
+        "|",
+        "ul",
+        "ol",
+        "|",
+        "table",
+        "link",
+        "hr",
+        "|",
+        "undo",
+        "redo",
+        "|",
+        "eraser",
+        "fullsize",
+      ],
+      buttonsMD: [
+        "bold",
+        "italic",
+        "underline",
+        "|",
+        "font",
+        "fontsize",
+        "brush",
+        "|",
+        "align",
+        "|",
+        "ul",
+        "ol",
+        "table",
+        "|",
+        "undo",
+        "redo",
+      ],
+      buttonsSM: [
+        "bold",
+        "italic",
+        "underline",
+        "|",
+        "font",
+        "fontsize",
+        "|",
+        "align",
+        "|",
+        "table",
+        "undo",
+        "redo",
+      ],
+      buttonsXS: [
+        "bold",
+        "italic",
+        "|",
+        "font",
+        "fontsize",
+        "|",
+        "align",
+        "table",
+      ],
+      controls: {
+        font: {
+          list: JODIT_FONT_LIST,
+        },
+        fontsize: {
+          list: JODIT_FONT_SIZES,
+        },
+      },
+    }),
+    [language],
+  );
 
   const openEdit = (t: NoteTemplate) => {
     setEditingId(t.id);
@@ -1502,101 +1599,8 @@ export function NoteTemplatesView({
                     <JoditEditor
                       ref={editorRef}
                       value={bodyTemplate}
-                      config={{
-                        readonly: false,
-                        minHeight: 380,
-                        height: 440,
-                        placeholder:
-                          language === "bn"
-                            ? "এখানে টেমপ্লেট লিখুন (এইচটিএমএল বা টেক্সট)..."
-                            : "Start typing...",
-                        defaultActionOnPaste: "insert_as_html",
-                        askBeforePasteHTML: false,
-                        askBeforePasteFromWord: false,
-                        showCharsCounter: false,
-                        showWordsCounter: false,
-                        showXPathInStatusbar: false,
-                        buttons: [
-                          "source",
-                          "|",
-                          "bold",
-                          "italic",
-                          "underline",
-                          "strikethrough",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "brush",
-                          "paragraph",
-                          "|",
-                          "align",
-                          "|",
-                          "ul",
-                          "ol",
-                          "|",
-                          "table",
-                          "link",
-                          "hr",
-                          "|",
-                          "undo",
-                          "redo",
-                          "|",
-                          "eraser",
-                          "fullsize",
-                        ],
-                        buttonsMD: [
-                          "bold",
-                          "italic",
-                          "underline",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "brush",
-                          "|",
-                          "align",
-                          "|",
-                          "ul",
-                          "ol",
-                          "table",
-                          "|",
-                          "undo",
-                          "redo",
-                        ],
-                        buttonsSM: [
-                          "bold",
-                          "italic",
-                          "underline",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "|",
-                          "align",
-                          "|",
-                          "table",
-                          "undo",
-                          "redo",
-                        ],
-                        buttonsXS: [
-                          "bold",
-                          "italic",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "|",
-                          "align",
-                          "table",
-                        ],
-                        controls: {
-                          font: {
-                            list: JODIT_FONT_LIST,
-                          },
-                          fontsize: {
-                            list: JODIT_FONT_SIZES,
-                          },
-                        },
-                      }}
+                      config={joditConfig}
                       onBlur={(newContent) => setBodyTemplate(newContent)}
-                      onChange={(newContent) => setBodyTemplate(newContent)}
                     />
                   </div>
                 ) : (

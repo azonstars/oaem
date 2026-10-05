@@ -925,6 +925,124 @@ export function NoteSheetPreviewModal({
   const [showGuidelines, setShowGuidelines] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
+  const joditConfig = useMemo(
+    () => ({
+      readonly: false,
+      minHeight: 500,
+      height: "auto",
+      style: {
+        fontFamily: settings.fontFamily,
+        fontSize: `${settings.fontSizePt}pt`,
+        lineHeight: settings.lineSpacing,
+        textAlign: settings.textAlign,
+      },
+      placeholder:
+        language === "bn"
+          ? activeDocTab === "notesheet"
+            ? "নোট শিটের বিবরণ লিখুন..."
+            : activeDocTab === "sanctionnotesheet"
+              ? "মঞ্জুরীর নোটশিটের বিবরণ লিখুন..."
+              : activeDocTab === "forwarding"
+                ? "ফরোয়ার্ডিং পত্রের বিবরণ লিখুন..."
+                : activeDocTab === "sanctionletter"
+                  ? "মঞ্জুরপত্রের বিবরণ লিখুন..."
+                  : "সাপ্লাই অর্ডারের বিবরণ লিখুন..."
+          : "Enter document body...",
+      defaultActionOnPaste: "insert_as_html" as any,
+      askBeforePasteHTML: false,
+      askBeforePasteFromWord: false,
+      showCharsCounter: false,
+      showWordsCounter: false,
+      showXPathInStatusbar: false,
+      buttons: [
+        "source",
+        "|",
+        "bold",
+        "italic",
+        "underline",
+        "strikethrough",
+        "|",
+        "font",
+        "fontsize",
+        "brush",
+        "paragraph",
+        "|",
+        "align",
+        "|",
+        "ul",
+        "ol",
+        "|",
+        "table",
+        "link",
+        "hr",
+        "|",
+        "undo",
+        "redo",
+        "|",
+        "eraser",
+        "fullsize",
+      ],
+      buttonsMD: [
+        "bold",
+        "italic",
+        "underline",
+        "|",
+        "font",
+        "fontsize",
+        "brush",
+        "|",
+        "align",
+        "|",
+        "ul",
+        "ol",
+        "table",
+        "|",
+        "undo",
+        "redo",
+      ],
+      buttonsSM: [
+        "bold",
+        "italic",
+        "underline",
+        "|",
+        "font",
+        "fontsize",
+        "|",
+        "align",
+        "|",
+        "table",
+        "undo",
+        "redo",
+      ],
+      buttonsXS: [
+        "bold",
+        "italic",
+        "|",
+        "font",
+        "fontsize",
+        "|",
+        "align",
+        "table",
+      ],
+      controls: {
+        font: {
+          list: JODIT_FONT_LIST,
+        },
+        fontsize: {
+          list: JODIT_FONT_SIZES,
+        },
+      },
+    }),
+    [
+      settings.fontFamily,
+      settings.fontSizePt,
+      settings.lineSpacing,
+      settings.textAlign,
+      language,
+      activeDocTab,
+    ],
+  );
+
   const { pageWidthMm, pageHeightMm } = useMemo(() => {
     if (
       activeDocTab === "application" ||
@@ -3596,117 +3714,8 @@ export function NoteSheetPreviewModal({
                       key={activeDocTab}
                       ref={editorRef}
                       value={activeEditContent}
-                      config={{
-                        readonly: false,
-                        minHeight: 500,
-                        height: "auto",
-                        style: {
-                          fontFamily: settings.fontFamily,
-                          fontSize: `${settings.fontSizePt}pt`,
-                          lineHeight: settings.lineSpacing,
-                          textAlign: settings.textAlign,
-                        },
-                        placeholder:
-                          language === "bn"
-                            ? activeDocTab === "notesheet"
-                              ? "নোট শিটের বিবরণ লিখুন..."
-                              : activeDocTab === "sanctionnotesheet"
-                                ? "মঞ্জুরীর নোটশিটের বিবরণ লিখুন..."
-                                : activeDocTab === "forwarding"
-                                  ? "ফরোয়ার্ডিং পত্রের বিবরণ লিখুন..."
-                                  : activeDocTab === "sanctionletter"
-                                    ? "মঞ্জুরপত্রের বিবরণ লিখুন..."
-                                    : "সাপ্লাই অর্ডারের বিবরণ লিখুন..."
-                            : "Enter document body...",
-                        defaultActionOnPaste: "insert_as_html",
-                        askBeforePasteHTML: false,
-                        askBeforePasteFromWord: false,
-                        showCharsCounter: false,
-                        showWordsCounter: false,
-                        showXPathInStatusbar: false,
-                        buttons: [
-                          "source",
-                          "|",
-                          "bold",
-                          "italic",
-                          "underline",
-                          "strikethrough",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "brush",
-                          "paragraph",
-                          "|",
-                          "align",
-                          "|",
-                          "ul",
-                          "ol",
-                          "|",
-                          "table",
-                          "link",
-                          "hr",
-                          "|",
-                          "undo",
-                          "redo",
-                          "|",
-                          "eraser",
-                          "fullsize",
-                        ],
-                        buttonsMD: [
-                          "bold",
-                          "italic",
-                          "underline",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "brush",
-                          "|",
-                          "align",
-                          "|",
-                          "ul",
-                          "ol",
-                          "table",
-                          "|",
-                          "undo",
-                          "redo",
-                        ],
-                        buttonsSM: [
-                          "bold",
-                          "italic",
-                          "underline",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "|",
-                          "align",
-                          "|",
-                          "table",
-                          "undo",
-                          "redo",
-                        ],
-                        buttonsXS: [
-                          "bold",
-                          "italic",
-                          "|",
-                          "font",
-                          "fontsize",
-                          "|",
-                          "align",
-                          "table",
-                        ],
-                        controls: {
-                          font: {
-                            list: JODIT_FONT_LIST,
-                          },
-                          fontsize: {
-                            list: JODIT_FONT_SIZES,
-                          },
-                        },
-                      }}
+                      config={joditConfig}
                       onBlur={(newContent) => setActiveEditContent(newContent)}
-                      onChange={(newContent) =>
-                        setActiveEditContent(newContent)
-                      }
                     />
                   </div>
 

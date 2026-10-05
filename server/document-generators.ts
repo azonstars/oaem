@@ -2445,9 +2445,22 @@ export function generateMotorVehicleNoteSheetHtml(
 </div>`;
 }
 
+export function isPhotocopyExpense(expense: any): boolean {
+  if (!expense) return false;
+  const desc = `${expense.description || ""} ${expense.purpose || ""} ${expense.particulars || ""}`.toLowerCase();
+  return (
+    desc.includes("ফটোকপি") ||
+    desc.includes("ফটোস্ট্যাট") ||
+    desc.includes("photocopy") ||
+    desc.includes("photostat") ||
+    Boolean(expense.isPhotocopy) ||
+    Boolean(expense.photocopyQuantity)
+  );
+}
+
 export function generateMiscNoteSheetHtml(
   expense: any,
-  _office: any,
+  office: any,
   category: any,
   financialYear: any,
   balanceInfo: any,
@@ -2459,14 +2472,10 @@ export function generateMiscNoteSheetHtml(
   const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
   const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
   const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
 
-  const applicantName = expense.applicant?.name || expense.applicantName || "জনাব মো: এনামুল হক";
-  const applicantDesignation = expense.applicant?.designation || expense.applicantDesignation || "গাড়ী চালক";
-  const rawPurpose = expense.description || expense.purpose || "ফেরি পাড়াপাড় খরচ";
-  const cleanPurpose = rawPurpose.trim();
-  const purposeWithUrgent = cleanPurpose.startsWith("জরুরী ভিত্তিতে")
-    ? cleanPurpose
-    : `জরুরী ভিত্তিতে ${cleanPurpose}`;
+  const isPhotocopy = isPhotocopyExpense(expense);
+  const isUnder1500 = currentBill <= 1500 || shouldSkipAuditParagraphs(category);
 
   const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
 
@@ -2492,29 +2501,113 @@ export function generateMiscNoteSheetHtml(
     ? `${category.name} (${category.code || "১৩৩/৩৬ (সি)"})`
     : "বিবিধ খরচ (সাধারণ) (১৩৩/৩৬ (সি))";
 
+  let subjectTitle = `বিষয় : অত্র কার্যালয়ের ${categoryLabel} বাবদ খরচকৃত অর্থ পরিশোধ প্রসঙ্গে।`;
+  let bodyParagraph = "";
+
+  if (isPhotocopy) {
+    subjectTitle = "বিষয় : ফটোকপি বিল পরিশোধ প্রসংগে";
+
+    let qtyRateText = "";
+    if (expense.photocopyQuantity && expense.photocopyUnitRate) {
+      qtyRateText = `${convertToBengaliNumber(expense.photocopyQuantity)} কপি প্রতিটি ${convertToBengaliNumber(expense.photocopyUnitRate)} টাকা হারে `;
+    } else if (expense.photocopyQuantity) {
+      const calcRate = (currentBill / Number(expense.photocopyQuantity)).toFixed(2);
+      qtyRateText = `${convertToBengaliNumber(expense.photocopyQuantity)} কপি প্রতিটি ${convertToBengaliNumber(calcRate)} টাকা হারে `;
+    }
+
+    const applicantNameClean = expense.applicant?.name || expense.applicantName || "";
+    const applicantInstClean = expense.applicant?.institution || expense.applicantInstitution || expense.vendorName || "";
+
+    let applicantVendorPhrase = "";
+    if (applicantInstClean && applicantNameClean) {
+      applicantVendorPhrase = `${applicantInstClean} এর মালিক ${applicantNameClean}`;
+    } else if (applicantInstClean) {
+      applicantVendorPhrase = `${applicantInstClean} এর স্বত্বাধিকারী`;
+    } else if (applicantNameClean) {
+      const cleanName = applicantNameClean.startsWith("জনাব") ? applicantNameClean : `জনাব ${applicantNameClean}`;
+      applicantVendorPhrase = `অত্র কার্যালয়ের কর্মকর্তা ${cleanName}`;
+    } else {
+      applicantVendorPhrase = "সংশ্লিষ্ট সরবরাহকারী";
+    }
+
+    bodyParagraph = `অত্র কার্যালয় ও ঊর্ধ্বতন কার্যালয়ের বিভিন্ন পত্র-পরিপত্র ও বিবরণী বিভিন্ন সময়ে ফটোস্ট্যাট করায় ${qtyRateText}মোট ৳=${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের ভাউচার সহকারে নগদে প্রাপ্তির জন্য ${applicantVendorPhrase} কর্তৃক আবেদন দাখিল করা হয়। তাঁর আবেদন সঠিক পরিলক্ষিত হওয়ায় ৳=${formattedAmount}/- (${amountWords}) টাকা মাত্র নগদে প্রদানাদেশ দেয়া যেতে পারে।`;
+  } else {
+    const applicantName = expense.applicant?.name || expense.applicantName || "জনাব মো: এনামুল হক";
+    const applicantDesignation = expense.applicant?.designation || expense.applicantDesignation || "গাড়ী চালক";
+    const rawPurpose = expense.description || expense.purpose || "ফেরি পাড়াপাড় খরচ";
+    const cleanPurpose = rawPurpose.trim();
+    const expMonthStr = expense.expenseMonthYear ? `${expense.expenseMonthYear} মাসের` : "";
+    const purposeText = expMonthStr ? `${expMonthStr} ${cleanPurpose}` : cleanPurpose;
+    const purposeWithUrgent = purposeText.startsWith("জরুরী ভিত্তিতে")
+      ? purposeText
+      : `জরুরী ভিত্তিতে ${purposeText}`;
+
+    bodyParagraph = `অত্র কার্যালয়ের ${purposeWithUrgent} বাবদ${vatTaxStr} সর্বমোট ৳=${formattedAmount}/- (কথায়: ${amountWords} টাকা মাত্র) খরচ পূর্বক অত্র কার্যালয়ের ${applicantDesignation} জনাব ${applicantName} কর্তৃক খরচের রশিদ সহ একখানা আবেদন করা হয়। তাঁর আবেদন সঠিক ও যথাযথ পরিলক্ষিত হওয়ায় আবেদনকৃত ৳=${formattedAmount}/- (কথায়: ${amountWords} টাকা মাত্র) নগদে প্রদানাদেশ দেওয়া যেতে পারে।`;
+  }
+
+  let bottomSectionHtml = "";
+  if (isUnder1500) {
+    bottomSectionHtml = `
+  <div class="regular-signatures-single-line" style="margin-top: 25pt; margin-bottom: 0pt; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        আঞ্চলিক ব্যবস্থাপক
+      </div>
+      <div style="font-size: 0.85em; color: #444;">
+        ${office?.name || "বাংলাদেশ কৃষি ব্যাংক"}
+      </div>
+    </div>
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>`;
+  } else {
+    bottomSectionHtml = `
+  <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>
+
+  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+    আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
+  </p>
+  
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
+    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+  </div>`;
+  }
+
   return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.6; text-align: justify;">
   <div style="text-align: center; font-weight: bold; margin-bottom: 8pt;">
     (পাতা-${pageNoStr})
   </div>
   <div style="font-weight: bold; margin-bottom: 16pt; text-align: center; text-decoration: underline;">
-    বিষয় : অত্র কার্যালয়ের ${categoryLabel} বাবদ খরচকৃত অর্থ পরিশোধ প্রসঙ্গে।
+    ${subjectTitle}
   </div>
   
   <p style="text-indent: 40px; margin-bottom: 12pt; text-align: justify; line-height: 1.6;">
-    অত্র কার্যালয়ের ${purposeWithUrgent} বাবদ${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) খরচ পূর্বক অত্র কার্যালয়ের ${applicantDesignation} জনাব ${applicantName} কর্তৃক খরচের রশিদ সহ একখানা আবেদন করা হয়। তাঁর আবেদন সঠিক ও যথাযথ পরিলক্ষিত হওয়ায় আবেদনকৃত ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) নগদে প্রদানাদেশ দেওয়া যেতে পারে।
+    ${bodyParagraph}
   </p>
 
   ${budgetHtml}
 
-  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 1in; text-align: justify; line-height: 1.6;">
-    আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
-  </p>
-  
-  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 1in; line-height: 1.6;">
-    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
-    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
-    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
-  </div>
+  ${bottomSectionHtml}
 </div>`;
 }
 
@@ -2558,6 +2651,348 @@ export function isMiscCategory(category: any): boolean {
   );
 }
 
+export function isLocalTransportCategory(category: any): boolean {
+  if (!category) return false;
+  const code = (category.code || "").trim();
+  const name = category.name || "";
+  const desc = category.description || "";
+  return (
+    category.id === "cat-30" ||
+    code === "১৩৩/২৪" ||
+    code === "133/24" ||
+    name.includes("যাতায়াত (স্থানীয়)") ||
+    desc.includes("১৩৩/২৪") ||
+    name.includes("যাতায়াত")
+  );
+}
+
+export function isTelephoneCategory(category: any): boolean {
+  if (!category) return false;
+  const code = (category.code || "").trim();
+  const name = category.name || "";
+  const desc = category.description || "";
+  return (
+    category.id === "cat-28" ||
+    code === "১৩৩/২৩ (এ)" ||
+    code === "133/23 (A)" ||
+    code === "133/23(A)" ||
+    code === "১৩৩/২৩(এ)" ||
+    code.includes("১৩৩/২৩") ||
+    name.includes("টেলিফোন") ||
+    desc.includes("১৩৩/২৩")
+  );
+}
+
+export function shouldSkipAuditParagraphs(category: any): boolean {
+  if (!category) return false;
+  const code = (category.code || "").trim();
+  const name = category.name || "";
+  const desc = category.description || "";
+  
+  const targetCodes = [
+    "133/23 (A)", "133/23(A)", "১৩৩/২৩ (এ)", "১৩৩/২৩(এ)",
+    "133/17", "১৩৩/১৭",
+    "133/18", "১৩৩/১৮",
+    "133/23 (C)", "133/23(C)", "১৩৩/২৩ (সি)", "১৩৩/২৩(সি)",
+    "133/12(B)", "133/12 (B)", "১৩৩/১২(বি)", "১৩৩/১২ (বি)",
+    "133/32", "১৩৩/৩২",
+    "133/6(E)", "133/6 (E)", "১৩৩/৬(ই)", "১৩৩/৬ (ই)",
+    "133/7", "১৩৩/৭",
+    "133/7(A)", "133/7 (A)", "১৩৩/৭(এ)", "১৩৩/৭ (এ)",
+    "133/10", "১৩৩/১০"
+  ];
+
+  if (targetCodes.some(c => code.includes(c) || desc.includes(c))) {
+    return true;
+  }
+
+  return (
+    name.includes("টেলিফোন") ||
+    name.includes("বিদ্যুৎ") ||
+    name.includes("বাড়ীভাড়া") ||
+    name.includes("ইন্টারনেট") ||
+    name.includes("নিরাপত্তা") ||
+    name.includes("ঝাড়ুদার") ||
+    name.includes("আপ্যায়ন") ||
+    name.includes("শ্রান্তি") ||
+    name.includes("ভ্রমণ")
+  );
+}
+
+export function generateTelephoneNoteSheetHtml(
+  expense: any,
+  office: any,
+  category: any,
+  financialYear: any,
+  balanceInfo: any,
+): string {
+  const telephoneMonthYear = expense.telephoneMonthYear || "এপ্রিল/২০১৫";
+  const telephoneItems = Array.isArray(expense.telephoneItems) && expense.telephoneItems.length > 0
+    ? expense.telephoneItems
+    : [
+        { telephoneType: "রেমিট্যান্স", telephoneNumber: "৬২৭২০", billMonth: "এপ্রিল/১৫", periodFrom: "২১/০৩/২০১৫", periodTo: "২০/০৪/২০১৫", amount: 1157 },
+        { telephoneType: "দাপ্তরিক", telephoneNumber: "৬৩১৫৭", billMonth: "এপ্রিল/১৫", periodFrom: "২১/০৩/২০১৫", periodTo: "২০/০৪/২০১৫", amount: 1717 }
+      ];
+
+  const totalBill = telephoneItems.reduce((acc: number, item: any) => acc + Number(item.amount || 0), 0);
+  const currentBill = Number(expense.grossAmount || expense.amount || totalBill);
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedTotal = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
+
+  const isUnder1500 = currentBill <= 1500 || shouldSkipAuditParagraphs(category);
+  const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
+
+  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const safeSpentSoFar = Math.max(0, spentSoFar);
+  const spentIncludingCurrent = safeSpentSoFar + currentBill;
+  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+
+  const budgetHtml = generateBudgetProvisionTableHtml(
+    balanceInfo,
+    category,
+    financialYear,
+    currentBill,
+    safeSpentSoFar,
+    remainingBalance,
+  );
+
+  const subjectTitle = `বিষয় : ${telephoneMonthYear} মাসের টেলিফোন বিল পরিশোধ প্রসঙ্গে`;
+  const bodyIntro = `অত্র কার্যালয়ে ব্যবহৃত টেলিফোনের বিল নিম্ন বর্ণনা মোতাবেক দাখিল করা হলো।`;
+
+  let rowsHtml = "";
+  telephoneItems.forEach((item: any, idx: number) => {
+    const slNo = convertToBengaliNumber(String(idx + 1).padStart(2, "0")) + " ।";
+    const tType = item.telephoneType || "দাপ্তরিক";
+    const tNum = convertToBengaliNumber(item.telephoneNumber || "");
+    const bMonth = item.billMonth || telephoneMonthYear;
+    const pFrom = convertToBengaliNumber(item.periodFrom || "");
+    const pTo = convertToBengaliNumber(item.periodTo || "");
+    const amt = convertToBengaliNumber(Number(item.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 }));
+
+    rowsHtml += `
+      <tr>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: center;">${slNo}</td>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: center;">${tType}</td>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: center;">${tNum}</td>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: center;">${bMonth}</td>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: center;">${pFrom}</td>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: center;">${pTo}</td>
+        <td style="border: 1pt solid #000; padding: 4pt; text-align: right;">${amt}</td>
+      </tr>`;
+  });
+
+  const totalWords = amountWords;
+  const tableHtml = `
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10pt; margin-bottom: 12pt; font-size: 10pt;">
+      <thead>
+        <tr style="background: #f5f5f5;">
+          <th rowspan="2" style="border: 1pt solid #000; padding: 5pt; text-align: center; width: 40pt;">ক্রঃ<br/>নং</th>
+          <th rowspan="2" style="border: 1pt solid #000; padding: 5pt; text-align: center;">টেলিফোনের ধরন</th>
+          <th rowspan="2" style="border: 1pt solid #000; padding: 5pt; text-align: center;">টেলিফোন<br/>নম্বর</th>
+          <th rowspan="2" style="border: 1pt solid #000; padding: 5pt; text-align: center;">বিল প্রদানের<br/>মাস</th>
+          <th colspan="2" style="border: 1pt solid #000; padding: 5pt; text-align: center;">সময়কাল</th>
+          <th rowspan="2" style="border: 1pt solid #000; padding: 5pt; text-align: center; width: 80pt;">বিলের<br/>পরিমাণ</th>
+        </tr>
+        <tr style="background: #f5f5f5;">
+          <th style="border: 1pt solid #000; padding: 4pt; text-align: center;">হতে</th>
+          <th style="border: 1pt solid #000; padding: 4pt; text-align: center;">পর্যন্ত</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml}
+        <tr>
+          <td colspan="6" style="border: 1pt solid #000; padding: 5pt; text-align: right; font-weight: bold;">
+            মোট= ${totalWords} টাকা মাত্র ।
+          </td>
+          <td style="border: 1pt solid #000; padding: 5pt; text-align: right; font-weight: bold;">
+            =${formattedTotal}
+          </td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  const bodyConcluding = `উক্ত বর্ণনা মোতাবেক টেলিফোন বিল বাবদ ৳=${formattedTotal}/- (${totalWords}) টাকা মাত্র প্রদানের অনুমোদন দেওয়া যেতে পারে।`;
+
+  let bottomSectionHtml = "";
+  if (isUnder1500) {
+    bottomSectionHtml = `
+  <div class="regular-signatures-single-line" style="margin-top: 25pt; margin-bottom: 0pt; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        আঞ্চলিক ব্যবস্থাপক
+      </div>
+      <div style="font-size: 0.85em; color: #444;">
+        ${office?.name || "বাংলাদেশ কৃষি ব্যাংক"}
+      </div>
+    </div>
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>`;
+  } else {
+    bottomSectionHtml = `
+  <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>
+
+  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+    আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
+  </p>
+  
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
+    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর টেলিফোন দাপ্তরিক (১৩৩/২৩ (এ)) খাতে সর্বমোট ৳=${formattedTotal}/- (${totalWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+  </div>`;
+  }
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.6; text-align: justify;">
+  <div style="text-align: center; font-weight: bold; margin-bottom: 8pt;">
+    (পাতা-${pageNoStr})
+  </div>
+  <div style="font-weight: bold; margin-bottom: 16pt; text-align: center; text-decoration: underline;">
+    ${subjectTitle}
+  </div>
+  
+  <p style="text-indent: 40px; margin-bottom: 8pt; text-align: justify; line-height: 1.6;">
+    ${bodyIntro}
+  </p>
+
+  ${tableHtml}
+
+  <p style="text-indent: 40px; margin-top: 12pt; margin-bottom: 12pt; text-align: justify; line-height: 1.6;">
+    ${bodyConcluding}
+  </p>
+
+  ${budgetHtml}
+
+  ${bottomSectionHtml}
+</div>`;
+}
+
+export function generateLocalTransportNoteSheetHtml(
+  expense: any,
+  office: any,
+  category: any,
+  financialYear: any,
+  balanceInfo: any,
+): string {
+  const vRate = Number(expense.vatRate || 0);
+  const tRate = Number(expense.taxRate || 0);
+  const baseAmt = Number(expense.baseAmount || expense.amount || 0);
+  const calcVat = Number(expense.vatAmount || (baseAmt * vRate) / 100);
+  const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
+  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
+
+  const isUnder1500 = currentBill <= 1500 || shouldSkipAuditParagraphs(category);
+  const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
+
+  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const safeSpentSoFar = Math.max(0, spentSoFar);
+  const spentIncludingCurrent = safeSpentSoFar + currentBill;
+  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+
+  const budgetHtml = generateBudgetProvisionTableHtml(
+    balanceInfo,
+    category,
+    financialYear,
+    currentBill,
+    safeSpentSoFar,
+    remainingBalance,
+  );
+
+  const subjectTitle = "বিষয় : যাতায়াত খরচ প্রদান প্রসঙ্গে";
+
+  const applicantNameClean = expense.applicant?.name || expense.applicantName || "জনাব থোয়াই চিং প্রু মার্মা";
+  const applicantDesignation = expense.applicant?.designation || expense.applicantDesignation || "প্রহরী";
+  
+  const cleanApplicantName = applicantNameClean.startsWith("জনাব") ? applicantNameClean : `জনাব ${applicantNameClean}`;
+
+  const bodyParagraph = `অত্র কার্যালয়ের দাপ্তরিক কাজে জরুরী প্রয়োজনে বিভিন্ন তারিখে অত্র জেলা শহরে যাতায়াত করায় খরচ বাবদ ৳=${formattedAmount}/- (${amountWords}) টাকা মাত্র প্রাপ্তির জন্য অত্র কার্যালয়ের ${applicantDesignation} ${cleanApplicantName} কর্তৃক একটি আবেদন দাখিল করা হয়। তাঁর আবেদন যথাযথ পরিলক্ষিত হওয়ায় ৳=${formattedAmount}/- (${amountWords}) টাকা মাত্র নগদে প্রদান করা যেতে পারে।`;
+
+  let bottomSectionHtml = "";
+  if (isUnder1500) {
+    bottomSectionHtml = `
+  <div class="regular-signatures-single-line" style="margin-top: 25pt; margin-bottom: 0pt; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        আঞ্চলিক ব্যবস্থাপক
+      </div>
+      <div style="font-size: 0.85em; color: #444;">
+        ${office?.name || "বাংলাদেশ কৃষি ব্যাংক"}
+      </div>
+    </div>
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>`;
+  } else {
+    bottomSectionHtml = `
+  <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>
+
+  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+    আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
+  </p>
+  
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
+    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর যাতায়াত (স্থানীয়) (১৩৩/২৪) খাতে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+  </div>`;
+  }
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.6; text-align: justify;">
+  <div style="text-align: center; font-weight: bold; margin-bottom: 8pt;">
+    (পাতা-${pageNoStr})
+  </div>
+  <div style="font-weight: bold; margin-bottom: 16pt; text-align: center; text-decoration: underline;">
+    ${subjectTitle}
+  </div>
+  
+  <p style="text-indent: 40px; margin-bottom: 12pt; text-align: justify; line-height: 1.6;">
+    ${bodyParagraph}
+  </p>
+
+  ${budgetHtml}
+
+  ${bottomSectionHtml}
+</div>`;
+}
+
 export function renderExpenseNoteSheetContent(
   expense: any,
   office: any,
@@ -2578,6 +3013,26 @@ export function renderExpenseNoteSheetContent(
 
   if (isMaintenanceCategory(category)) {
     return generateMotorVehicleNoteSheetHtml(
+      expense,
+      office,
+      category,
+      financialYear,
+      balanceInfo,
+    );
+  }
+
+  if (isLocalTransportCategory(category)) {
+    return generateLocalTransportNoteSheetHtml(
+      expense,
+      office,
+      category,
+      financialYear,
+      balanceInfo,
+    );
+  }
+
+  if (isTelephoneCategory(category)) {
+    return generateTelephoneNoteSheetHtml(
       expense,
       office,
       category,
@@ -2767,7 +3222,7 @@ export function renderExpenseNoteSheetContent(
       template?.id === "tpl-regular-expense" ||
       template?.id === "tpl-default-regular" ||
       expense.expenseType !== "Quotation";
-    const isBillUnder1500 = isRegularExpense && currentBillAmount <= 1500;
+    const isBillUnder1500 = (isRegularExpense && currentBillAmount <= 1500) || shouldSkipAuditParagraphs(category);
 
     const auditApprovalHtml = `<div class="audit-approval-section" style="margin-top: 20pt; display: flex; flex-direction: column; gap: 20pt;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> {{DESCRIPTION}} বাবদ {{VAT_TEXT}} ও {{TAX_TEXT}}সহ সর্বমোট ৳={{AMOUNT_WITH_WORDS}} টাকা খরচের আর্থিক সম্মতির গ্রহনের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, {{OFFICE_NAME}} বরাবরে নথি প্রেরণ করুন।</div>
@@ -3263,10 +3718,13 @@ export function generatePostFactoNoteSheetHtml(
   };
 
   const currentBill = Number(proposal.totalAmount || 0);
-  const previousExpense = Math.max(
-    0,
-    balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
-  );
+  const previousExpense =
+    balanceInfo.previousExpense !== undefined
+      ? Number(balanceInfo.previousExpense || 0)
+      : Math.max(
+          0,
+          balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+        );
   const remainingBalance =
     balanceInfo.totalAllocated - (previousExpense + currentBill);
 
@@ -3302,9 +3760,21 @@ export function generatePostFactoNoteSheetHtml(
   const officeOrgGen = isBranch ? "অত্র শাখার" : "অত্র কার্যালয়ের";
   const officeLoc = isBranch ? "অত্র শাখায়" : "অত্র কার্যালয়ে";
 
-  const tenderDateBn = proposal.tenderDate
-    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.tenderDate))
+  const rawTenderOrOrderDate =
+    proposal.tenderDate || proposal.orderDate || proposal.workOrderDate;
+  const tenderDateBn = rawTenderOrOrderDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawTenderOrOrderDate).split("T")[0]),
+      )
     : ".../.../......";
+
+  const rawWorkOrderDate =
+    proposal.workOrderDate || proposal.orderDate;
+  const workOrderDateBn = rawWorkOrderDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawWorkOrderDate).split("T")[0]),
+      )
+    : "";
 
   const subjectText = isRepair
     ? `<strong>বিষয়:</strong> ${proposal.description} বিলের বাজেট বরাদ্দসহ খরচোত্তর অনুমোদন প্রদান প্রসঙ্গে।`
@@ -3321,6 +3791,10 @@ export function generatePostFactoNoteSheetHtml(
     : `০২। তদালক্ষ্যে ${officeOrgGen} জন্য জরুরি ভিত্তিতে উক্ত মালামাল সরবরাহ করার নিমিত্তে গত ${tenderDateBn} ইং তারিখে স্থানীয় দরপত্র আহ্বান করা হয়। উক্ত আহ্বানের প্রেক্ষিতে নিম্নলিখিত দরদাতা প্রতিষ্ঠানসমূহ তাদের সিলমোহরকৃত দরপত্র দাখিল করেন:`;
 
   const tableHeaderItemDesc = isRepair ? "কাজের বিবরণ" : "মালামালের বিবরণ";
+
+  const para3Text = (workOrderDateBn && workOrderDateBn !== ".../.../......")
+    ? `০৩। পর্যালোচনা করে দেখা যায় যে, দরদাতা প্রতিষ্ঠানসমূহ বা আবেদনকারীদের মধ্যে <strong>'${lowestBidder.name}'</strong> সর্বনিম্ন দরদাতা হিসেবে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) দর প্রস্তাব করেছে, যা বাজার দরের সাথে সামঞ্জস্যপূর্ণ ও গ্রহণযোগ্য বিবেচিত হওয়ায় গত ${workOrderDateBn} ইং তারিখে কার্যাদেশ প্রদান করে কাজ সম্পন্ন/ক্রয় করা হয়।`
+    : `০৩। পর্যালোচনা করে দেখা যায় যে, দরদাতা প্রতিষ্ঠানসমূহ বা আবেদনকারীদের মধ্যে <strong>'${lowestBidder.name}'</strong> সর্বনিম্ন দরদাতা হিসেবে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) দর প্রস্তাব করেছে, যা বাজার দরের সাথে সামঞ্জস্যপূর্ণ ও গ্রহণযোগ্য বিবেচিত হয়।`;
 
   const para5Text = isRepair
     ? `০৫। এমতাবস্থায়, ${officeOrgGen} কার্যক্রমের ধারাবাহিকতা রক্ষার্থে জরুরি ভিত্তিতে কৃত উক্ত মেরামতের বিপরীতে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান <strong>'${lowestBidder.name}'</strong>-কে সর্বমোট ৳=${formattedAmount}/- (ভ্যাটসহ) টাকা পরিশোধ করাসহ বাজেট বরাদ্দ প্রদানপূর্বক খরচোত্তর অনুমোদনের জন্য বিনীত অনুরোধ পেশ করা হলো।`
@@ -3358,7 +3832,7 @@ export function generatePostFactoNoteSheetHtml(
       </table>
 
       <p style="margin-bottom: 12px; text-align: justify;">
-        ০৩। পর্যালোচনা করে দেখা যায় যে, দরদাতা প্রতিষ্ঠানসমূহ বা আবেদনকারীদের মধ্যে <strong>'${lowestBidder.name}'</strong> সর্বনিম্ন দরদাতা হিসেবে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) দর প্রস্তাব করেছে, যা বাজার দরের সাথে সামঞ্জস্যপূর্ণ ও গ্রহণযোগ্য বিবেচিত হয়।
+        ${para3Text}
       </p>
 
       <p style="margin-bottom: 12px; text-align: justify;">
@@ -3418,15 +3892,45 @@ export function generatePostFactoForwardingHtml(
     `;
   });
 
-  const letterNo =
-    proposal.letterNo ||
-    `বকেবি/${office?.code || "শাখা"}/কম্পিউটার/${financialYear?.name || "২০২৫-২০২৬"}/...`;
-  const letterDateBn = proposal.letterDate
-    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.letterDate))
+  const rawLetterNo = proposal.letterNo ? String(proposal.letterNo).trim() : "";
+  let letterNo = "";
+  if (rawLetterNo) {
+    if (rawLetterNo.includes("বকেবি/") || rawLetterNo.includes("/")) {
+      letterNo = convertToBengaliNumber(rawLetterNo);
+    } else {
+      letterNo = `বকেবি/${office?.code || "শাখা"}/${category?.name || "বাজেট"}/${financialYear?.name || "২০২৫-২০২৬"}/${convertToBengaliNumber(rawLetterNo)}`;
+    }
+  } else {
+    letterNo = `বকেবি/${office?.code || "শাখা"}/${category?.name || "বাজেট"}/${financialYear?.name || "২০২৫-২০২৬"}/...`;
+  }
+
+  const rawLetterDate =
+    proposal.letterDate ||
+    proposal.date ||
+    proposal.proposalDate;
+  const letterDateBn = rawLetterDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawLetterDate).split("T")[0]),
+      )
     : ".../.../......";
-  const tenderDateBn = proposal.tenderDate
-    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.tenderDate))
+
+  const rawTenderOrOrderDate =
+    proposal.tenderDate ||
+    proposal.orderDate ||
+    proposal.workOrderDate;
+  const tenderDateBn = rawTenderOrOrderDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawTenderOrOrderDate).split("T")[0]),
+      )
     : ".../.../......";
+
+  const rawWorkOrderDate =
+    proposal.workOrderDate || proposal.orderDate;
+  const workOrderDateBn = rawWorkOrderDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawWorkOrderDate).split("T")[0]),
+      )
+    : "";
 
   const padHeader = getBankPadHeaderHtml(office?.name);
   const watermarkHtml = getBankWatermarkHtml();
@@ -3450,8 +3954,12 @@ export function generatePostFactoForwardingHtml(
     : "চাহিতব্য মালামালের বিবরণ";
 
   const para4Text = isRepair
-    ? `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান হতে উক্ত মেরামত কার্য সম্পাদনের সিদ্ধান্ত গৃহীত হয়।`
-    : `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান হতে উক্ত মালামাল ক্রয়ের সিদ্ধান্ত গৃহীত হয়।`;
+    ? (workOrderDateBn && workOrderDateBn !== ".../.../......"
+        ? `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠানকে গত ${workOrderDateBn} ইং তারিখে কার্যাদেশ প্রদানপূর্বক উক্ত মেরামত কার্য সম্পাদন করা হয়।`
+        : `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান হতে উক্ত মেরামত কার্য সম্পাদনের সিদ্ধান্ত গৃহীত হয়।`)
+    : (workOrderDateBn && workOrderDateBn !== ".../.../......"
+        ? `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠানকে গত ${workOrderDateBn} ইং তারিখে কার্যাদেশ প্রদানপূর্বক উক্ত মালামাল ক্রয়/সরবরাহ গ্রহণ করা হয়।`
+        : `০৪। উল্লেখিত দরপত্রসমূহ পর্যালোচনা করে সর্বনিম্ন দরপত্র দাতা প্রতিষ্ঠান হতে উক্ত মালামাল ক্রয়ের সিদ্ধান্ত গৃহীত হয়।`);
 
   const para5Text = isRepair
     ? `০৫। এমতাবস্থায়, ${officeOrgGen} কার্যক্রমের ধারাবাহিকতা রক্ষার্থে কৃত উক্ত মেরামত বাবদ সর্বনিম্ন দরপত্রদাতা প্রতিষ্ঠান <strong>'${lowestBidder.name}'</strong>-এর অনুকূলে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বাজেট বরাদ্দ প্রদানপূর্বক খরচোত্তর অনুমোদনের জন্য মহোদয়ের নিকট বিনীত অনুরোধ করা গেল।`
@@ -3575,14 +4083,39 @@ export function generatePostFactoSupplyOrderHtml(
     taxVatStr = `${toBnDigits(taxRate)}% ট্যাক্স`;
   }
 
-  const workOrderNo =
-    proposal.workOrderNo ||
-    `বকেবি/${office?.code || "শাখা"}/কম্পিউটার/কার্যাদেশ/${financialYear?.name || "২০২৫-২০২৬"}/...`;
-  const workOrderDateBn = proposal.workOrderDate
-    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.workOrderDate))
+  const rawWorkOrderInput = proposal.workOrderNo
+    ? String(proposal.workOrderNo).trim()
+    : (proposal.letterNo ? String(proposal.letterNo).trim() : "");
+  let workOrderNo = "";
+  if (rawWorkOrderInput) {
+    if (rawWorkOrderInput.includes("কার্যাদেশ")) {
+      workOrderNo = convertToBengaliNumber(rawWorkOrderInput);
+    } else {
+      let numPart = rawWorkOrderInput;
+      if (rawWorkOrderInput.includes("/")) {
+        const parts = rawWorkOrderInput.split("/").map((s: string) => s.trim()).filter(Boolean);
+        numPart = parts[parts.length - 1] || rawWorkOrderInput;
+      }
+      workOrderNo = `বকেবি/${office?.code || "শাখা"}/${category?.name || "বাজেট"}/কার্যাদেশ/${financialYear?.name || "২০২৫-২০২৬"}/${convertToBengaliNumber(numPart)}`;
+    }
+  } else {
+    workOrderNo = `বকেবি/${office?.code || "শাখা"}/${category?.name || "বাজেট"}/কার্যাদেশ/${financialYear?.name || "২০২৫-২০২৬"}/...`;
+  }
+
+  const rawWorkOrderDate =
+    proposal.workOrderDate || proposal.orderDate || proposal.letterDate || proposal.date;
+  const workOrderDateBn = rawWorkOrderDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawWorkOrderDate).split("T")[0]),
+      )
     : ".../.../......";
-  const tenderDateBn = proposal.tenderDate
-    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.tenderDate))
+
+  const rawTenderDate =
+    proposal.tenderDate || proposal.orderDate || proposal.workOrderDate || proposal.letterDate || proposal.date;
+  const tenderDateBn = rawTenderDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawTenderDate).split("T")[0]),
+      )
     : ".../.../......";
 
   const padHeader = getBankPadHeaderHtml(office?.name);
@@ -3718,10 +4251,13 @@ export function generatePostFactoSanctionNoteSheetHtml(
   };
 
   const currentBill = Number(proposal.totalAmount || 0);
-  const previousExpense = Math.max(
-    0,
-    balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
-  );
+  const previousExpense =
+    balanceInfo.previousExpense !== undefined
+      ? Number(balanceInfo.previousExpense || 0)
+      : Math.max(
+          0,
+          balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+        );
   const remainingBalance =
     balanceInfo.totalAllocated - (previousExpense + currentBill);
 
@@ -3785,25 +4321,24 @@ export function generatePostFactoSanctionNoteSheetHtml(
     remainingBalance,
   );
 
+  const descHasKroy = proposal.description && (proposal.description.includes("ক্রয়") || proposal.description.includes("মেরামত"));
+  const descWithAction = isRepair
+    ? (proposal.description.includes("মেরামত") ? proposal.description : `${proposal.description} মেরামত`)
+    : (descHasKroy ? proposal.description : `${proposal.description} ক্রয়`);
+
   const subjectText = isRepair
     ? `বিষয়ঃ- বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} বিল খরচোত্তর অনুমোদন ও প্রদান প্রসঙ্গে।`
-    : `বিষয়ঃ- বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} ক্রয়ের বিল খরচোত্তর অনুমোদন ও প্রদান প্রসঙ্গে।`;
+    : `বিষয়ঃ- বিকেবি, ${branchOfficeName} এর জন্য ${descWithAction} বিল খরচোত্তর অনুমোদন ও প্রদান প্রসঙ্গে।`;
 
   const para1Text = isRepair
     ? `বিকেবি, ${branchOfficeName} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সচল রাখার নিমিত্তে জরুরি বিবেচনায় ${proposal.description} কাজ সম্পাদনের লক্ষ্যে স্থানীয়ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে উক্ত কাজ সম্পন্ন করা হয় এবং বিল খরচোত্তর অনুমোদনের নিমিত্তে অত্র কার্যালয়ে প্রস্তাব পেশ করা হয়।`
-    : `বিকেবি, ${branchOfficeName} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সচল রাখার নিমিত্তে জরুরি বিবেচনায় স্থানীয় বাজার হতে ${proposal.description} ক্রয়ের নিমিত্তে স্থানীয়ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে উক্ত মালামাল ক্রয়/সরবরাহ করা হয় এবং বিল খরচোত্তর অনুমোদনের নিমিত্তে অত্র কার্যালয়ে প্রস্তাব পেশ করা হয়।`;
+    : `বিকেবি, ${branchOfficeName} এর দৈনন্দিন দাপ্তরিক কার্যক্রম সচল রাখার নিমিত্তে জরুরি বিবেচনায় স্থানীয় বাজার হতে ${descWithAction} এর নিমিত্তে স্থানীয়ভাবে ${convertToBengaliNumber(totalBiddersCount)} টি প্রতিষ্ঠানের দরপত্র সংগ্রহ করতঃ সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র মূল্যে উক্ত মালামাল ক্রয়/সরবরাহ করা হয় এবং বিল খরচোত্তর অনুমোদনের নিমিত্তে অত্র কার্যালয়ে প্রস্তাব পেশ করা হয়।`;
 
-  const para2Text = isRepair
-    ? `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${proposal.description} বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে উক্ত কাজ সম্পন্ন করা হয়।`
-    : `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${proposal.description} ক্রয় বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে বর্ণিত মালামাল ক্রয়/সরবরাহ করা হয়।`;
+  const para2Text = `উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${descWithAction} বাবদ ${taxVatStr} সর্বনিম্ন দর ৮= ${formattedAmount}/- (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে ${isRepair ? "উক্ত কাজ সম্পন্ন করা হয়।" : "বর্ণিত মালামাল ক্রয়/সরবরাহ করা হয়।"}`;
 
-  const para3Text = isRepair
-    ? `এমতাবস্থায়, বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি শাখা প্রধান, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের খরচোত্তর অনুমোদন দেয়া যেতে পারে।`
-    : `এমতাবস্থায়, বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি শাখা প্রধান, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের খরচোত্তর অনুমোদন দেয়া যেতে পারে।`;
+  const para3Text = `এমতাবস্থায়, বিকেবি, ${branchOfficeName} এর জন্য ${descWithAction} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র খরচের বিষয়টি শাখা প্রধান, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের খরচোত্তর অনুমোদন দেয়া যেতে পারে।`;
 
-  const auditNoteText = isRepair
-    ? `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`
-    : `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> বিকেবি, ${branchOfficeName} এর জন্য ${proposal.description} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`;
+  const auditNoteText = `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> বিকেবি, ${branchOfficeName} এর জন্য ${descWithAction} বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`;
 
   const budgetScopeNote = is134
     ? `<div style="margin-top: 4pt; margin-bottom: 8pt; font-size: 0.9em; color: #1e293b; font-style: italic; text-align: right;">(নোট: ১৩৪/০১ হতে ১৩৪/০৫ খাতের ব্যয় বিধায় আঞ্চলিক কার্যালয়ের মূল বাজেট হতে সংস্থান করা হয়েছে)</div>`
@@ -3875,9 +4410,23 @@ export function generatePostFactoSanctionLetterHtml(
   const formattedAmount = convertToBengaliNumber(
     currentBill.toLocaleString("en-IN"),
   );
-  const letterNo = proposal.letterNo || "...";
-  const letterDateBn = proposal.letterDate
-    ? convertToBengaliNumber(formatDateToDDMMYYYY(proposal.letterDate))
+  const rawLetterNo = proposal.letterNo ? String(proposal.letterNo).trim() : "";
+  let letterNo = "...";
+  if (rawLetterNo) {
+    if (rawLetterNo.includes("বকেবি/") || rawLetterNo.includes("/")) {
+      letterNo = convertToBengaliNumber(rawLetterNo);
+    } else {
+      letterNo = `বকেবি/${office?.code || "শাখা"}/${category?.name || "বাজেট"}/${_financialYear?.name || "২০২৫-২০২৬"}/${convertToBengaliNumber(rawLetterNo)}`;
+    }
+  }
+  const rawLetterDate =
+    proposal.letterDate ||
+    proposal.date ||
+    proposal.proposalDate;
+  const letterDateBn = rawLetterDate
+    ? convertToBengaliNumber(
+        formatDateToDDMMYYYY(String(rawLetterDate).split("T")[0]),
+      )
     : ".../.../......";
 
   const sanctionMemoNo = proposal.sanctionMemoNo || "প্রশা-১(১৪)/২০২৫-২০২৬/";
@@ -3902,6 +4451,18 @@ export function generatePostFactoSanctionLetterHtml(
 
   const isRepair = isRepairWork(proposal.description);
   const vendorType = isRepair ? "মেরামতকারী" : "সরবরাহকারী";
+
+  const vatRate = Number(proposal.vatRate ?? 0);
+  const taxRate = Number(proposal.taxRate ?? 0);
+
+  let taxVatStr = "ভ্যাট ও ট্যাক্স ব্যতীত";
+  if (vatRate > 0 && taxRate > 0) {
+    taxVatStr = `${toBnDigits(vatRate)}% ভ্যাট ও ${toBnDigits(taxRate)}% ট্যাক্সসহ`;
+  } else if (vatRate > 0 && taxRate === 0) {
+    taxVatStr = `${toBnDigits(vatRate)}% ভ্যাটসহ`;
+  } else if (vatRate === 0 && taxRate > 0) {
+    taxVatStr = `${toBnDigits(taxRate)}% ট্যাক্সসহ`;
+  }
 
   const subjectText = isBudget
     ? `বিষয়: বিকেবি, ${office?.name || "শাখা"} শাখায় ব্যবহৃত ${proposal.description || "-"} বিল খরচোত্তর বাজেট বরাদ্দসহ অনুমোদন প্রসংগে।`
@@ -3945,11 +4506,11 @@ export function generatePostFactoSanctionLetterHtml(
         </p>
         
         <p style="text-align: justify;">
-          ০২। উক্ত পত্রের মাধ্যমে বিকেবি, ${office?.name || "শাখা"} শাখা এর জন্য ${proposal.description || "-"} করতে: ${vendorType} প্রতিষ্ঠান ${lowestBidder.name}, ${lowestBidder.address} হতে ${proposal.vatRate || 10}% ভ্যাটসহ ৳=${formattedAmount}/- (${amountWords}) টাকা মূল্যের একখানা বিল খরচোত্তর অনুমোদনের জন্যে সংযুক্তি সহকারে অত্র কার্যালয়ে প্রেরণ করা হয়।
+          ০২। উক্ত পত্রের মাধ্যমে বিকেবি, ${office?.name || "শাখা"} শাখা এর জন্য ${proposal.description || "-"} করতে: ${vendorType} প্রতিষ্ঠান ${lowestBidder.name}, ${lowestBidder.address} হতে ${taxVatStr} ৳=${formattedAmount}/- (${amountWords}) টাকা মূল্যের একখানা বিল খরচোত্তর অনুমোদনের জন্যে সংযুক্তি সহকারে অত্র কার্যালয়ে প্রেরণ করা হয়।
         </p>
 
         <p style="text-align: justify;">
-          ০৩। উক্ত পত্রের প্রেক্ষিতে বিকেবি, ${office?.name || "শাখা"} শাখা এর জন্য ${proposal.description || "-"} বাবদ ${proposal.vatRate || 10}% ভ্যাটসহ মোট ৳=${formattedAmount}/- (${amountWords}) টাকা শাখার ${category?.name || "-"} খাতে ${sanctionText}
+          ০৩। উক্ত পত্রের প্রেক্ষিতে বিকেবি, ${office?.name || "শাখা"} শাখা এর জন্য ${proposal.description || "-"} বাবদ ${taxVatStr} মোট ৳=${formattedAmount}/- (${amountWords}) টাকা শাখার ${category?.name || "-"} খাতে ${sanctionText}
         </p>
 
         <div style="margin-top: 50px; display: flex; justify-content: space-between;">

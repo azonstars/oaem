@@ -160,6 +160,11 @@ export const ExpensesSchema = z.object({
   fuelSupplierName: z.string().optional(),
   fuelItems: z.any().optional(),
   maintenancePurpose: z.string().optional(),
+  photocopyQuantity: z.preprocess((val) => (val !== undefined && val !== "" ? Number(val) : undefined), z.number().optional()),
+  photocopyUnitRate: z.preprocess((val) => (val !== undefined && val !== "" ? Number(val) : undefined), z.number().optional()),
+  telephoneMonthYear: z.string().optional(),
+  telephoneItems: z.any().optional(),
+  expenseMonthYear: z.string().optional(),
 }).strip();
 
 export const NoteTemplatesSchema = z.object({
@@ -223,6 +228,14 @@ export const PostFactoProposalsSchema = z.object({
   sanctionDocument: z.string().optional().default(""),
   sanctionedBy: z.string().optional().default(""),
   sanctionedAt: z.string().optional().default(""),
+  sanctionType: z.enum(["budget_allocation", "only_sanction"]).optional().default("budget_allocation"),
+  tenderDate: z.string().optional().default(""),
+  workOrderNo: z.string().optional().default(""),
+  workOrderDate: z.string().optional().default(""),
+  letterNo: z.string().optional().default(""),
+  letterDate: z.string().optional().default(""),
+  noteSheetId: z.string().optional().default(""),
+  createdBy: z.string().optional().default(""),
 }).strip();
 
 export const FlowToolsSchema = z.object({

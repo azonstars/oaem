@@ -13,6 +13,7 @@ import {
   QuotationItem,
   BranchDebitEntry,
   FuelExpenseItem,
+  TelephoneExpenseItem,
   SystemSettings,
 } from "../types";
 import {
@@ -143,6 +144,8 @@ export function ExpensesView({
     new Date().toISOString().split("T")[0],
   );
   const [description, setDescription] = useState("");
+  const [photocopyQuantity, setPhotocopyQuantity] = useState("");
+  const [photocopyUnitRate, setPhotocopyUnitRate] = useState("");
   const [vatRate, setVatRate] = useState("");
   const [taxRate, setTaxRate] = useState("");
   const [expenseType, setExpenseType] = useState<"General" | "Quotation">(
@@ -175,6 +178,28 @@ export function ExpensesView({
   const [fuelMonthYear, setFuelMonthYear] = useState("জুন/২০২৬");
   const [fuelType, setFuelType] = useState("অকটেন");
   const [fuelSupplierName, setFuelSupplierName] = useState("মেসার্স হিল ভিউ");
+  const [telephoneMonthYear, setTelephoneMonthYear] = useState("এপ্রিল/২০১৫");
+  const [expenseMonthYear, setExpenseMonthYear] = useState("এপ্রিল/২০১৫");
+  const [telephoneItems, setTelephoneItems] = useState<TelephoneExpenseItem[]>([
+    {
+      id: "t-1",
+      telephoneType: "রেমিট্যান্স",
+      telephoneNumber: "৬২৭২০",
+      billMonth: "এপ্রিল/১৫",
+      periodFrom: "২১/০৩/২০১৫",
+      periodTo: "২০/০৪/২০১৫",
+      amount: 1157,
+    },
+    {
+      id: "t-2",
+      telephoneType: "দাপ্তরিক",
+      telephoneNumber: "৬৩১৫৭",
+      billMonth: "এপ্রিল/১৫",
+      periodFrom: "২১/০৩/২০১৫",
+      periodTo: "২০/০৪/২০১৫",
+      amount: 1717,
+    },
+  ]);
   const [fuelItems, setFuelItems] = useState<FuelExpenseItem[]>([
     {
       id: "f-1",
@@ -404,6 +429,8 @@ export function ExpensesView({
     setVoucherDate(new Date().toISOString().split("T")[0]);
     setExpenseDate(new Date().toISOString().split("T")[0]);
     setDescription("");
+    setPhotocopyQuantity("");
+    setPhotocopyUnitRate("");
     setVatRate("");
     setTaxRate("0");
     setHasStockChalan("হ্যাঁ");
@@ -487,6 +514,28 @@ export function ExpensesView({
     setFuelMonthYear("জুন/২০২৬");
     setFuelType("অকটেন");
     setFuelSupplierName("মেসার্স হিল ভিউ");
+    setTelephoneMonthYear("এপ্রিল/২০১৫");
+    setExpenseMonthYear("এপ্রিল/২০১৫");
+    setTelephoneItems([
+      {
+        id: "t-1",
+        telephoneType: "রেমিট্যান্স",
+        telephoneNumber: "৬২৭২০",
+        billMonth: "এপ্রিল/১৫",
+        periodFrom: "২১/০৩/২০১৫",
+        periodTo: "২০/০৪/২০১৫",
+        amount: 1157,
+      },
+      {
+        id: "t-2",
+        telephoneType: "দাপ্তরিক",
+        telephoneNumber: "৬৩১৫৭",
+        billMonth: "এপ্রিল/১৫",
+        periodFrom: "২১/০৩/২০১৫",
+        periodTo: "২০/০৪/২০১৫",
+        amount: 1717,
+      },
+    ]);
     setFuelItems([
       {
         id: "f-1",
@@ -565,6 +614,16 @@ export function ExpensesView({
     setVoucherDate(exp.voucherDate || new Date().toISOString().split("T")[0]);
     setExpenseDate(exp.expenseDate || new Date().toISOString().split("T")[0]);
     setDescription(exp.description || "");
+    setPhotocopyQuantity(
+      exp.photocopyQuantity !== undefined && exp.photocopyQuantity !== null
+        ? String(exp.photocopyQuantity)
+        : "",
+    );
+    setPhotocopyUnitRate(
+      exp.photocopyUnitRate !== undefined && exp.photocopyUnitRate !== null
+        ? String(exp.photocopyUnitRate)
+        : "",
+    );
     setVatRate(exp.vatRate !== undefined ? String(exp.vatRate) : "");
     setTaxRate(exp.taxRate !== undefined ? String(exp.taxRate) : "0");
     if (exp.hasStockChalan) {
@@ -607,6 +666,35 @@ export function ExpensesView({
     else setFuelType("অকটেন");
     if (exp.fuelSupplierName) setFuelSupplierName(exp.fuelSupplierName);
     else setFuelSupplierName("মেসার্স হিল ভিউ");
+    if (exp.telephoneMonthYear) setTelephoneMonthYear(exp.telephoneMonthYear);
+    else setTelephoneMonthYear("এপ্রিল/২০১৫");
+    if (exp.expenseMonthYear) setExpenseMonthYear(exp.expenseMonthYear);
+    else setExpenseMonthYear("এপ্রিল/২০১৫");
+
+    let loadedTelephoneItems: TelephoneExpenseItem[] = [
+      {
+        id: "t-1",
+        telephoneType: "রেমিট্যান্স",
+        telephoneNumber: "৬২৭২০",
+        billMonth: "এপ্রিল/১৫",
+        periodFrom: "২১/০৩/২০১৫",
+        periodTo: "২০/০৪/২০১৫",
+        amount: 1157,
+      },
+      {
+        id: "t-2",
+        telephoneType: "দাপ্তরিক",
+        telephoneNumber: "৬৩১৫৭",
+        billMonth: "এপ্রিল/১৫",
+        periodFrom: "২১/০৩/২০১৫",
+        periodTo: "২০/০৪/২০১৫",
+        amount: 1717,
+      },
+    ];
+    if (exp.telephoneItems && Array.isArray(exp.telephoneItems) && exp.telephoneItems.length > 0) {
+      loadedTelephoneItems = exp.telephoneItems;
+    }
+    setTelephoneItems(loadedTelephoneItems);
 
     let loadedFuelItems: FuelExpenseItem[] = [];
     const rawFuelItems = exp.fuelItems as any;
@@ -1266,6 +1354,51 @@ export function ExpensesView({
     return isVehicle && isFuel;
   };
 
+  const isTelephoneCategory = (cat?: { id?: string; code?: string; name?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    return (
+      cat.id === "cat-28" ||
+      code === "১৩৩/২৩ (এ)" ||
+      code === "133/23 (A)" ||
+      code === "133/23(A)" ||
+      code === "১৩৩/২৩(এ)" ||
+      code.includes("১৩৩/২৩") ||
+      (cat.name || "").includes("টেলিফোন")
+    );
+  };
+
+  const shouldSkipAuditParagraphs = (cat?: { id?: string; code?: string; name?: string; description?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    const name = cat.name || "";
+    const desc = cat.description || "";
+    const targetCodes = [
+      "133/23 (A)", "133/23(A)", "১৩৩/২৩ (এ)", "১৩৩/২৩(এ)",
+      "133/17", "১৩৩/১৭",
+      "133/18", "১৩৩/১৮",
+      "133/23 (C)", "133/23(C)", "১৩৩/২৩ (সি)", "১৩৩/২৩(সি)",
+      "133/12(B)", "133/12 (B)", "১৩৩/১২(বি)", "১৩৩/১২ (বি)",
+      "133/32", "১৩৩/৩২",
+      "133/6(E)", "133/6 (E)", "১৩৩/৬(ই)", "১৩৩/৬ (ই)",
+      "133/7", "১৩৩/৭",
+      "133/7(A)", "133/7 (A)", "১৩৩/৭(এ)", "১৩৩/৭ (এ)",
+      "133/10", "১৩৩/১০"
+    ];
+    if (targetCodes.some(c => code.includes(c) || desc.includes(c))) return true;
+    return (
+      name.includes("টেলিফোন") ||
+      name.includes("বিদ্যুৎ") ||
+      name.includes("বাড়ীভাড়া") ||
+      name.includes("ইন্টারনেট") ||
+      name.includes("নিরাপত্তা") ||
+      name.includes("ঝাড়ুদার") ||
+      name.includes("আপ্যায়ন") ||
+      name.includes("শ্রান্তি") ||
+      name.includes("ভ্রমণ")
+    );
+  };
+
   const _isVehicleMaintenanceCategory = (cat?: { id?: string; code?: string; name?: string } | null) => {
     if (!cat) return false;
     const code = (cat.code || "").trim();
@@ -1599,6 +1732,8 @@ export function ExpensesView({
         (selectedCatObj.code === "১৩৩/২৬" || selectedCatObj.code === "133/26"));
     const isFuelOrMaint = isVehicleFuelOrMaintenanceCategory(selectedCatObj);
     const isFuel = isVehicleFuelCategory(selectedCatObj);
+    const isTel = isTelephoneCategory(selectedCatObj);
+    const isSpecialMonthCat = shouldSkipAuditParagraphs(selectedCatObj);
     const motorPayload = is133Series
       ? {
           vehicleModel: isFuelOrMaint ? vehicleModel : undefined,
@@ -1608,8 +1743,11 @@ export function ExpensesView({
           fuelType: isFuel ? fuelType : undefined,
           fuelSupplierName: isFuel ? fuelSupplierName : undefined,
           fuelItems: isFuel ? fuelItems : undefined,
+          telephoneMonthYear: isTel ? telephoneMonthYear : undefined,
+          telephoneItems: isTel ? telephoneItems : undefined,
+          expenseMonthYear: isSpecialMonthCat && !isTel ? expenseMonthYear : undefined,
         }
-      : {};
+      : (shouldSkipAuditParagraphs(selectedCatObj) ? { expenseMonthYear } : {});
 
     if (isSaving) return;
     setIsSaving(true);
@@ -1630,6 +1768,8 @@ export function ExpensesView({
           voucherNo: voucherNo.trim(),
           voucherDate,
           description: finalDescription,
+          photocopyQuantity: photocopyQuantity ? Number(photocopyQuantity) : undefined,
+          photocopyUnitRate: photocopyUnitRate ? Number(photocopyUnitRate) : undefined,
           supportingDocument: supportingDocument || "",
           applicant,
           entryOfficer,
@@ -1695,6 +1835,8 @@ export function ExpensesView({
           voucherNo: voucherNo.trim(),
           voucherDate,
           description: finalDescription,
+          photocopyQuantity: photocopyQuantity ? Number(photocopyQuantity) : undefined,
+          photocopyUnitRate: photocopyUnitRate ? Number(photocopyUnitRate) : undefined,
           remarks: "",
           supportingDocument: supportingDocument || "",
           applicant,
@@ -3026,6 +3168,238 @@ export function ExpensesView({
                             * এই বিবরণী স্বয়ংক্রিয়ভাবে ১৩৩/২৬ খাতের নোট শিট টেবিলে অন্তর্ভুক্ত হবে।
                           </div>
                         </div>
+                      </div>
+                    )}
+
+                    {isTelephoneCategory(currentCategory) && (
+                      <div className="pt-2 border-t border-blue-200/50 dark:border-slate-700 space-y-3">
+                        <div className="flex items-center justify-between text-xs font-bold text-sky-500 dark:text-sky-400">
+                          <div className="flex items-center gap-1.5">
+                            <span>📞</span>
+                            <span>টেলিফোন বিলের বিবরণী (১৩৩/২৩ (এ) টেলিফোন দাপ্তরিক)</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const totalTelCalc = telephoneItems.reduce(
+                                (sum, it) => sum + (Number(it.amount) || 0),
+                                0,
+                              );
+                              if (totalTelCalc > 0) {
+                                setAmount(String(totalTelCalc));
+                              }
+                            }}
+                            className="px-2 py-0.5 bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 rounded text-[11px] font-semibold transition"
+                            title="তালিকার মোট টাকা মূল খরচের পরিমাণে বসান"
+                          >
+                            🔄 মোট টাকা মূল বিলে সেট করুন
+                          </button>
+                        </div>
+
+                        <div>
+                          <label
+                            className={`block font-semibold text-xs mb-1 ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}
+                          >
+                            মাসের নাম ও বছর (নোটের শিরোনামের জন্য)
+                          </label>
+                          <input
+                            type="text"
+                            value={telephoneMonthYear}
+                            onChange={(e) => setTelephoneMonthYear(e.target.value)}
+                            placeholder="যেমন: এপ্রিল/২০১৫"
+                            className={`w-full sm:w-1/2 px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                          />
+                        </div>
+
+                        {/* Telephone Items Table */}
+                        <div className="border border-slate-700 rounded-xl overflow-x-auto">
+                          <table className="w-full text-xs text-left">
+                            <thead className="bg-slate-800/80 text-slate-200 border-b border-slate-700 font-semibold">
+                              <tr>
+                                <th className="p-2 text-center w-8">#</th>
+                                <th className="p-2 w-28">টেলিফোনের ধরন</th>
+                                <th className="p-2 w-24">টেলিফোন নম্বর</th>
+                                <th className="p-2 w-24">বিল প্রদানের মাস</th>
+                                <th className="p-2 min-w-[110px]">সময়কাল (হতে)</th>
+                                <th className="p-2 min-w-[110px]">সময়কাল (পর্যন্ত)</th>
+                                <th className="p-2 text-right w-24">বিলের পরিমাণ (টাকা)</th>
+                                <th className="p-2 text-center w-8"></th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-800">
+                              {telephoneItems.map((item, idx) => (
+                                <tr key={item.id || idx} className="hover:bg-slate-800/30">
+                                  <td className="p-1.5 text-center text-slate-400 font-mono">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.telephoneType || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTelephoneItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], telephoneType: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="দাপ্তরিক / রেমিট্যান্স"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.telephoneNumber || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTelephoneItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], telephoneNumber: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="৬২৭২০"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100 font-mono"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.billMonth || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTelephoneItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], billMonth: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="এপ্রিল/১৫"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.periodFrom || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTelephoneItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], periodFrom: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="২১/০৩/২০১৫"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100 font-mono"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="text"
+                                      value={item.periodTo || ""}
+                                      onChange={(e) => {
+                                        const val = e.target.value;
+                                        setTelephoneItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], periodTo: val };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="২০/০৪/২০১৫"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-slate-100 font-mono"
+                                    />
+                                  </td>
+                                  <td className="p-1">
+                                    <input
+                                      type="number"
+                                      step="any"
+                                      value={item.amount !== undefined ? item.amount : ""}
+                                      onChange={(e) => {
+                                        const amt = parseFloat(e.target.value) || 0;
+                                        setTelephoneItems((prev) => {
+                                          const updated = [...prev];
+                                          updated[idx] = { ...updated[idx], amount: amt };
+                                          return updated;
+                                        });
+                                      }}
+                                      placeholder="1157"
+                                      className="w-full px-2 py-1 bg-slate-900 border border-slate-700 rounded text-xs text-right text-sky-400 font-mono font-bold"
+                                    />
+                                  </td>
+                                  <td className="p-1 text-center">
+                                    {telephoneItems.length > 1 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTelephoneItems((prev) => prev.filter((_, i) => i !== idx));
+                                        }}
+                                        className="p-1 text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 rounded transition"
+                                        title="মুছুন"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                            <tfoot className="bg-slate-800/60 font-semibold border-t border-slate-700 text-xs">
+                              <tr>
+                                <td colSpan={6} className="p-2 text-right text-slate-300">
+                                  সর্বমোট:
+                                </td>
+                                <td className="p-2 text-right font-mono text-sky-400 font-bold">
+                                  ৳{" "}
+                                  {telephoneItems
+                                    .reduce((s, it) => s + (Number(it.amount) || 0), 0)
+                                    .toLocaleString("en-IN")}
+                                </td>
+                                <td className="p-2"></td>
+                              </tr>
+                            </tfoot>
+                          </table>
+                        </div>
+
+                        <div className="flex justify-between items-center pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTelephoneItems((prev) => [
+                                ...prev,
+                                {
+                                  id: `t-${Date.now()}`,
+                                  telephoneType: "দাপ্তরিক",
+                                  telephoneNumber: "",
+                                  billMonth: telephoneMonthYear,
+                                  periodFrom: "",
+                                  periodTo: "",
+                                  amount: 0,
+                                },
+                              ]);
+                            }}
+                            className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition"
+                          >
+                            <span>+ আরেকটি বিল যুক্ত করুন</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {shouldSkipAuditParagraphs(currentCategory) && !isTelephoneCategory(currentCategory) && (
+                      <div className="pt-2 border-t border-blue-200/50 dark:border-slate-700 space-y-2">
+                        <label className={`block font-semibold text-xs ${isCustom ? "text-purple-200" : isDark ? "text-slate-300" : "text-slate-700"}`}>
+                          ব্যয়ের মাস (একাধিক মাস থাকতে পারে)
+                        </label>
+                        <input
+                          type="text"
+                          value={expenseMonthYear}
+                          onChange={(e) => setExpenseMonthYear(e.target.value)}
+                          placeholder="যেমন: এপ্রিল/২০১৫ বা মার্চ ও এপ্রিল/২০১৫"
+                          className={`w-full sm:w-1/2 px-3 py-1.5 border rounded-xl text-xs focus:outline-none ${isCustom ? "bg-[#18122d] border-[#382b61] text-purple-100" : isDark ? "bg-slate-850 border-slate-700 text-slate-100" : "bg-white border-slate-300 text-slate-900"}`}
+                        />
                       </div>
                     )}
                   </div>
@@ -5484,6 +5858,92 @@ export function ExpensesView({
                             : "bg-white border-slate-300 text-slate-900"
                       }`}
                     />
+                  </div>
+
+                  {/* Photocopy Details (Optional) */}
+                  <div
+                    className={`p-3.5 rounded-xl border space-y-3 ${
+                      isCustom
+                        ? "bg-[#18122d] border-[#382b61]"
+                        : isDark
+                          ? "bg-slate-800/60 border-slate-700"
+                          : "bg-emerald-50/50 border-emerald-100"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <label
+                        className={`text-xs font-bold uppercase tracking-wider ${
+                          isCustom
+                            ? "text-purple-300"
+                            : isDark
+                              ? "text-emerald-400"
+                              : "text-emerald-700"
+                        }`}
+                      >
+                        ফটোকপির বিস্তারিত তথ্য (ঐচ্ছিক)
+                      </label>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        ফটোকপি খরচে কপি সংখ্যা ও দর স্বয়ংক্রিয়ভাবে নোটে যুক্ত হবে
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label
+                          className={`block text-xs font-semibold mb-1 ${
+                            isCustom
+                              ? "text-purple-200"
+                              : isDark
+                                ? "text-slate-300"
+                                : "text-slate-700"
+                          }`}
+                        >
+                          ফটোকপির সংখ্যা (কপি)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={photocopyQuantity}
+                          onChange={(e) => setPhotocopyQuantity(e.target.value)}
+                          placeholder="যেমন: ৩৫০"
+                          className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-xs ${
+                            isCustom
+                              ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                                : "bg-white border-slate-300 text-slate-900"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          className={`block text-xs font-semibold mb-1 ${
+                            isCustom
+                              ? "text-purple-200"
+                              : isDark
+                                ? "text-slate-300"
+                                : "text-slate-700"
+                          }`}
+                        >
+                          প্রতি কপি দর / মূল্য (টাকা)
+                        </label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={photocopyUnitRate}
+                          onChange={(e) => setPhotocopyUnitRate(e.target.value)}
+                          placeholder="যেমন: ২.০০"
+                          className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-xs ${
+                            isCustom
+                              ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                                : "bg-white border-slate-300 text-slate-900"
+                          }`}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

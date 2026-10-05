@@ -3,7 +3,7 @@ import fs from "fs";
 import crypto from "crypto";
 import { getDbSheetData, saveDbSheetData, saveDbSingleItem } from "../sqlite.js";
 import { initialData } from "./default-data.js";
-import { computeExpenseAmounts } from "./utils.js";
+import { computeExpenseAmounts, isCategory134 } from "./utils.js";
 
 export const DATA_DIR = path.join(process.cwd(), "data");
 if (!fs.existsSync(DATA_DIR)) {
@@ -157,13 +157,42 @@ export function getAvailableBalance(
 ) {
   const allocations = getSheetData("Allocations");
   const expenses = getSheetData("Expenses");
+  const postFactoProposals = getSheetData("PostFactoProposals") || [];
+  const categories = getSheetData("Categories") || [];
+  const offices = getSheetData("Offices") || [];
 
-  const categoryAllocations = allocations.filter(
+  const category = categories.find((c: any) => c.id === categoryId);
+  const is134 = isCategory134(category);
+
+  const regionalOffice =
+    offices.find(
+      (o: any) =>
+        o.type === "HeadOffice" ||
+        o.id === "off-ho" ||
+        (o.name && o.name.includes("আঞ্চলিক কার্যালয়")),
+    );
+
+  const targetAllocOfficeId = is134
+    ? regionalOffice?.id || "off-ho"
+    : officeId;
+
+  let categoryAllocations = allocations.filter(
     (a: any) =>
       a.financialYearId === financialYearId &&
-      a.officeId === officeId &&
-      a.categoryId === categoryId,
+      a.categoryId === categoryId &&
+      (is134
+        ? a.officeId === targetAllocOfficeId ||
+          a.officeId === "off-ho" ||
+          a.officeId === officeId
+        : a.officeId === officeId),
   );
+
+  if (is134 && categoryAllocations.length === 0) {
+    categoryAllocations = allocations.filter(
+      (a: any) =>
+        a.financialYearId === financialYearId && a.categoryId === categoryId,
+    );
+  }
 
   const initialBudget = categoryAllocations
     .filter((a: any) => a.type === "Initial" || !a.type)
@@ -182,8 +211,9 @@ export function getAvailableBalance(
   const categoryExpenses = expenses.filter(
     (e: any) =>
       e.financialYearId === financialYearId &&
-      e.officeId === officeId &&
-      e.categoryId === categoryId,
+      e.categoryId === categoryId &&
+      (is134 ? true : e.officeId === officeId) &&
+      e.status !== "Rejected",
   );
 
   let totalSpent = 0;
@@ -194,10 +224,25 @@ export function getAvailableBalance(
     const gross = Number(computed.grossAmount || 0);
     if (e.status === "Pending") {
       totalPending += gross;
-    } else if (e.status === "Rejected") {
-      // Rejected
     } else {
       totalSpent += gross;
+    }
+  });
+
+  const categoryProposals = postFactoProposals.filter(
+    (p: any) =>
+      p.financialYearId === financialYearId &&
+      p.categoryId === categoryId &&
+      (is134 ? true : p.officeId === officeId) &&
+      p.status !== "Rejected",
+  );
+
+  categoryProposals.forEach((p: any) => {
+    const amt = Number(p.totalAmount || 0);
+    if (p.status === "Pending") {
+      totalPending += amt;
+    } else {
+      totalSpent += amt;
     }
   });
 
@@ -213,6 +258,114 @@ export function getAvailableBalance(
     totalSpent,
     pending: totalPending,
     totalPending,
+    available,
+    availableBalance: available,
+  };
+}
+
+export function getPostFactoBalanceInfo(
+  financialYearId: string,
+  officeId: string,
+  categoryId: string,
+  currentProposalId?: string,
+  is134: boolean = false,
+) {
+  const allocations = getSheetData("Allocations");
+  const expenses = getSheetData("Expenses");
+  const postFactoProposals = getSheetData("PostFactoProposals") || [];
+  const offices = getSheetData("Offices") || [];
+
+  const regionalOffice =
+    offices.find(
+      (o: any) =>
+        o.type === "HeadOffice" ||
+        o.id === "off-ho" ||
+        (o.name && o.name.includes("আঞ্চলিক কার্যালয়")),
+    );
+
+  const targetAllocOfficeId = is134
+    ? regionalOffice?.id || "off-ho"
+    : officeId;
+
+  let categoryAllocations = allocations.filter(
+    (a: any) =>
+      a.financialYearId === financialYearId &&
+      a.categoryId === categoryId &&
+      (is134
+        ? a.officeId === targetAllocOfficeId ||
+          a.officeId === "off-ho" ||
+          a.officeId === officeId
+        : a.officeId === officeId),
+  );
+
+  if (is134 && categoryAllocations.length === 0) {
+    categoryAllocations = allocations.filter(
+      (a: any) =>
+        a.financialYearId === financialYearId && a.categoryId === categoryId,
+    );
+  }
+
+  const initialBudget = categoryAllocations
+    .filter((a: any) => a.type === "Initial" || !a.type)
+    .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
+
+  const provisionAmount = categoryAllocations
+    .filter((a: any) => a.type === "Adjustment")
+    .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
+
+  const additionalBudget = categoryAllocations
+    .filter((a: any) => a.type === "Additional")
+    .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
+
+  const totalAllocated = initialBudget + provisionAmount + additionalBudget;
+
+  // Expenses:
+  // For 134/01 to 134/05: include all offices (RO, ANIKA, and all branches)
+  // For other categories: include officeId
+  const categoryExpenses = expenses.filter(
+    (e: any) =>
+      e.financialYearId === financialYearId &&
+      e.categoryId === categoryId &&
+      (is134 ? true : e.officeId === officeId) &&
+      e.status !== "Rejected",
+  );
+
+  let totalSpent = 0;
+  categoryExpenses.forEach((e: any) => {
+    const computed = computeExpenseAmounts(e.amount, e.vatRate, e.taxRate);
+    const gross = Number(computed.grossAmount || 0);
+    totalSpent += gross;
+  });
+
+  // Post-facto proposals prior to this one:
+  // For 134/01 to 134/05: include all offices
+  // For other categories: include officeId
+  const priorProposals = postFactoProposals.filter(
+    (p: any) =>
+      p.financialYearId === financialYearId &&
+      p.categoryId === categoryId &&
+      (is134 ? true : p.officeId === officeId) &&
+      p.status !== "Rejected" &&
+      p.id !== currentProposalId,
+  );
+
+  priorProposals.forEach((p: any) => {
+    totalSpent += Number(p.totalAmount || 0);
+  });
+
+  const available = totalAllocated - totalSpent;
+
+  return {
+    initialBudget,
+    provisionAmount,
+    additionalBudget,
+    allocated: totalAllocated,
+    totalAllocated,
+    spent: totalSpent,
+    totalSpent,
+    previousExpense: totalSpent,
+    pending: 0,
+    totalPending: 0,
     available,
     availableBalance: available,
   };
