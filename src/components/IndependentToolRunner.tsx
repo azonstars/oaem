@@ -14,6 +14,7 @@ import { StockProTool } from "./tools/StockProTool";
 import { ConferenceNoteTool } from "./tools/ConferenceNoteTool";
 import { MultiItemBillTool } from "./tools/MultiItemBillTool";
 import { StationeryBillTool } from "./tools/StationeryBillTool";
+import { TravelBillTool } from "./tools/TravelBillTool";
 import { MiscellaneousView } from "./MiscellaneousView";
 import OfficeMonitoringIntegratedTool from "./officeMonitoring/OfficeMonitoringIntegratedTool";
 import {
@@ -150,6 +151,22 @@ export function IndependentToolRunner({
     return (
       <div className="w-full min-h-full flex-1 bg-slate-50 dark:bg-slate-950">
         <StationeryBillTool
+          currentUser={currentUser}
+          systemSettings={systemSettings}
+          offices={offices}
+          financialYears={financialYears}
+          selectedFY={selectedFY}
+          onBack={onBackToHub}
+        />
+      </div>
+    );
+  }
+
+  // If Travel Bill Generator is requested directly
+  if (tool.id === "travel-bill") {
+    return (
+      <div className="w-full min-h-full flex-1 bg-slate-50 dark:bg-slate-950">
+        <TravelBillTool
           currentUser={currentUser}
           systemSettings={systemSettings}
           offices={offices}

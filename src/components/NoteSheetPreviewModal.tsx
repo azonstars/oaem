@@ -1334,6 +1334,25 @@ export function NoteSheetPreviewModal({
       }
     }
 
+    // Dynamic Fiscal Year Provision Date Label:
+    // If the note sheet content contains standalone legacy "প্রভিশন" in a table cell,
+    // dynamically determine the closing date of the month in which the fiscal year ended.
+    const fyMatch = raw.match(/খাতে\s*([০-৯]{4}|[0-9]{4})-([০-৯]{4}|[0-9]{4})\s*অর্থ\s*বছরে/);
+    let provDateBn = "৩০-০৬-২০২৬";
+    if (fyMatch) {
+      const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+      const toEnDigits = (str: string) => str.replace(/[০-৯]/g, (d) => String(bnDigits.indexOf(d)));
+      const startYearEn = parseInt(toEnDigits(fyMatch[1]), 10);
+      if (!isNaN(startYearEn) && startYearEn > 2000) {
+        const toBnDigits = (str: string) => str.replace(/\d/g, (d) => bnDigits[parseInt(d)]);
+        provDateBn = toBnDigits(`30-06-${startYearEn}`);
+      }
+    }
+    raw = raw.replace(
+      /(<td[^>]*>)\s*প্রভিশন\s*(<\/td>)/gi,
+      `$1${provDateBn} তারিখে প্রভিশণ$2`
+    );
+
     if (
       !raw.includes("<p>") &&
       !raw.includes("<table") &&

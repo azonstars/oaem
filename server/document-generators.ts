@@ -373,6 +373,78 @@ export function generateQuotationBiddersTableHtml(
   return { biddersHtml, lowestBidderName, totalBiddersCount, isMultipleItems };
 }
 
+export function getDynamicProvisionLabel(financialYear?: any): string {
+  try {
+    const financialYears = getSheetData("FinancialYears") || [];
+    let currentFY = financialYear;
+    if (typeof currentFY === "string") {
+      currentFY = financialYears.find((f: any) => f.id === currentFY);
+    }
+    if (!currentFY) {
+      currentFY = financialYears.find((f: any) => f.isActive) || financialYears[0];
+    }
+
+    let targetDateStr = "";
+
+    if (currentFY) {
+      // 1. Look for a preceding financial year that ended on or before currentFY's startDate
+      if (currentFY.startDate) {
+        const candidates = financialYears.filter(
+          (f: any) => f.id !== currentFY.id && f.endDate && f.endDate <= currentFY.startDate,
+        );
+        if (candidates.length > 0) {
+          candidates.sort((a: any, b: any) => b.endDate.localeCompare(a.endDate));
+          targetDateStr = candidates[0].endDate;
+        }
+      }
+
+      // 2. If no candidate found by endDate <= startDate, find predecessor by sorted startDate
+      if (!targetDateStr && financialYears.length > 0) {
+        const sorted = [...financialYears].sort((a: any, b: any) =>
+          (a.startDate || "").localeCompare(b.startDate || ""),
+        );
+        const idx = sorted.findIndex((f: any) => f.id === currentFY.id);
+        if (idx > 0 && sorted[idx - 1].endDate) {
+          targetDateStr = sorted[idx - 1].endDate;
+        }
+      }
+
+      // 3. Fallback: compute from currentFY.startDate (the day before startDate)
+      if (!targetDateStr && currentFY.startDate) {
+        const parts = currentFY.startDate.split("-");
+        if (parts.length >= 3) {
+          const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          dt.setDate(dt.getDate() - 1);
+          const y = dt.getFullYear();
+          const m = dt.getMonth() + 1;
+          const lastDay = new Date(y, m, 0).getDate();
+          const dd = String(lastDay).padStart(2, "0");
+          const mm = String(m).padStart(2, "0");
+          const yyyy = String(y);
+          targetDateStr = `${yyyy}-${mm}-${dd}`;
+        }
+      }
+    }
+
+    if (targetDateStr) {
+      const parts = targetDateStr.split("-");
+      if (parts.length >= 2) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10);
+        // The last date of the month in which that financial year ends dynamically
+        const lastDay = new Date(year, month, 0).getDate();
+        const dd = String(lastDay).padStart(2, "0");
+        const mm = String(month).padStart(2, "0");
+        const yyyy = String(year);
+        return `${convertToBengaliNumber(`${dd}-${mm}-${yyyy}`)} তারিখে প্রভিশণ`;
+      }
+    }
+  } catch (e) {
+    console.error("Error generating dynamic provision label:", e);
+  }
+  return "৩০-০৬-২০২৬ তারিখে প্রভিশণ";
+}
+
 export function generateBudgetProvisionTableHtml(
   balanceInfo: any,
   category: any,
@@ -387,6 +459,7 @@ export function generateBudgetProvisionTableHtml(
       ? convertToBengaliNumber(category.code)
       : "-";
   const fyText = financialYear ? financialYear.name : "";
+  const provisionLineLabel = getDynamicProvisionLabel(financialYear);
 
   let budgetHtml = `
     <table class="budget-provision-table" style="width: 100%; border-collapse: collapse; margin-top: 14pt; margin-bottom: 12pt; font-size: inherit; page-break-inside: avoid; break-inside: avoid; border: none !important; table-layout: auto;">
@@ -396,7 +469,7 @@ export function generateBudgetProvisionTableHtml(
   if (balanceInfo.provisionAmount > 0) {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">প্রভিশন</td>
+        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">${provisionLineLabel}</td>
         <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.provisionAmount.toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
@@ -436,11 +509,23 @@ export function generateBudgetProvisionTableHtml(
     `;
   }
 
+  if (previousExpense > 0) {
+    budgetHtml += `
+      <tr style="page-break-inside: avoid; break-inside: avoid;">
+        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচসহ সর্বমোট খরচের পরিমাণ (${convertToBengaliNumber(previousExpense.toLocaleString("en-IN"))} + ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))})/-</td>
+        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber((previousExpense + currentBill).toLocaleString("en-IN"))}/-</td>
+      </tr>
+    `;
+  } else {
+    budgetHtml += `
+      <tr style="page-break-inside: avoid; break-inside: avoid;">
+        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচের পরিমাণ</td>
+        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/-</td>
+      </tr>
+    `;
+  }
+
   budgetHtml += `
-    <tr style="page-break-inside: avoid; break-inside: avoid;">
-      <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচসহ সর্বমোট খরচের পরিমাণ (${convertToBengaliNumber(previousExpense.toLocaleString("en-IN"))} + ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))})/-</td>
-      <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber((previousExpense + currentBill).toLocaleString("en-IN"))}/-</td>
-    </tr>
     <tr style="page-break-inside: avoid; break-inside: avoid;">
       <td style="border: none !important; padding: 6px 8px; font-size: inherit; text-align: right; padding-right: 12px; font-weight: bold; white-space: nowrap;">এ খাতে অবশিষ্ট বাজেটের পরিমাণ</td>
       <td style="border: none !important; padding: 6px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: bold; border-bottom: 3px double #000 !important; white-space: nowrap;">= ${convertToBengaliNumber(remainingBalance.toLocaleString("en-IN"))}/-</td>
@@ -590,27 +675,76 @@ export function generateForm1ForwardingHtml(
 
   const budgetHeadAcc = getBudgetHeadForExpense(expense, category);
 
-  const quotationItems = expense.quotationItems || [];
+  const rawQuotationItems = expense.quotationItems || [];
+  const quotationItems = rawQuotationItems.map((it: any) => {
+    if (it.suppliers && Array.isArray(it.suppliers) && it.suppliers.length > 0) {
+      const lowest =
+        it.suppliers.find(
+          (s: any) =>
+            s.remarks === "সর্বনিম্ন দরদাতা" ||
+            s.remarks?.includes("সর্বনিম্ন"),
+        ) ||
+        it.suppliers.reduce((min: any, cur: any) =>
+          Number(cur.totalPrice || 0) > 0 &&
+          Number(cur.totalPrice || 0) < Number(min.totalPrice || Infinity)
+            ? cur
+            : min,
+          it.suppliers[0],
+        );
+      if (
+        lowest &&
+        (Number(lowest.totalPrice || 0) > 0 ||
+          Number(lowest.unitPrice || 0) > 0)
+      ) {
+        return {
+          ...it,
+          unitPrice: Number(lowest.unitPrice || it.unitPrice || 0),
+          totalPrice: Number(
+            lowest.totalPrice ||
+              Number(lowest.unitPrice || 0) * Number(it.qty || 1),
+          ),
+          remarks: "সর্বনিম্ন দরদাতা",
+        };
+      }
+    }
+    return it;
+  });
+  const itemsBaseSum = quotationItems.reduce(
+    (acc: number, item: any) =>
+      acc +
+      (Number(item.totalPrice) ||
+        Number(item.qty || 1) * Number(item.unitPrice || 0)),
+    0,
+  );
   const baseAmt = Number(
-    expense.baseAmount ||
-      quotationItems.reduce(
-        (acc: number, item: any) =>
-          acc +
-          (Number(item.totalPrice) ||
-            Number(item.qty || 1) * Number(item.unitPrice || 0)),
-        0,
-      ),
+    (expense.baseAmount !== undefined && expense.baseAmount !== null
+      ? expense.baseAmount
+      : itemsBaseSum > 0
+        ? itemsBaseSum
+        : expense.amount) || 0,
   );
-  const calcVat = Number(expense.vatAmount || (baseAmt * vatRate) / 100);
-  const calcTax = Number(expense.taxAmount || (baseAmt * taxRate) / 100);
-  const currentBill = Number(
-    expense.grossAmount || expense.amount || baseAmt + calcVat + calcTax,
-  );
-  const netPayable = Number(
-    expense.netPayable || currentBill - (hasMusok ? 0 : calcVat) - calcTax,
-  );
-  const amountWords = numberToBengaliWords(Math.round(currentBill));
-  const netPayableWords = numberToBengaliWords(Math.round(netPayable));
+  const calcVat = Math.round(Number(
+    expense.vatAmount !== undefined && expense.vatAmount !== null
+      ? expense.vatAmount
+      : (baseAmt * vatRate) / 100,
+  ));
+  const calcTax = Math.round(Number(
+    hasMusok
+      ? 0
+      : expense.taxAmount !== undefined && expense.taxAmount !== null
+        ? expense.taxAmount
+        : (baseAmt * taxRate) / 100,
+  ));
+  const currentBill = Math.round(Number(
+    expense.grossAmount !== undefined && expense.grossAmount !== null
+      ? expense.grossAmount
+      : expense.amount || baseAmt + calcVat + calcTax,
+  ));
+  const netPayable = Math.round(Number(
+    currentBill - (hasMusok ? 0 : calcVat) - calcTax,
+  ));
+  const amountWords = numberToBengaliWords(currentBill);
+  const netPayableWords = numberToBengaliWords(netPayable);
 
   const itemsListForParagraph = quotationItems.map((qi: any) => {
     const q = Number(qi.qty || qi.quantity || 1);
@@ -704,7 +838,7 @@ export function generateForm1ForwardingHtml(
   const taxRateDisplay =
     taxRate > 0
       ? toBnDigits(taxRate)
-      : expense.taxRate
+      : expense.taxRate && !hasMusok
         ? toBnDigits(expense.taxRate)
         : "৫";
 
@@ -713,9 +847,15 @@ export function generateForm1ForwardingHtml(
     : `সরবরাহকারী প্রতিষ্ঠান "${supplierOrgName}"`;
   let paragraph3Text = "";
   if (calcVat > 0 && !hasMusok && (!vatChalanNo || vatChalanNo.trim() === "")) {
-    paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${vatRateDisplay}% ভ্যাট বাবদ ৳=${calcVatStr} এবং ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
-  } else {
+    if (calcTax > 0) {
+      paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${vatRateDisplay}% ভ্যাট বাবদ ৳=${calcVatStr} এবং ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
+    } else {
+      paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${vatRateDisplay}% ভ্যাট বাবদ ৳=${calcVatStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
+    }
+  } else if (calcTax > 0) {
     paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল হতে ${taxRateDisplay}% উৎসে কর বাবদ ৳=${calcTaxStr} কর্তন করে অবশিষ্ট ৳=${netPayableStr} (${netPayableWords}) টাকা পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
+  } else {
+    paragraph3Text = `প্রাপ্ত ৳=${currentBillStr} (${amountWords}) টাকার বিল পেমেন্ট অর্ডারের মাধ্যমে ${supplierOrgLabel} বরাবর পরিশোধের জন্য অনুরোধ করা হলো।`;
   }
 
   const itemsCount = quotationItems.length;
@@ -1229,17 +1369,29 @@ export function generateForm2NoteSheetHtml(
       expense.amount ||
       0,
   );
-  const calcVat = Number(expense.vatAmount || (baseAmt * vatRate) / 100);
-  const calcTax = Number(expense.taxAmount || (baseAmt * taxRate) / 100);
-  const currentBill = Number(
+  const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vatRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * taxRate) / 100));
+  const currentBill = Math.round(Number(
     expense.grossAmount || expense.amount || baseAmt + calcVat + calcTax,
+  ));
+  const expensesList = getSheetData("Expenses") || [];
+  const isExistingExpense =
+    expense.id && expensesList.some((e: any) => e.id === expense.id);
+  const previousExpense =
+    balanceInfo.previousExpense !== undefined
+      ? Number(balanceInfo.previousExpense || 0)
+      : isExistingExpense
+        ? Math.max(
+            0,
+            balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+          )
+        : Math.max(
+            0,
+            balanceInfo.totalSpent + balanceInfo.totalPending,
+          );
+  const remainingBalance = Math.round(
+    balanceInfo.totalAllocated - (previousExpense + currentBill),
   );
-  const previousExpense = Math.max(
-    0,
-    balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
-  );
-  const remainingBalance =
-    balanceInfo.totalAllocated - (previousExpense + currentBill);
 
   const amountWords = numberToBengaliWords(currentBill);
 
@@ -1354,18 +1506,30 @@ export function generateForm1NoteSheetHtml(
       expense.amount ||
       0,
   );
-  const calcVat = Number(expense.vatAmount || (baseAmt * vatRate) / 100);
-  const calcTax = Number(expense.taxAmount || (baseAmt * taxRate) / 100);
-  const currentBill = Number(
+  const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vatRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * taxRate) / 100));
+  const currentBill = Math.round(Number(
     expense.grossAmount || expense.amount || baseAmt + calcVat + calcTax,
-  );
+  ));
 
-  const previousExpense = Math.max(
-    0,
-    balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+  const expensesList = getSheetData("Expenses") || [];
+  const isExistingExpense =
+    expense.id && expensesList.some((e: any) => e.id === expense.id);
+  const previousExpense =
+    balanceInfo.previousExpense !== undefined
+      ? Number(balanceInfo.previousExpense || 0)
+      : isExistingExpense
+        ? Math.max(
+            0,
+            balanceInfo.totalSpent + balanceInfo.totalPending - currentBill,
+          )
+        : Math.max(
+            0,
+            balanceInfo.totalSpent + balanceInfo.totalPending,
+          );
+  const remainingBalance = Math.round(
+    balanceInfo.totalAllocated - (previousExpense + currentBill),
   );
-  const remainingBalance =
-    balanceInfo.totalAllocated - (previousExpense + currentBill);
 
   const amountWords = numberToBengaliWords(currentBill);
   const formattedItems = formatItemsListText(quotationItems);
@@ -1488,15 +1652,15 @@ export function generateMotorFuelApplicationHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount !== undefined ? expense.vatAmount : (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount !== undefined ? expense.taxAmount : (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount !== undefined && expense.vatAmount !== null ? expense.vatAmount : (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount !== undefined && expense.taxAmount !== null ? expense.taxAmount : (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || (expense.baseAmount ? expense.amount : 0) || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
 
-  const baseAmtFormatted = convertToBengaliNumber(baseAmt.toFixed(2));
-  const calcVatFormatted = convertToBengaliNumber(calcVat.toFixed(2));
-  const calcTaxFormatted = convertToBengaliNumber(calcTax.toFixed(2));
-  const currentBillFormatted = convertToBengaliNumber(currentBill.toFixed(2));
+  const baseAmtFormatted = convertToBengaliNumber(Math.round(baseAmt).toLocaleString("en-IN"));
+  const calcVatFormatted = convertToBengaliNumber(calcVat.toLocaleString("en-IN"));
+  const calcTaxFormatted = convertToBengaliNumber(calcTax.toLocaleString("en-IN"));
+  const currentBillFormatted = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
 
   const categoryCode = _category?.code || "১৩৩/২৬";
   const vehicleModel = expense.vehicleModel || "Toyota Land Cruiser Prado";
@@ -1590,9 +1754,9 @@ export function generateMotorFuelForwardingHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount !== undefined ? expense.vatAmount : (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount !== undefined ? expense.taxAmount : (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount !== undefined && expense.vatAmount !== null ? expense.vatAmount : (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount !== undefined && expense.taxAmount !== null ? expense.taxAmount : (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || (expense.baseAmount ? expense.amount : 0) || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
 
   const vehicleModel = expense.vehicleModel || "জীপ";
@@ -1970,15 +2134,15 @@ export function generateMotorVehicleForwardingHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount !== undefined ? expense.vatAmount : (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount !== undefined ? expense.taxAmount : (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount !== undefined && expense.vatAmount !== null ? expense.vatAmount : (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount !== undefined && expense.taxAmount !== null ? expense.taxAmount : (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || (expense.baseAmount ? expense.amount : 0) || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
 
-  const baseAmtFormatted = convertToBengaliNumber(baseAmt.toFixed(2));
-  const calcVatFormatted = convertToBengaliNumber(calcVat.toFixed(2));
-  const calcTaxFormatted = convertToBengaliNumber(calcTax.toFixed(2));
-  const currentBillFormatted = convertToBengaliNumber(currentBill.toFixed(2));
+  const baseAmtFormatted = convertToBengaliNumber(Math.round(baseAmt).toLocaleString("en-IN"));
+  const calcVatFormatted = convertToBengaliNumber(calcVat.toLocaleString("en-IN"));
+  const calcTaxFormatted = convertToBengaliNumber(calcTax.toLocaleString("en-IN"));
+  const currentBillFormatted = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
 
   const categoryCode = _category?.code || "১৩৩/২৬ (এ)";
   const applicantName = expense.applicant?.name || expense.applicantName || expense.driverName || "";
@@ -2154,9 +2318,9 @@ export function generateMotorFuelNoteSheetHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount !== undefined ? expense.vatAmount : (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount !== undefined ? expense.taxAmount : (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount !== undefined ? expense.vatAmount : (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount !== undefined ? expense.taxAmount : (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
 
   const vehicleModel = expense.vehicleModel || "জীপ";
@@ -2167,11 +2331,15 @@ export function generateMotorFuelNoteSheetHtml(
 
   const fuelSupplierName = expense.fuelSupplierName || expense.supplyRecipientOrgName || expense.supplierOrg1 || "মেসার্স হিল ভিউ";
   const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
+  const officeNameClean = office?.name ? office.name.replace(/আঞ্চলিক কার্যালয়,?\s*|বিকেবি,?\s*/g, "").trim() : "রাঙ্গামাটি";
+  const auditOfficeLocation = officeNameClean || "রাঙ্গামাটি";
 
-  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const spentSoFar = balanceInfo.previousExpense !== undefined
+    ? Number(balanceInfo.previousExpense || 0)
+    : Math.max(0, balanceInfo.totalSpent + balanceInfo.totalPending - currentBill);
   const safeSpentSoFar = Math.max(0, spentSoFar);
-  const spentIncludingCurrent = safeSpentSoFar + currentBill;
-  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+  const spentIncludingCurrent = Math.round(safeSpentSoFar + currentBill);
+  const remainingBalance = Math.round(balanceInfo.totalAllocated - spentIncludingCurrent);
 
   const budgetHtml = generateBudgetProvisionTableHtml(
     balanceInfo,
@@ -2261,28 +2429,40 @@ export function generateMotorFuelNoteSheetHtml(
     monthGroups[m][fType].total += lineTotal;
   });
 
-  const monthParts: string[] = [];
-  monthOrder.forEach((m, idx) => {
-    const fTypes = monthGroups[m];
+  let fuelSupplyParagraphText = "";
+  if (monthOrder.length <= 1) {
+    const m = monthOrder[0] || fuelMonthYear;
+    const fTypes = monthGroups[m] || {};
     const fTypeStrings: string[] = [];
     Object.entries(fTypes).forEach(([fType, data]) => {
       const formattedQty = convertToBengaliNumber(
         data.qty % 1 === 0 ? data.qty.toString() : data.qty.toFixed(2)
       );
-      const formattedAmt = convertToBengaliNumber(data.total.toFixed(2));
-      fTypeStrings.push(
-        `${formattedQty} লিটার ${fType} বাবদ ${formattedAmt} টাকা`
-      );
+      fTypeStrings.push(`${formattedQty} লিটার ${fType}`);
     });
 
-    const fTypeCombined = fTypeStrings.join(" এবং ");
-    const monthSuffix = idx === 0 ? "মাসের" : "মাসে";
-    monthParts.push(`${m} ${monthSuffix} ${fTypeCombined}`);
-  });
+    const fTypeSummary = fTypeStrings.length > 0
+      ? fTypeStrings.join(" ও ")
+      : (expense.fuelQuantity
+          ? `${convertToBengaliNumber(expense.fuelQuantity)} লিটার ${expense.fuelType || "অকটেন"}`
+          : `প্রয়োজনীয় ${expense.fuelType || "জ্বালানী"}`);
 
-  const monthBreakdownText = monthParts.length > 0
-    ? monthParts.join(" ও ")
-    : `${fuelMonthYear} মাসের প্রয়োজনীয় জ্বালানী`;
+    fuelSupplyParagraphText = `${fTypeSummary} সরবরাহ করতঃ ${m} মাসের খরচ বাবদ`;
+  } else {
+    const multiMonthParts: string[] = [];
+    monthOrder.forEach((m) => {
+      const fTypes = monthGroups[m];
+      const fTypeStrings: string[] = [];
+      Object.entries(fTypes).forEach(([fType, data]) => {
+        const formattedQty = convertToBengaliNumber(
+          data.qty % 1 === 0 ? data.qty.toString() : data.qty.toFixed(2)
+        );
+        fTypeStrings.push(`${formattedQty} লিটার ${fType}`);
+      });
+      multiMonthParts.push(`${m} মাসে ${fTypeStrings.join(" ও ")}`);
+    });
+    fuelSupplyParagraphText = `${multiMonthParts.join(" এবং ")} সরবরাহ করতঃ খরচ বাবদ`;
+  }
 
   const subjectMonths = monthOrder.length > 0 ? monthOrder.join(" ও ") : fuelMonthYear;
   const fuelMonthYearSubject = subjectMonths.includes("খ্রিঃ") || subjectMonths.includes("খ্রি")
@@ -2332,7 +2512,7 @@ export function generateMotorFuelNoteSheetHtml(
   </div>
   
   <p style="text-indent: 40px; margin-bottom: 12pt; text-align: justify; line-height: 1.7;">
-    অত্র কার্যালয়ের ${vehicleDisplayName} নং-${vehicleRegNo} এর ${monthBreakdownText} খরচ বাবদ ${fuelSupplierName} কর্তৃক সর্বমোট ৳=${currentBillFormatted}/-, (${amountWords}) টাকা মূল্যের নিম্ন বর্ণনা মোতাবেক একটি বিল দাখিল করা হয়।
+    অত্র কার্যালয়ের ${vehicleDisplayName} নং-${vehicleRegNo} এর ${fuelSupplyParagraphText} ${fuelSupplierName} কর্তৃক সর্বমোট ৳=${currentBillFormatted}/-, (${amountWords}) টাকা মূল্যের নিম্ন বর্ণনা মোতাবেক একটি বিল দাখিল করা হয়।
   </p>
 
   <table border="1" style="width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin: 12pt 0 14pt 0; font-size: 0.95em;">
@@ -2359,12 +2539,12 @@ export function generateMotorFuelNoteSheetHtml(
   ${budgetHtml}
 
   <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 1in; text-align: justify; line-height: 1.6;">
-    অতএব, আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
+    অতএব, ৳=${currentBillFormatted}/-, (${amountWords}) টাকা মাত্র আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, ${auditOfficeLocation} মহোদয়ের বরাবরে আর্থিক সম্মতির নিমিত্তে প্রেরণ করা যেতে পারে।
   </p>
   
   <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 1in; line-height: 1.6;">
-    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
-    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, ${auditOfficeLocation} মহোদয়ের নিকট প্রেরণ করুন।</div>
+    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, ${auditOfficeLocation} এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
   </div>
 </div>`;
@@ -2380,9 +2560,9 @@ export function generateMotorVehicleNoteSheetHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount || (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
 
   const vehicleModel = expense.vehicleModel || "Toyota Land Cruiser Prado";
@@ -2393,10 +2573,12 @@ export function generateMotorVehicleNoteSheetHtml(
 
   const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
 
-  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const spentSoFar = balanceInfo.previousExpense !== undefined
+    ? Number(balanceInfo.previousExpense || 0)
+    : Math.max(0, balanceInfo.totalSpent + balanceInfo.totalPending - currentBill);
   const safeSpentSoFar = Math.max(0, spentSoFar);
-  const spentIncludingCurrent = safeSpentSoFar + currentBill;
-  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+  const spentIncludingCurrent = Math.round(safeSpentSoFar + currentBill);
+  const remainingBalance = Math.round(balanceInfo.totalAllocated - spentIncludingCurrent);
 
   const budgetHtml = generateBudgetProvisionTableHtml(
     balanceInfo,
@@ -2468,9 +2650,9 @@ export function generateMiscNoteSheetHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount || (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
   const formattedAmount = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
 
@@ -2479,10 +2661,12 @@ export function generateMiscNoteSheetHtml(
 
   const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
 
-  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const spentSoFar = balanceInfo.previousExpense !== undefined
+    ? Number(balanceInfo.previousExpense || 0)
+    : Math.max(0, balanceInfo.totalSpent + balanceInfo.totalPending - currentBill);
   const safeSpentSoFar = Math.max(0, spentSoFar);
-  const spentIncludingCurrent = safeSpentSoFar + currentBill;
-  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+  const spentIncludingCurrent = Math.round(safeSpentSoFar + currentBill);
+  const remainingBalance = Math.round(balanceInfo.totalAllocated - spentIncludingCurrent);
 
   const budgetHtml = generateBudgetProvisionTableHtml(
     balanceInfo,
@@ -2683,6 +2867,21 @@ export function isTelephoneCategory(category: any): boolean {
   );
 }
 
+export function isElectricityCategory(category: any): boolean {
+  if (!category) return false;
+  const code = (category.code || "").trim();
+  const name = category.name || "";
+  const desc = category.description || "";
+  return (
+    category.id === "cat-19" ||
+    code.includes("133/17") ||
+    code.includes("১৩৩/১৭") ||
+    desc.includes("133/17") ||
+    desc.includes("১৩৩/১৭") ||
+    name.includes("বিদ্যুৎ")
+  );
+}
+
 export function shouldSkipAuditParagraphs(category: any): boolean {
   if (!category) return false;
   const code = (category.code || "").trim();
@@ -2742,7 +2941,9 @@ export function generateTelephoneNoteSheetHtml(
   const isUnder1500 = currentBill <= 1500 || shouldSkipAuditParagraphs(category);
   const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
 
-  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const spentSoFar = balanceInfo.previousExpense !== undefined
+    ? Number(balanceInfo.previousExpense || 0)
+    : Math.max(0, balanceInfo.totalSpent + balanceInfo.totalPending - currentBill);
   const safeSpentSoFar = Math.max(0, spentSoFar);
   const spentIncludingCurrent = safeSpentSoFar + currentBill;
   const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
@@ -2895,19 +3096,21 @@ export function generateLocalTransportNoteSheetHtml(
   const vRate = Number(expense.vatRate || 0);
   const tRate = Number(expense.taxRate || 0);
   const baseAmt = Number(expense.baseAmount || expense.amount || 0);
-  const calcVat = Number(expense.vatAmount || (baseAmt * vRate) / 100);
-  const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
-  const currentBill = Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax));
+  const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax)));
   const amountWords = numberToBengaliWords(currentBill);
   const formattedAmount = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
 
   const isUnder1500 = currentBill <= 1500 || shouldSkipAuditParagraphs(category);
   const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
 
-  const spentSoFar = balanceInfo.totalSpent + balanceInfo.totalPending - currentBill;
+  const spentSoFar = balanceInfo.previousExpense !== undefined
+    ? Number(balanceInfo.previousExpense || 0)
+    : Math.max(0, balanceInfo.totalSpent + balanceInfo.totalPending - currentBill);
   const safeSpentSoFar = Math.max(0, spentSoFar);
-  const spentIncludingCurrent = safeSpentSoFar + currentBill;
-  const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+  const spentIncludingCurrent = Math.round(safeSpentSoFar + currentBill);
+  const remainingBalance = Math.round(balanceInfo.totalAllocated - spentIncludingCurrent);
 
   const budgetHtml = generateBudgetProvisionTableHtml(
     balanceInfo,
@@ -2993,6 +3196,159 @@ export function generateLocalTransportNoteSheetHtml(
 </div>`;
 }
 
+export function generateElectricityNoteSheetHtml(
+  expense: any,
+  office: any,
+  category: any,
+  financialYear: any,
+  balanceInfo: any,
+): string {
+  const vRate = Number(expense.vatRate || 0);
+  const tRate = Number(expense.taxRate || 0);
+  const baseAmt = Number(expense.baseAmount || expense.amount || 0);
+  const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vRate) / 100));
+  const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * tRate) / 100));
+  const currentBill = Math.round(Number(expense.grossAmount || expense.amount || (baseAmt + calcVat + calcTax)));
+  const amountWords = numberToBengaliWords(currentBill);
+  const formattedAmount = convertToBengaliNumber(currentBill.toLocaleString("en-IN"));
+
+  const isUnder1500 = currentBill <= 1500 || shouldSkipAuditParagraphs(category);
+  const pageNoStr = expense.pageNo ? convertToBengaliNumber(expense.pageNo) : "৪১৯";
+
+  const spentSoFar = balanceInfo.previousExpense !== undefined
+    ? Number(balanceInfo.previousExpense || 0)
+    : Math.max(0, balanceInfo.totalSpent + balanceInfo.totalPending - currentBill);
+  const safeSpentSoFar = Math.max(0, spentSoFar);
+  const spentIncludingCurrent = Math.round(safeSpentSoFar + currentBill);
+  const remainingBalance = Math.round(balanceInfo.totalAllocated - spentIncludingCurrent);
+
+  const budgetHtml = generateBudgetProvisionTableHtml(
+    balanceInfo,
+    category,
+    financialYear,
+    currentBill,
+    safeSpentSoFar,
+    remainingBalance,
+  );
+
+  const electricityMonthYear = expense.electricityMonthYear || expense.expenseMonthYear || "নভেম্বর/২০২৫";
+  const meterNo = expense.electricityMeterNo ? convertToBengaliNumber(expense.electricityMeterNo) : "৩৪৪১২৭";
+
+  const readingFrom = expense.electricityReadingFrom ? convertToBengaliNumber(expense.electricityReadingFrom) : "৩৬৫৪৫";
+  const dateFrom = expense.electricityDateFrom ? convertToBengaliNumber(expense.electricityDateFrom) : "১৯/১০/২০২৫";
+
+  const readingTo = expense.electricityReadingTo ? convertToBengaliNumber(expense.electricityReadingTo) : "৩৬৬৮৫";
+  const dateTo = expense.electricityDateTo ? convertToBengaliNumber(expense.electricityDateTo) : "১৮/১১/২০২৫";
+
+  let unitsNum = 0;
+  if (expense.electricityTotalUnits !== undefined && expense.electricityTotalUnits !== "") {
+    unitsNum = Number(expense.electricityTotalUnits) || 0;
+  } else if (expense.electricityReadingFrom && expense.electricityReadingTo) {
+    unitsNum = Math.max(0, Number(expense.electricityReadingTo) - Number(expense.electricityReadingFrom));
+  } else {
+    unitsNum = 140;
+  }
+
+  const totalUnitsBn = convertToBengaliNumber(unitsNum);
+  const totalUnitsWordsBn = numberToBengaliWords(unitsNum);
+
+  const supplierName = (expense.supplierOrg1 || expense.fuelSupplierName || expense.applicantName || "পিডিবি").trim();
+  const cleanSupplier = supplierName || "পিডিবি";
+
+  const officeNameClean = office?.name ? String(office.name).replace(/\/[\s]*Bangladesh Krishi Bank/gi, "").trim() : "বিকএবি, আঞ্চলিক কার্যালয়, রাঙ্গামাটি";
+
+  const subjectTitle = `বিষয় : ${electricityMonthYear} মাসের বিদ্যুৎ বিল পরিশোধ প্রসঙ্গে`;
+
+  const bodyParagraph = `${cleanSupplier} কর্তৃক দাখিলকৃত ${officeNameClean} এর ${electricityMonthYear} ইং মাসের বিদ্যুৎ খরচকৃত ${totalUnitsBn}(${totalUnitsWordsBn}) ইউনিট মূল্য বাবদ ৳=${formattedAmount}/- (${amountWords}) টাকা মাত্র প্রদানাদেশ দেয়া যেতে পারে।`;
+
+  const readingTableHtml = `
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10pt; margin-bottom: 12pt; font-size: 10pt;">
+      <thead>
+        <tr style="background: #f5f5f5;">
+          <th style="border: 1pt solid #000; padding: 5pt; text-align: center; width: 25%;">মিটার নং</th>
+          <th style="border: 1pt solid #000; padding: 5pt; text-align: center; width: 25%;">তারিখে রিডিং</th>
+          <th style="border: 1pt solid #000; padding: 5pt; text-align: center; width: 25%;">তারিখে রিডিং</th>
+          <th style="border: 1pt solid #000; padding: 5pt; text-align: center; width: 25%;">মোট ইউনিট</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="border: 1pt solid #000; padding: 5pt; text-align: center;">${meterNo}</td>
+          <td style="border: 1pt solid #000; padding: 5pt; text-align: center;">${readingFrom}(${dateFrom})</td>
+          <td style="border: 1pt solid #000; padding: 5pt; text-align: center;">${readingTo}(${dateTo})</td>
+          <td style="border: 1pt solid #000; padding: 5pt; text-align: center;">${totalUnitsBn}</td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  let bottomSectionHtml = "";
+  if (isUnder1500) {
+    bottomSectionHtml = `
+  <div class="regular-signatures-single-line" style="margin-top: 25pt; margin-bottom: 0pt; display: flex; justify-content: space-between; align-items: flex-end; width: 100%;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        আঞ্চলিক ব্যবস্থাপক
+      </div>
+      <div style="font-size: 0.85em; color: #444;">
+        ${office?.name || "বাংলাদেশ কৃষি ব্যাংক"}
+      </div>
+    </div>
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>`;
+  } else {
+    bottomSectionHtml = `
+  <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+    <div style="text-align: center; min-width: 170pt; display: inline-block;">
+      <div style="height: 35pt;"></div>
+      <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+        প্রস্তুতকারী কর্মকর্তা
+      </div>
+      <div style="font-size: 0.85em; color: #444; font-family: monospace;">
+        ${expense.entryOfficer?.name || expense.entryOfficerName || "প্রশাসনিক বিভাগ"}
+      </div>
+    </div>
+  </div>
+
+  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+    আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
+  </p>
+  
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
+    <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর বিদ্যুৎ ও পানি (১৩৩/১৭) খাতে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
+    <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+  </div>`;
+  }
+
+  return `<div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; line-height: 1.6; text-align: justify;">
+  <div style="text-align: center; font-weight: bold; margin-bottom: 8pt;">
+    (পাতা-${pageNoStr})
+  </div>
+  <div style="font-weight: bold; margin-bottom: 16pt; text-align: center; text-decoration: underline;">
+    ${subjectTitle}
+  </div>
+  
+  <p style="text-indent: 40px; margin-bottom: 12pt; text-align: justify; line-height: 1.6;">
+    ${bodyParagraph}
+  </p>
+
+  ${readingTableHtml}
+
+  ${budgetHtml}
+
+  ${bottomSectionHtml}
+</div>`;
+}
+
 export function renderExpenseNoteSheetContent(
   expense: any,
   office: any,
@@ -3001,6 +3357,16 @@ export function renderExpenseNoteSheetContent(
   balanceInfo: any,
   template?: any,
 ): string {
+  if (isElectricityCategory(category)) {
+    return generateElectricityNoteSheetHtml(
+      expense,
+      office,
+      category,
+      financialYear,
+      balanceInfo,
+    );
+  }
+
   if (isFuelCategory(category)) {
     return generateMotorFuelNoteSheetHtml(
       expense,
@@ -3164,17 +3530,30 @@ export function renderExpenseNoteSheetContent(
         expense.amount ||
         0,
     );
-    const calcVat = Number(expense.vatAmount || (baseAmt * vRate) / 100);
-    const calcTax = Number(expense.taxAmount || (baseAmt * tRate) / 100);
-    const currentBillAmount = Number(
+    const calcVat = Math.round(Number(expense.vatAmount || (baseAmt * vRate) / 100));
+    const calcTax = Math.round(Number(expense.taxAmount || (baseAmt * tRate) / 100));
+    const currentBillAmount = Math.round(Number(
       expense.grossAmount || expense.amount || baseAmt + calcVat + calcTax,
-    );
+    ));
 
+    const expensesList = getSheetData("Expenses") || [];
+    const isExistingExpense =
+      expense.id && expensesList.some((e: any) => e.id === expense.id);
     const spentSoFar =
-      balanceInfo.totalSpent + balanceInfo.totalPending - currentBillAmount;
+      balanceInfo.previousExpense !== undefined
+        ? Number(balanceInfo.previousExpense || 0)
+        : isExistingExpense
+          ? Math.max(
+              0,
+              balanceInfo.totalSpent + balanceInfo.totalPending - currentBillAmount,
+            )
+          : Math.max(
+              0,
+              balanceInfo.totalSpent + balanceInfo.totalPending,
+            );
     const safeSpentSoFar = Math.max(0, spentSoFar);
-    const spentIncludingCurrent = safeSpentSoFar + currentBillAmount;
-    const remainingBalance = balanceInfo.totalAllocated - spentIncludingCurrent;
+    const spentIncludingCurrent = Math.round(safeSpentSoFar + currentBillAmount);
+    const remainingBalance = Math.round(balanceInfo.totalAllocated - spentIncludingCurrent);
     const amountWords = numberToBengaliWords(currentBillAmount);
     const amountBn = convertToBengaliNumber(
       currentBillAmount.toLocaleString("en-IN"),

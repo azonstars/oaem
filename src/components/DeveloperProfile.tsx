@@ -11,17 +11,17 @@ import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
 
 interface DeveloperProfileProps {
-  variant?: "full" | "card" | "compact";
+  className?: string;
 }
 
-export function DeveloperProfile({ variant: _variant = "full" }: DeveloperProfileProps) {
+export function DeveloperProfile({ className = "" }: DeveloperProfileProps = {}) {
   const { language } = useLanguage();
   const { theme, isCustom, isOcean } = useTheme();
   const isDark = theme === "dark";
 
   return (
     <div
-      className={`rounded-2xl border transition-all ${
+      className={`rounded-2xl border transition-all ${className} ${
         isCustom
           ? "bg-[#181230] border-[#382b61] text-purple-100 shadow-lg"
           : isOcean

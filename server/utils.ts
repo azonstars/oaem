@@ -238,29 +238,90 @@ export function isCategory134(category: any): boolean {
     str.includes("১৩৪/০২") ||
     str.includes("১৩৪/০৩") ||
     str.includes("১৩৪/০৪") ||
-    str.includes("১৩৪/০৫")
+    str.includes("১৩৪/০৫") ||
+    str.includes("আসবাবপত্র")
   );
 }
 
-export function computeExpenseAmounts(baseAmount: number, vatRate: number = 0, taxRate: number = 0) {
-  const base = Number(baseAmount) || 0;
-  const vRate = Number(vatRate) || 0;
-  const tRate = Number(taxRate) || 0;
+export function computeExpenseAmounts(
+  itemOrAmount: any,
+  vatRateInput: number = 0,
+  taxRateInput: number = 0,
+) {
+  let base = 0;
+  let vRate = 0;
+  let tRate = 0;
+  let explicitGross = 0;
+  let hasMusok = false;
+  let quotationItems: any[] | undefined = undefined;
 
-  const vatAmount = Number(((base * vRate) / 100).toFixed(2));
-  const taxAmount = Number(((base * tRate) / 100).toFixed(2));
-  const grossAmount = base;
-  const netPayable = Number((grossAmount - vatAmount - taxAmount).toFixed(2));
+  if (typeof itemOrAmount === "object" && itemOrAmount !== null) {
+    quotationItems = itemOrAmount.quotationItems;
+    hasMusok =
+      itemOrAmount.hasStockChalan === "হ্যাঁ" ||
+      (Number(itemOrAmount.taxRate) === 0 && itemOrAmount.hasStockChalan !== "না");
+    vRate = Number(itemOrAmount.vatRate ?? vatRateInput) || 0;
+    tRate = hasMusok ? 0 : (Number(itemOrAmount.taxRate ?? taxRateInput) || 0);
+
+    if (
+      itemOrAmount.baseAmount !== undefined &&
+      itemOrAmount.baseAmount !== null &&
+      Number(itemOrAmount.baseAmount) > 0
+    ) {
+      base = Number(itemOrAmount.baseAmount);
+    } else if (Array.isArray(quotationItems) && quotationItems.length > 0) {
+      const itemsSum = quotationItems.reduce(
+        (sum: number, it: any) =>
+          sum +
+          (Number(it.totalPrice) ||
+            Number(it.qty || 1) * Number(it.unitPrice || 0)),
+        0,
+      );
+      if (itemsSum > 0) {
+        base = itemsSum;
+      }
+    }
+
+    if (!base && itemOrAmount.baseAmount !== undefined && itemOrAmount.baseAmount !== null) {
+      base = Number(itemOrAmount.baseAmount) || 0;
+    }
+
+    explicitGross = Number(itemOrAmount.grossAmount || itemOrAmount.amount || 0);
+  } else {
+    base = Number(itemOrAmount) || 0;
+    vRate = Number(vatRateInput) || 0;
+    tRate = Number(taxRateInput) || 0;
+    explicitGross = base;
+  }
+
+  const vatAmount =
+    typeof itemOrAmount === "object" &&
+    itemOrAmount !== null &&
+    itemOrAmount.vatAmount !== undefined &&
+    itemOrAmount.vatAmount !== null
+      ? Math.round(Number(itemOrAmount.vatAmount))
+      : Math.round((base * vRate) / 100);
+  const taxAmount = hasMusok
+    ? 0
+    : typeof itemOrAmount === "object" &&
+        itemOrAmount !== null &&
+        itemOrAmount.taxAmount !== undefined &&
+        itemOrAmount.taxAmount !== null
+      ? Math.round(Number(itemOrAmount.taxAmount))
+      : Math.round((base * tRate) / 100);
+  const calculatedGross = Math.round(base + vatAmount + taxAmount);
+  const grossAmount = explicitGross > 0 ? explicitGross : calculatedGross;
+  const netPayable = Math.round(grossAmount - (hasMusok ? 0 : vatAmount) - taxAmount);
 
   return {
-    baseAmount: base,
+    baseAmount: base > 0 ? base : grossAmount,
     vatRate: vRate,
     vatAmount,
     taxRate: tRate,
     taxAmount,
     netPayable,
     grossAmount,
-    amount: grossAmount
+    amount: grossAmount,
   };
 }
 

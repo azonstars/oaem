@@ -581,6 +581,7 @@ sheetsList.forEach((sheet) => {
           "NoteSheets",
           "OpeningBalances",
           "PostFactoProposals",
+          "ToolDocuments",
         ].includes(sheet)
       ) {
         data = data.filter((item: any) => item.officeId === user.officeId);
@@ -706,11 +707,7 @@ sheetsList.forEach((sheet) => {
 
           let newItem = rawItem;
           if (sheet === "Expenses") {
-            const computed = computeExpenseAmounts(
-              rawItem.amount,
-              rawItem.vatRate,
-              rawItem.taxRate,
-            );
+            const computed = computeExpenseAmounts(rawItem);
             const categories = getSheetData("Categories");
             const category = categories.find(
               (c: any) => c.id === rawItem.categoryId,
@@ -1066,11 +1063,7 @@ sheetsList.forEach((sheet) => {
             }
 
             const merged = { ...data[index], ...validatedBody };
-            const computed = computeExpenseAmounts(
-              merged.amount,
-              merged.vatRate,
-              merged.taxRate,
-            );
+            const computed = computeExpenseAmounts(merged);
             updatePayload = {
               ...merged,
               ...computed,

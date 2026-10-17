@@ -24,6 +24,7 @@ import {
   Cpu,
   ArrowLeft,
   Shield,
+  Settings,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -64,7 +65,7 @@ export function Header({
   tools = [],
   onOpenHub,
   onSwitchTool,
-  onOpenSettings: _onOpenSettings,
+  onOpenSettings,
   onOpenCentralManagement,
 }: HeaderProps) {
   const { language, setLanguage, t } = useLanguage();
@@ -791,6 +792,24 @@ export function Header({
                         : "About & System Info"}
                     </span>
                   </button>
+
+                  {/* Settings Shortcut */}
+                  {onOpenSettings && (
+                    <button
+                      onClick={() => {
+                        onOpenSettings("general");
+                        setShowUserMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left hover:bg-slate-100 dark:hover:bg-slate-800 transition text-slate-700 dark:text-slate-200"
+                    >
+                      <Settings className="w-3.5 h-3.5 text-slate-500" />
+                      <span>
+                        {language === "bn"
+                          ? "সিস্টেম সেটিংস"
+                          : "System Settings"}
+                      </span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Logout Option (Uses existing functionality) */}

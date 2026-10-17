@@ -15,6 +15,7 @@ import {
   FuelExpenseItem,
   TelephoneExpenseItem,
   SystemSettings,
+  OpeningBalance,
 } from "../types";
 import {
   Receipt,
@@ -41,6 +42,10 @@ import {
   RefreshCw,
   Sparkles,
   Car,
+  Zap,
+  Search,
+  Filter,
+  RotateCcw,
 } from "lucide-react";
 import { NoteSheetPreviewModal } from "./NoteSheetPreviewModal";
 import { useLanguage } from "../i18n";
@@ -67,6 +72,7 @@ interface ExpensesViewProps {
   ) => void;
   refreshData?: () => void;
   systemSettings?: SystemSettings | null;
+  openingBalances?: OpeningBalance[];
 }
 
 export function ExpensesView({
@@ -88,6 +94,7 @@ export function ExpensesView({
   setStatusFilter: propSetStatusFilter,
   refreshData,
   systemSettings,
+  openingBalances = [],
 }: ExpensesViewProps) {
   const { t, formatCurrency, language } = useLanguage();
   const { isCustom, isDark } = useTheme();
@@ -104,6 +111,15 @@ export function ExpensesView({
   const currentStatusFilter =
     propStatusFilter !== undefined ? propStatusFilter : internalStatusFilter;
   const setStatusFilter = propSetStatusFilter || setInternalStatusFilter;
+
+  // Comprehensive Filtering States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOfficeId, setFilterOfficeId] = useState("all");
+  const [filterCategoryId, setFilterCategoryId] = useState("all");
+  const [filterExpenseType, setFilterExpenseType] = useState<string>("all");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
+  const [filterNoteSheetStatus, setFilterNoteSheetStatus] = useState<"all" | "generated" | "pending">("all");
 
   const [showModal, setShowModal] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
@@ -179,6 +195,13 @@ export function ExpensesView({
   const [fuelType, setFuelType] = useState("অকটেন");
   const [fuelSupplierName, setFuelSupplierName] = useState("মেসার্স হিল ভিউ");
   const [telephoneMonthYear, setTelephoneMonthYear] = useState("এপ্রিল/২০১৫");
+  const [electricityMonthYear, setElectricityMonthYear] = useState("নভেম্বর/২০২৫");
+  const [electricityMeterNo, setElectricityMeterNo] = useState("৩৪৪১২৭");
+  const [electricityReadingFrom, setElectricityReadingFrom] = useState("৩৬৫৪৫");
+  const [electricityDateFrom, setElectricityDateFrom] = useState("১৯/১০/২০২৫");
+  const [electricityReadingTo, setElectricityReadingTo] = useState("৩৬৬৮৫");
+  const [electricityDateTo, setElectricityDateTo] = useState("১৮/১১/২০২৫");
+  const [electricityTotalUnits, setElectricityTotalUnits] = useState("১৪০");
   const [expenseMonthYear, setExpenseMonthYear] = useState("এপ্রিল/২০১৫");
   const [telephoneItems, setTelephoneItems] = useState<TelephoneExpenseItem[]>([
     {
@@ -582,6 +605,13 @@ export function ExpensesView({
     setApplicantName("");
     setApplicantDesignation("");
     setApplicantInstitution("");
+    setElectricityMonthYear("নভেম্বর/২০২৫");
+    setElectricityMeterNo("৩৪৪১২৭");
+    setElectricityReadingFrom("৩৬৫৪৫");
+    setElectricityDateFrom("১৯/১০/২০২৫");
+    setElectricityReadingTo("৩৬৬৮৫");
+    setElectricityDateTo("১৮/১১/২০২৫");
+    setElectricityTotalUnits("১৪০");
     setSupportingDocument("");
     setUploadingDoc(false);
     setUploadError("");
@@ -609,7 +639,13 @@ export function ExpensesView({
     setEditingExpenseId(exp.id);
     setOfficeId(exp.officeId);
     setCategoryId(exp.categoryId);
-    setAmount(String(exp.amount));
+    setAmount(
+      String(
+        exp.baseAmount !== undefined && exp.baseAmount !== null
+          ? exp.baseAmount
+          : exp.amount,
+      ),
+    );
     setVoucherNo(exp.voucherNo || "");
     setVoucherDate(exp.voucherDate || new Date().toISOString().split("T")[0]);
     setExpenseDate(exp.expenseDate || new Date().toISOString().split("T")[0]);
@@ -668,6 +704,20 @@ export function ExpensesView({
     else setFuelSupplierName("মেসার্স হিল ভিউ");
     if (exp.telephoneMonthYear) setTelephoneMonthYear(exp.telephoneMonthYear);
     else setTelephoneMonthYear("এপ্রিল/২০১৫");
+    if (exp.electricityMonthYear) setElectricityMonthYear(exp.electricityMonthYear);
+    else setElectricityMonthYear("নভেম্বর/২০২৫");
+    if (exp.electricityMeterNo) setElectricityMeterNo(exp.electricityMeterNo);
+    else setElectricityMeterNo("৩৪৪১২৭");
+    if (exp.electricityReadingFrom) setElectricityReadingFrom(exp.electricityReadingFrom);
+    else setElectricityReadingFrom("৩৬৫৪৫");
+    if (exp.electricityDateFrom) setElectricityDateFrom(exp.electricityDateFrom);
+    else setElectricityDateFrom("১৯/১০/২০২৫");
+    if (exp.electricityReadingTo) setElectricityReadingTo(exp.electricityReadingTo);
+    else setElectricityReadingTo("৩৬৬৮৫");
+    if (exp.electricityDateTo) setElectricityDateTo(exp.electricityDateTo);
+    else setElectricityDateTo("১৮/১১/২০২৫");
+    if (exp.electricityTotalUnits !== undefined) setElectricityTotalUnits(String(exp.electricityTotalUnits));
+    else setElectricityTotalUnits("১৪০");
     if (exp.expenseMonthYear) setExpenseMonthYear(exp.expenseMonthYear);
     else setExpenseMonthYear("এপ্রিল/২০১৫");
 
@@ -1099,11 +1149,11 @@ export function ExpensesView({
   }, [quotationItems]);
 
   const form1VatAmount = useMemo(() => {
-    return (form1LowestBaseTotal * effectiveVatRate) / 100;
+    return Math.round((form1LowestBaseTotal * effectiveVatRate) / 100);
   }, [form1LowestBaseTotal, effectiveVatRate]);
 
   const form1TaxAmount = useMemo(() => {
-    return (form1LowestBaseTotal * effectiveTaxRate) / 100;
+    return Math.round((form1LowestBaseTotal * effectiveTaxRate) / 100);
   }, [form1LowestBaseTotal, effectiveTaxRate]);
 
   const form1GrandTotal = useMemo(() => {
@@ -1121,28 +1171,44 @@ export function ExpensesView({
   }, [form2LowestBidder, form2Items]);
 
   const form2VatAmount = useMemo(() => {
-    return (form2LowestBaseTotal * effectiveVatRate) / 100;
+    return Math.round((form2LowestBaseTotal * effectiveVatRate) / 100);
   }, [form2LowestBaseTotal, effectiveVatRate]);
 
   const form2TaxAmount = useMemo(() => {
-    return (form2LowestBaseTotal * effectiveTaxRate) / 100;
+    return Math.round((form2LowestBaseTotal * effectiveTaxRate) / 100);
   }, [form2LowestBaseTotal, effectiveTaxRate]);
 
   const form2GrandTotal = useMemo(() => {
     return form2LowestBaseTotal + form2VatAmount + form2TaxAmount;
   }, [form2LowestBaseTotal, form2VatAmount, form2TaxAmount]);
 
+  const regularBaseAmount = Number(amount) || 0;
+  const regularVatAmount = useMemo(() => {
+    return Math.round((regularBaseAmount * effectiveVatRate) / 100);
+  }, [regularBaseAmount, effectiveVatRate]);
+  const regularTaxAmount = useMemo(() => {
+    return Math.round((regularBaseAmount * effectiveTaxRate) / 100);
+  }, [regularBaseAmount, effectiveTaxRate]);
+  const regularGrandTotal = useMemo(() => {
+    return regularBaseAmount + regularVatAmount + regularTaxAmount;
+  }, [regularBaseAmount, regularVatAmount, regularTaxAmount]);
+
   const effectiveCurrentAmount = useMemo(() => {
     if (expenseType === "Quotation") {
       return quotationFormType === "Form1" ? form1GrandTotal : form2GrandTotal;
     }
-    return Number(amount) || 0;
+    return (effectiveVatRate > 0 || effectiveTaxRate > 0)
+      ? regularGrandTotal
+      : regularBaseAmount;
   }, [
     expenseType,
     quotationFormType,
     form1GrandTotal,
     form2GrandTotal,
-    amount,
+    regularGrandTotal,
+    regularBaseAmount,
+    effectiveVatRate,
+    effectiveTaxRate,
   ]);
 
   const handleForm2SupplierNameChange = (
@@ -1283,10 +1349,29 @@ export function ExpensesView({
     setForm2Items((prev) => prev.filter((_, i) => i !== itemIdx));
   };
 
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    (isHeadOffice && filterOfficeId !== "all") ||
+    filterCategoryId !== "all" ||
+    filterExpenseType !== "all" ||
+    filterStartDate !== "" ||
+    filterEndDate !== "" ||
+    filterNoteSheetStatus !== "all";
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    if (isHeadOffice) setFilterOfficeId("all");
+    setFilterCategoryId("all");
+    setFilterExpenseType("all");
+    setFilterStartDate("");
+    setFilterEndDate("");
+    setFilterNoteSheetStatus("all");
+  };
+
   const filteredExpenses = expenses.filter((e) => {
     const matchFY = e.financialYearId === selectedFY;
     const matchOffice = isHeadOffice
-      ? true
+      ? filterOfficeId === "all" || e.officeId === filterOfficeId
       : e.officeId === currentUser.officeId;
 
     let matchStatus = true;
@@ -1298,8 +1383,120 @@ export function ExpensesView({
       matchStatus = e.status === "Rejected";
     }
 
-    return matchFY && matchOffice && matchStatus;
+    if (!matchFY || !matchOffice || !matchStatus) return false;
+
+    if (filterCategoryId !== "all" && e.categoryId !== filterCategoryId) {
+      return false;
+    }
+
+    const expCat = categories.find((c) => c.id === e.categoryId);
+
+    if (filterExpenseType !== "all") {
+      if (filterExpenseType === "General") {
+        if (e.expenseType === "Quotation") return false;
+      } else if (filterExpenseType === "Fuel") {
+        const isFuel =
+          e.expenseType !== "Quotation" &&
+          (isVehicleFuelOrMaintenanceCategory(expCat) ||
+            Boolean(e.vehicleRegNo || e.vehicleModel || (e.fuelItems && e.fuelItems.length > 0)));
+        if (!isFuel) return false;
+      } else if (filterExpenseType === "Telephone") {
+        const isTel =
+          e.expenseType !== "Quotation" &&
+          (isTelephoneCategory(expCat) ||
+            Boolean(e.telephoneMonthYear || (e.telephoneItems && e.telephoneItems.length > 0)));
+        if (!isTel) return false;
+      } else if (filterExpenseType === "Electricity") {
+        const isElec =
+          e.expenseType !== "Quotation" &&
+          (isElectricityCategory(expCat) ||
+            Boolean(e.electricityMeterNo || e.electricityMonthYear));
+        if (!isElec) return false;
+      } else if (filterExpenseType === "Photocopy") {
+        const isPhoto =
+          e.expenseType !== "Quotation" &&
+          (isPhotocopyMentioned(e.description) || Number(e.photocopyQuantity) > 0);
+        if (!isPhoto) return false;
+      } else if (filterExpenseType === "Quotation-Form1") {
+        if (e.expenseType !== "Quotation" || (e.quotationFormType && e.quotationFormType !== "Form1")) {
+          return false;
+        }
+      } else if (filterExpenseType === "Quotation-Form2") {
+        if (e.expenseType !== "Quotation" || e.quotationFormType !== "Form2") {
+          return false;
+        }
+      }
+    }
+
+    const expDate = e.expenseDate || e.voucherDate || "";
+    if (filterStartDate && expDate && expDate < filterStartDate) {
+      return false;
+    }
+    if (filterEndDate && expDate && expDate > filterEndDate) {
+      return false;
+    }
+
+    if (filterNoteSheetStatus === "generated" && !e.noteSheetId) {
+      return false;
+    }
+    if (filterNoteSheetStatus === "pending" && e.noteSheetId) {
+      return false;
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const catName = (expCat?.name || "").toLowerCase();
+      const catCode = (expCat?.code || "").toLowerCase();
+      const catHead = (expCat?.budgetHead || "").toLowerCase();
+      const off = offices.find((o) => o.id === e.officeId);
+      const offName = (off?.name || "").toLowerCase();
+      const offCode = (off?.code || "").toLowerCase();
+      const voucher = (e.voucherNo || "").toLowerCase();
+      const desc = (e.description || "").toLowerCase();
+      const applicantName = (e.applicant?.name || "").toLowerCase();
+      const applicantDesig = (e.applicant?.designation || "").toLowerCase();
+      const applicantInst = (e.applicant?.institutionName || "").toLowerCase();
+      const entryOfficer = (e.entryOfficer?.name || "").toLowerCase();
+      const amountStr = String(e.amount || "");
+      const supplier1 = (e.supplierOrg1 || "").toLowerCase();
+      const supplier2 = (e.supplierOrg2 || "").toLowerCase();
+      const supplier3 = (e.supplierOrg3 || "").toLowerCase();
+      const vehicleNo = (e.vehicleRegNo || e.vehicleModel || "").toLowerCase();
+      const fuelSlip = (e.fuelMonthYear || e.fuelSupplierName || "").toLowerCase();
+      const telBill = (e.telephoneMonthYear || "").toLowerCase();
+      const elecMeter = (e.electricityMeterNo || e.electricityMonthYear || "").toLowerCase();
+
+      const matches =
+        voucher.includes(q) ||
+        desc.includes(q) ||
+        catName.includes(q) ||
+        catCode.includes(q) ||
+        catHead.includes(q) ||
+        offName.includes(q) ||
+        offCode.includes(q) ||
+        applicantName.includes(q) ||
+        applicantDesig.includes(q) ||
+        applicantInst.includes(q) ||
+        entryOfficer.includes(q) ||
+        amountStr.includes(q) ||
+        supplier1.includes(q) ||
+        supplier2.includes(q) ||
+        supplier3.includes(q) ||
+        vehicleNo.includes(q) ||
+        fuelSlip.includes(q) ||
+        telBill.includes(q) ||
+        elecMeter.includes(q);
+
+      if (!matches) return false;
+    }
+
+    return true;
   });
+
+  const filteredExpensesTotalAmount = filteredExpenses.reduce(
+    (sum, e) => sum + Number(e.amount || 0),
+    0,
+  );
 
   const editingExpenseObj = editingExpenseId
     ? expenses.find((e) => e.id === editingExpenseId)
@@ -1368,6 +1565,48 @@ export function ExpensesView({
     );
   };
 
+  const isElectricityCategory = (cat?: { id?: string; code?: string; name?: string; description?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    const name = cat.name || "";
+    const desc = cat.description || "";
+    return (
+      cat.id === "cat-19" ||
+      code.includes("133/17") ||
+      code.includes("১৩৩/১৭") ||
+      desc.includes("133/17") ||
+      desc.includes("১৩৩/১৭") ||
+      name.includes("বিদ্যুৎ")
+    );
+  };
+
+  const isMiscCategory = (cat?: { id?: string; code?: string; name?: string; description?: string } | null) => {
+    if (!cat) return false;
+    const code = (cat.code || "").trim();
+    const name = cat.name || "";
+    const desc = cat.description || "";
+    return (
+      cat.id === "cat-38" ||
+      code.includes("১৩৩/৩৬") ||
+      code.includes("133/36") ||
+      desc.includes("১৩৩/৩৬") ||
+      desc.includes("133/36") ||
+      name.includes("বিবিধ") ||
+      desc.includes("বিবিধ")
+    );
+  };
+
+  const isPhotocopyMentioned = (text?: string) => {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return (
+      lower.includes("ফটোকপি") ||
+      lower.includes("ফটোস্ট্যাট") ||
+      lower.includes("photocopy") ||
+      lower.includes("photostat")
+    );
+  };
+
   const shouldSkipAuditParagraphs = (cat?: { id?: string; code?: string; name?: string; description?: string } | null) => {
     if (!cat) return false;
     const code = (cat.code || "").trim();
@@ -1424,13 +1663,24 @@ export function ExpensesView({
       a.categoryId === categoryId,
   );
 
+  const openingProvision = (openingBalances || [])
+    .filter(
+      (ob) =>
+        ob.financialYearId === activeModalFY &&
+        ob.officeId === officeId &&
+        ob.categoryId === categoryId,
+    )
+    .reduce((sum, ob) => sum + Number(ob.amount || 0), 0);
+
   const initialBudget = categoryAllocations
     .filter((a) => a.type === "Initial" || !a.type)
     .reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
 
-  const provisionAmount = categoryAllocations
+  const adjustmentAmount = categoryAllocations
     .filter((a) => a.type === "Adjustment")
     .reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
+
+  const provisionAmount = openingProvision + adjustmentAmount;
 
   const additionalBudget = categoryAllocations
     .filter((a) => a.type === "Additional")
@@ -1603,8 +1853,8 @@ export function ExpensesView({
       (acc, item) => acc + (item.totalPrice || 0),
       0,
     );
-    const form1VatAmt = (form1BaseTotal * effectiveVatRate) / 100;
-    const form1TaxAmt = (form1BaseTotal * effectiveTaxRate) / 100;
+    const form1VatAmt = Math.round((form1BaseTotal * effectiveVatRate) / 100);
+    const form1TaxAmt = Math.round((form1BaseTotal * effectiveTaxRate) / 100);
     const form1GrandTotal = form1BaseTotal + form1VatAmt + form1TaxAmt;
 
     const effectiveAmount =
@@ -1612,7 +1862,9 @@ export function ExpensesView({
         ? form1GrandTotal
         : expenseType === "Quotation" && quotationFormType === "Form2"
           ? form2GrandTotal
-          : Number(amount);
+          : (effectiveVatRate > 0 || effectiveTaxRate > 0)
+            ? regularGrandTotal
+            : Number(amount);
 
     const finalDescription =
       expenseType === "Quotation" && quotationFormType === "Form1"
@@ -1673,26 +1925,43 @@ export function ExpensesView({
             taxRate: effectiveTaxRate,
           }))
         : expenseType === "Quotation" && quotationFormType === "Form2"
-          ? form2Items.map((item) => ({
-              itemDescription: item.itemDescription,
-              specification: "",
-              qty: item.qty,
-              unit: item.unit,
-              unitPrice: item.suppliers[0]?.unitPrice || 0,
-              totalPrice: item.suppliers[0]?.totalPrice || 0,
-              vatRate: effectiveVatRate,
-              taxRate: effectiveTaxRate,
-              remarks: item.suppliers[0]?.remarks || "সর্বনিম্ন দরদাতা",
-              suppliers: item.suppliers.map((s) => ({
-                nameAndAddress: s.orgName,
-                unitPrice: s.unitPrice,
-                qty: s.qty,
-                totalPrice: s.totalPrice,
+          ? form2Items.map((item) => {
+              const lowestSupplier =
+                item.suppliers.find(
+                  (s) =>
+                    s.remarks === "সর্বনিম্ন দরদাতা" ||
+                    s.remarks?.includes("সর্বনিম্ন"),
+                ) ||
+                (form2LowestBidder.index >= 1 &&
+                form2LowestBidder.index <= item.suppliers.length
+                  ? item.suppliers[form2LowestBidder.index - 1]
+                  : undefined) ||
+                item.suppliers[0];
+              const supUnitPrice = Number(lowestSupplier?.unitPrice || 0);
+              const supTotalPrice =
+                Number(lowestSupplier?.totalPrice) ||
+                supUnitPrice * Number(item.qty || 1);
+              return {
+                itemDescription: item.itemDescription,
+                specification: "",
+                qty: item.qty,
+                unit: item.unit,
+                unitPrice: supUnitPrice,
+                totalPrice: supTotalPrice,
                 vatRate: effectiveVatRate,
                 taxRate: effectiveTaxRate,
-                remarks: s.remarks,
-              })),
-            }))
+                remarks: "সর্বনিম্ন দরদাতা",
+                suppliers: item.suppliers.map((s) => ({
+                  nameAndAddress: s.orgName,
+                  unitPrice: s.unitPrice,
+                  qty: s.qty,
+                  totalPrice: s.totalPrice,
+                  vatRate: effectiveVatRate,
+                  taxRate: effectiveTaxRate,
+                  remarks: s.remarks,
+                })),
+              };
+            })
           : undefined;
 
     const quotationPayload =
@@ -1708,17 +1977,20 @@ export function ExpensesView({
             taxRate: effectiveTaxRate,
             taxAmount:
               quotationFormType === "Form1" ? form1TaxAmt : form2TaxAmount,
+            grossAmount:
+              quotationFormType === "Form1" ? form1GrandTotal : form2GrandTotal,
             hasStockChalan: hasStockChalan,
             vatChalanNo: hasStockChalan === "হ্যাঁ" ? vatChalanNo : undefined,
             vatChalanDate:
               hasStockChalan === "হ্যাঁ" ? vatChalanDate : undefined,
           }
         : {
-            baseAmount: undefined,
+            baseAmount: regularBaseAmount > 0 ? regularBaseAmount : undefined,
             vatRate: vatRate ? Number(vatRate) : undefined,
-            vatAmount: undefined,
+            vatAmount: (effectiveVatRate > 0 || vatRate) ? regularVatAmount : undefined,
             taxRate: effectiveTaxRate,
-            taxAmount: undefined,
+            taxAmount: (effectiveTaxRate > 0 || taxRate) ? regularTaxAmount : undefined,
+            grossAmount: (effectiveVatRate > 0 || effectiveTaxRate > 0) ? regularGrandTotal : regularBaseAmount,
             hasStockChalan: undefined,
             vatChalanNo: undefined,
             vatChalanDate: undefined,
@@ -1733,7 +2005,19 @@ export function ExpensesView({
     const isFuelOrMaint = isVehicleFuelOrMaintenanceCategory(selectedCatObj);
     const isFuel = isVehicleFuelCategory(selectedCatObj);
     const isTel = isTelephoneCategory(selectedCatObj);
+    const isElec = isElectricityCategory(selectedCatObj);
     const isSpecialMonthCat = shouldSkipAuditParagraphs(selectedCatObj);
+    const electricityPayload = isElec
+      ? {
+          electricityMonthYear,
+          electricityMeterNo,
+          electricityReadingFrom,
+          electricityDateFrom,
+          electricityReadingTo,
+          electricityDateTo,
+          electricityTotalUnits,
+        }
+      : {};
     const motorPayload = is133Series
       ? {
           vehicleModel: isFuelOrMaint ? vehicleModel : undefined,
@@ -1745,9 +2029,17 @@ export function ExpensesView({
           fuelItems: isFuel ? fuelItems : undefined,
           telephoneMonthYear: isTel ? telephoneMonthYear : undefined,
           telephoneItems: isTel ? telephoneItems : undefined,
-          expenseMonthYear: isSpecialMonthCat && !isTel ? expenseMonthYear : undefined,
+          expenseMonthYear: isSpecialMonthCat && !isTel && !isElec ? expenseMonthYear : undefined,
+          ...electricityPayload,
         }
-      : (shouldSkipAuditParagraphs(selectedCatObj) ? { expenseMonthYear } : {});
+      : (shouldSkipAuditParagraphs(selectedCatObj) ? { expenseMonthYear, ...electricityPayload } : { ...electricityPayload });
+
+    const isMiscCat = isMiscCategory(selectedCatObj);
+    const hasPhotocopy = isPhotocopyMentioned(finalDescription);
+    const validPhotocopyQuantity =
+      isMiscCat && hasPhotocopy && photocopyQuantity ? Number(photocopyQuantity) : undefined;
+    const validPhotocopyUnitRate =
+      isMiscCat && hasPhotocopy && photocopyUnitRate ? Number(photocopyUnitRate) : undefined;
 
     if (isSaving) return;
     setIsSaving(true);
@@ -1768,8 +2060,8 @@ export function ExpensesView({
           voucherNo: voucherNo.trim(),
           voucherDate,
           description: finalDescription,
-          photocopyQuantity: photocopyQuantity ? Number(photocopyQuantity) : undefined,
-          photocopyUnitRate: photocopyUnitRate ? Number(photocopyUnitRate) : undefined,
+          photocopyQuantity: validPhotocopyQuantity,
+          photocopyUnitRate: validPhotocopyUnitRate,
           supportingDocument: supportingDocument || "",
           applicant,
           entryOfficer,
@@ -1835,8 +2127,8 @@ export function ExpensesView({
           voucherNo: voucherNo.trim(),
           voucherDate,
           description: finalDescription,
-          photocopyQuantity: photocopyQuantity ? Number(photocopyQuantity) : undefined,
-          photocopyUnitRate: photocopyUnitRate ? Number(photocopyUnitRate) : undefined,
+          photocopyQuantity: validPhotocopyQuantity,
+          photocopyUnitRate: validPhotocopyUnitRate,
           remarks: "",
           supportingDocument: supportingDocument || "",
           applicant,
@@ -1982,7 +2274,7 @@ export function ExpensesView({
           const count = expenses.filter((e) => {
             const matchFY = e.financialYearId === selectedFY;
             const matchOffice = isHeadOffice
-              ? true
+              ? filterOfficeId === "all" || e.officeId === filterOfficeId
               : e.officeId === currentUser.officeId;
             if (!matchFY || !matchOffice) return false;
             if (st === "All") return true;
@@ -2040,6 +2332,251 @@ export function ExpensesView({
             </button>
           );
         })}
+      </div>
+
+      {/* Expenses Filter Bar */}
+      <div
+        className={`p-4 rounded-2xl border space-y-3 shadow-sm ${
+          isCustom
+            ? "bg-[#18122d] border-[#382b61]"
+            : isDark
+              ? "bg-slate-850 border-slate-800"
+              : "bg-white border-slate-200"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-emerald-500" />
+            <h4
+              className={`text-xs font-bold uppercase tracking-wider ${
+                isCustom ? "text-purple-200" : isDark ? "text-slate-200" : "text-slate-800"
+              }`}
+            >
+              {language === "bn"
+                ? "ব্যয় ভাউচার ও সাব-এন্ট্রি ফিল্টারিং ও অনুসন্ধান"
+                : "Expense Vouchers & Sub-Entries Filter & Search"}
+            </h4>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
+                isCustom
+                  ? "bg-[#251d45] text-amber-300 border border-[#3e2e6c]"
+                  : isDark
+                    ? "bg-slate-800 text-slate-300 border border-slate-700"
+                    : "bg-slate-100 text-slate-600 border border-slate-200"
+              }`}
+            >
+              {language === "bn"
+                ? `প্রদর্শিত হচ্ছে: ${filteredExpenses.length} টি ব্যয়`
+                : `Showing: ${filteredExpenses.length} expenses`}
+            </span>
+            <span
+              className={`text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold ${
+                isCustom
+                  ? "bg-amber-400/15 text-amber-300 border border-amber-400/30"
+                  : isDark
+                    ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                    : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+              }`}
+            >
+              {language === "bn" ? "মোট টাকা: " : "Total: "}
+              {formatCurrency(filteredExpensesTotalAmount)}
+            </span>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-xs px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition flex items-center gap-1 font-medium"
+              >
+                <RotateCcw className="w-3 h-3" />
+                {language === "bn" ? "ফিল্টার রিসেট" : "Reset Filters"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Search Box */}
+          <div className="lg:col-span-2 relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                language === "bn"
+                  ? "ভাউচার, কর্মকর্তা, প্রতিষ্ঠান, বিবরণ বা গাড়ী/মিটার দিয়ে খুঁজুন..."
+                  : "Search voucher, applicant, desc, supplier, vehicle..."
+              }
+              className={`w-full pl-8 pr-8 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                    : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
+              }`}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Office Filter (if HO) */}
+          {isHeadOffice && (
+            <div>
+              <select
+                value={filterOfficeId}
+                onChange={(e) => setFilterOfficeId(e.target.value)}
+                className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  isCustom
+                    ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                    : isDark
+                      ? "bg-slate-900 border-slate-700 text-slate-100"
+                      : "bg-slate-50 border-slate-200 text-slate-900"
+                }`}
+              >
+                <option value="all">
+                  {language === "bn" ? "সকল কার্যালয় / শাখা" : "All Offices"}
+                </option>
+                {offices.map((off) => (
+                  <option key={off.id} value={off.id}>
+                    {off.name} ({off.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category Filter */}
+          <div className={!isHeadOffice ? "lg:col-span-2" : ""}>
+            <select
+              value={filterCategoryId}
+              onChange={(e) => setFilterCategoryId(e.target.value)}
+              className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            >
+              <option value="all">
+                {language === "bn" ? "সকল হিসাবের খাত" : "All Categories"}
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.budgetHead ? `[${c.budgetHead}] ` : ""}
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sub-entry & Expense Type Filter */}
+          <div className="lg:col-span-2">
+            <select
+              value={filterExpenseType}
+              onChange={(e) => setFilterExpenseType(e.target.value)}
+              className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            >
+              <option value="all">
+                {language === "bn" ? "সকল ব্যয়ের ধরন ও সাব-এন্ট্রি" : "All Expense Types & Sub-Entries"}
+              </option>
+              <option value="General">
+                {language === "bn" ? "সাধারণ ও নিয়মিত ব্যয় (সকল)" : "General & Regular Expenses"}
+              </option>
+              <option value="Fuel">
+                {language === "bn" ? "🚗 গাড়ীর জ্বালানী ও মেরামত সাব-এন্ট্রি" : "🚗 Vehicle Fuel & Maintenance"}
+              </option>
+              <option value="Telephone">
+                {language === "bn" ? "☎️ টেলিফোন / ইন্টারনেট বিল সাব-এন্ট্রি" : "☎️ Telephone & Internet Bill"}
+              </option>
+              <option value="Electricity">
+                {language === "bn" ? "⚡ বিদ্যুৎ বিল সাব-এন্ট্রি" : "⚡ Electricity Bill"}
+              </option>
+              <option value="Photocopy">
+                {language === "bn" ? "📄 ফটোকপি সংক্রান্ত সাব-এন্ট্রি" : "📄 Photocopy Expense"}
+              </option>
+              <option value="Quotation-Form1">
+                {language === "bn" ? "📋 কোটেশন - ফর্ম-১ স্টাইল" : "📋 Quotation - Form 1 Style"}
+              </option>
+              <option value="Quotation-Form2">
+                {language === "bn" ? "📊 কোটেশন - ফর্ম-২ স্টাইল (৩ দরদাতা)" : "📊 Quotation - Form 2 Style (3 Bidders)"}
+              </option>
+            </select>
+          </div>
+
+          {/* NoteSheet Status Filter */}
+          <div>
+            <select
+              value={filterNoteSheetStatus}
+              onChange={(e) => setFilterNoteSheetStatus(e.target.value as any)}
+              className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            >
+              <option value="all">
+                {language === "bn" ? "সকল নোটশিট অবস্থা" : "All NoteSheets"}
+              </option>
+              <option value="generated">
+                {language === "bn" ? "✅ নোটশিট তৈরি হয়েছে" : "NoteSheet Generated"}
+              </option>
+              <option value="pending">
+                {language === "bn" ? "⏳ নোটশিট তৈরি বাকি" : "NoteSheet Pending"}
+              </option>
+            </select>
+          </div>
+
+          {/* Date Range */}
+          <div>
+            <input
+              type="date"
+              value={filterStartDate}
+              onChange={(e) => setFilterStartDate(e.target.value)}
+              title={language === "bn" ? "শুরুর তারিখ (হতে)" : "Start Date"}
+              className={`w-full px-2 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              value={filterEndDate}
+              onChange={(e) => setFilterEndDate(e.target.value)}
+              title={language === "bn" ? "শেষ তারিখ (পর্যন্ত)" : "End Date"}
+              className={`w-full px-2 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Expenses Table */}
@@ -3632,6 +4169,219 @@ export function ExpensesView({
                     )}
                   </div>
                 )}
+                {/* Photocopy Details (Optional) - Only displayed for Miscellaneous category when description mentions photocopy */}
+                {expenseType !== "Quotation" &&
+                  isMiscCategory(currentCategory) &&
+                  (isPhotocopyMentioned(description) ||
+                    (editingExpenseId && Boolean(Number(photocopyQuantity) > 0))) && (
+                  <div
+                    className={`p-3.5 rounded-xl border space-y-3 ${
+                      isCustom
+                        ? "bg-[#18122d] border-[#382b61]"
+                        : isDark
+                          ? "bg-slate-800/60 border-slate-700"
+                          : "bg-emerald-50/50 border-emerald-100"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <label
+                        className={`text-xs font-bold uppercase tracking-wider ${
+                          isCustom
+                            ? "text-purple-300"
+                            : isDark
+                              ? "text-emerald-400"
+                              : "text-emerald-700"
+                        }`}
+                      >
+                        ফটোকপির বিস্তারিত তথ্য (ঐচ্ছিক)
+                      </label>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        ফটোকপি খরচে কপি সংখ্যা ও দর স্বয়ংক্রিয়ভাবে নোটে যুক্ত হবে
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label
+                          className={`block text-xs font-semibold mb-1 ${
+                            isCustom
+                              ? "text-purple-200"
+                              : isDark
+                                ? "text-slate-300"
+                                : "text-slate-700"
+                          }`}
+                        >
+                          ফটোকপির সংখ্যা (কপি)
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={photocopyQuantity}
+                          onChange={(e) => setPhotocopyQuantity(e.target.value)}
+                          placeholder="যেমন: ৩৫০"
+                          className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-xs ${
+                            isCustom
+                              ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                                : "bg-white border-slate-300 text-slate-900"
+                          }`}
+                        />
+                      </div>
+                      <div>
+                        <label
+                          className={`block text-xs font-semibold mb-1 ${
+                            isCustom
+                              ? "text-purple-200"
+                              : isDark
+                                ? "text-slate-300"
+                                : "text-slate-700"
+                          }`}
+                        >
+                          প্রতি কপি দর / মূল্য (টাকা)
+                        </label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          value={photocopyUnitRate}
+                          onChange={(e) => setPhotocopyUnitRate(e.target.value)}
+                          placeholder="যেমন: ২.০০"
+                          className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-xs ${
+                            isCustom
+                              ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
+                              : isDark
+                                ? "bg-slate-850 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                                : "bg-white border-slate-300 text-slate-900"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Electricity 133/17 Specific Fields */}
+                {expenseType !== "Quotation" && currentCategory && isElectricityCategory(currentCategory) && (
+                  <div className="p-4 rounded-xl border border-amber-300/60 bg-amber-50/70 dark:bg-amber-950/30 dark:border-amber-700/50 space-y-3">
+                    <div className="flex items-center gap-2 text-amber-900 dark:text-amber-200 font-bold text-sm border-b border-amber-200 dark:border-amber-800/60 pb-2">
+                      <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span>বিদ্যুৎ বিলের বিবরণী (১৩৩/১৭)</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          মাসের নাম (মাসের নাম ও বছর) *
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityMonthYear}
+                          onChange={(e) => setElectricityMonthYear(e.target.value)}
+                          placeholder="যেমন: নভেম্বর/২০২৫"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          মিটার নং *
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityMeterNo}
+                          onChange={(e) => setElectricityMeterNo(e.target.value)}
+                          placeholder="যেমন: ৩৪৪১২৭"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          মোট ইউনিট (অটো হিসাবকৃত / কাস্টম)
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityTotalUnits}
+                          onChange={(e) => setElectricityTotalUnits(e.target.value)}
+                          placeholder="যেমন: ১৪০"
+                          className="w-full px-3 py-2 text-xs font-bold text-amber-900 dark:text-amber-200 rounded-xl border border-amber-400 dark:border-amber-600 bg-amber-100/50 dark:bg-amber-900/40 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          পূর্বে তারিখে রিডিং (হতে - রিডিং)
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityReadingFrom}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setElectricityReadingFrom(val);
+                            if (electricityReadingTo && val) {
+                              const rTo = Number(electricityReadingTo);
+                              const rFrom = Number(val);
+                              if (!isNaN(rTo) && !isNaN(rFrom) && rTo >= rFrom) {
+                                setElectricityTotalUnits(String(rTo - rFrom));
+                              }
+                            }
+                          }}
+                          placeholder="যেমন: ৩৬৫৪৫"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          পূর্বে তারিখ (হতে - তারিখ)
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityDateFrom}
+                          onChange={(e) => setElectricityDateFrom(e.target.value)}
+                          placeholder="যেমন: ১৯/১০/২০২৫"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          বর্তমান তারিখে রিডিং (পর্যন্ত - রিডিং)
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityReadingTo}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setElectricityReadingTo(val);
+                            if (electricityReadingFrom && val) {
+                              const rTo = Number(val);
+                              const rFrom = Number(electricityReadingFrom);
+                              if (!isNaN(rTo) && !isNaN(rFrom) && rTo >= rFrom) {
+                                setElectricityTotalUnits(String(rTo - rFrom));
+                              }
+                            }
+                          }}
+                          placeholder="যেমন: ৩৬৬৮৫"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          বর্তমান তারিখ (পর্যন্ত - তারিখ)
+                        </label>
+                        <input
+                          type="text"
+                          value={electricityDateTo}
+                          onChange={(e) => setElectricityDateTo(e.target.value)}
+                          placeholder="যেমন: ১৮/১১/২০২৫"
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -3752,6 +4502,38 @@ export function ExpensesView({
                         : "ℹ️ Auto-calculated from item details below."}
                     </p>
                   )}
+                  {expenseType !== "Quotation" && (effectiveVatRate > 0 || effectiveTaxRate > 0) && regularBaseAmount > 0 && (
+                    <div
+                      className={`mt-2.5 p-2.5 rounded-xl border text-xs space-y-1 ${
+                        isCustom
+                          ? "bg-[#18122d] border-[#382b61] text-purple-200"
+                          : isDark
+                            ? "bg-slate-800/80 border-slate-700 text-slate-300"
+                            : "bg-emerald-50/60 border-emerald-200 text-slate-700"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center opacity-85">
+                        <span>{language === "bn" ? "মূল পরিমাণ (Base Amount):" : "Base Amount:"}</span>
+                        <span className="font-mono font-medium">{formatCurrency(regularBaseAmount)}</span>
+                      </div>
+                      {effectiveVatRate > 0 && (
+                        <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                          <span>{language === "bn" ? `ভ্যাট (${effectiveVatRate}%):` : `VAT (${effectiveVatRate}%):`}</span>
+                          <span className="font-mono font-medium">+ {formatCurrency(regularVatAmount)}</span>
+                        </div>
+                      )}
+                      {effectiveTaxRate > 0 && (
+                        <div className="flex justify-between items-center text-blue-600 dark:text-blue-400">
+                          <span>{language === "bn" ? `ট্যাক্স (${effectiveTaxRate}%):` : `Tax (${effectiveTaxRate}%):`}</span>
+                          <span className="font-mono font-medium">+ {formatCurrency(regularTaxAmount)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center font-bold pt-1 border-t border-slate-200 dark:border-slate-700 text-emerald-800 dark:text-emerald-300">
+                        <span>{language === "bn" ? "সর্বমোট প্রদেয় (Grand Total):" : "Grand Total:"}</span>
+                        <span className="font-mono font-bold">{formatCurrency(regularGrandTotal)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Available Balance Preview */}
@@ -3776,15 +4558,28 @@ export function ExpensesView({
                           {formatCurrency(initialBudget)}
                         </span>
                       </div>
-                      {provisionAmount > 0 && (
+                      {openingProvision > 0 && (
                         <div className="flex justify-between items-center text-amber-500 dark:text-amber-400">
                           <span>
                             {language === "bn"
-                              ? "প্রভিশন / সমন্বয়:"
-                              : "Provision / Adjustment:"}
+                              ? "প্রারম্ভিক প্রভিশন (পূর্বের অর্থবছর):"
+                              : "Opening Provision (Prior FY):"}
                           </span>
                           <span className="font-mono font-medium">
-                            + {formatCurrency(provisionAmount)}
+                            + {formatCurrency(openingProvision)}
+                          </span>
+                        </div>
+                      )}
+                      {adjustmentAmount !== 0 && (
+                        <div className="flex justify-between items-center text-amber-500/80 dark:text-amber-400/80">
+                          <span>
+                            {language === "bn"
+                              ? "সমন্বয় / প্রভিশন স্থানান্তর:"
+                              : "Adjustment / Transfer:"}
+                          </span>
+                          <span className="font-mono font-medium">
+                            {adjustmentAmount > 0 ? "+" : ""}
+                            {formatCurrency(adjustmentAmount)}
                           </span>
                         </div>
                       )}
@@ -5027,14 +5822,7 @@ export function ExpensesView({
                             : `VAT Amount (${effectiveVatRate}%):`}
                         </span>
                         <span>
-                          {formatCurrency(
-                            (quotationItems.reduce(
-                              (acc, item) => acc + (item.totalPrice || 0),
-                              0,
-                            ) *
-                              effectiveVatRate) /
-                              100,
-                          )}
+                          {formatCurrency(form1VatAmount)}
                         </span>
                       </div>
                       <div
@@ -5051,14 +5839,7 @@ export function ExpensesView({
                           )}
                         </span>
                         <span>
-                          {formatCurrency(
-                            (quotationItems.reduce(
-                              (acc, item) => acc + (item.totalPrice || 0),
-                              0,
-                            ) *
-                              effectiveTaxRate) /
-                              100,
-                          )}
+                          {formatCurrency(form1TaxAmount)}
                         </span>
                       </div>
                       <div
@@ -5076,18 +5857,7 @@ export function ExpensesView({
                             : "Grand Total:"}
                         </span>
                         <span className="font-mono">
-                          {formatCurrency(
-                            quotationItems.reduce(
-                              (acc, item) => acc + (item.totalPrice || 0),
-                              0,
-                            ) +
-                              (quotationItems.reduce(
-                                (acc, item) => acc + (item.totalPrice || 0),
-                                0,
-                              ) *
-                                (effectiveVatRate + effectiveTaxRate)) /
-                                100,
-                          )}
+                          {formatCurrency(form1GrandTotal)}
                         </span>
                       </div>
                     </div>
@@ -5666,7 +6436,7 @@ export function ExpensesView({
                             : "Lowest Bidder Base Total"}
                           :{" "}
                           <span className="font-mono text-emerald-700 dark:text-emerald-300">
-                            ৳ {form2LowestBaseTotal.toFixed(2)}
+                            ৳ {Math.round(form2LowestBaseTotal).toLocaleString("en-IN")}
                           </span>
                         </span>
                         <span className="text-slate-400">|</span>
@@ -5674,7 +6444,7 @@ export function ExpensesView({
                           {effectiveVatRate}%{" "}
                           {language === "bn" ? "ভ্যাট" : "VAT"}:{" "}
                           <span className="font-mono text-emerald-700 dark:text-emerald-300">
-                            ৳ {form2VatAmount.toFixed(2)}
+                            ৳ {Math.round(form2VatAmount).toLocaleString("en-IN")}
                           </span>
                         </span>
                         <span className="text-slate-400">|</span>
@@ -5686,7 +6456,7 @@ export function ExpensesView({
                             : ""}
                           :{" "}
                           <span className="font-mono text-emerald-700 dark:text-emerald-300">
-                            ৳ {form2TaxAmount.toFixed(2)}
+                            ৳ {Math.round(form2TaxAmount).toLocaleString("en-IN")}
                           </span>
                         </span>
                       </div>
@@ -5697,7 +6467,7 @@ export function ExpensesView({
                             : "Grand Total"}
                           :{" "}
                           <span className="font-mono text-base text-emerald-800 dark:text-emerald-300 font-extrabold">
-                            ৳ {form2GrandTotal.toFixed(2)}
+                            ৳ {Math.round(form2GrandTotal).toLocaleString("en-IN")}
                           </span>
                         </span>
                       </div>
@@ -5859,96 +6629,8 @@ export function ExpensesView({
                       }`}
                     />
                   </div>
-
-                  {/* Photocopy Details (Optional) */}
-                  <div
-                    className={`p-3.5 rounded-xl border space-y-3 ${
-                      isCustom
-                        ? "bg-[#18122d] border-[#382b61]"
-                        : isDark
-                          ? "bg-slate-800/60 border-slate-700"
-                          : "bg-emerald-50/50 border-emerald-100"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between flex-wrap gap-1">
-                      <label
-                        className={`text-xs font-bold uppercase tracking-wider ${
-                          isCustom
-                            ? "text-purple-300"
-                            : isDark
-                              ? "text-emerald-400"
-                              : "text-emerald-700"
-                        }`}
-                      >
-                        ফটোকপির বিস্তারিত তথ্য (ঐচ্ছিক)
-                      </label>
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        ফটোকপি খরচে কপি সংখ্যা ও দর স্বয়ংক্রিয়ভাবে নোটে যুক্ত হবে
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label
-                          className={`block text-xs font-semibold mb-1 ${
-                            isCustom
-                              ? "text-purple-200"
-                              : isDark
-                                ? "text-slate-300"
-                                : "text-slate-700"
-                          }`}
-                        >
-                          ফটোকপির সংখ্যা (কপি)
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={photocopyQuantity}
-                          onChange={(e) => setPhotocopyQuantity(e.target.value)}
-                          placeholder="যেমন: ৩৫০"
-                          className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-xs ${
-                            isCustom
-                              ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
-                              : isDark
-                                ? "bg-slate-850 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                                : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          className={`block text-xs font-semibold mb-1 ${
-                            isCustom
-                              ? "text-purple-200"
-                              : isDark
-                                ? "text-slate-300"
-                                : "text-slate-700"
-                          }`}
-                        >
-                          প্রতি কপি দর / মূল্য (টাকা)
-                        </label>
-                        <input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          value={photocopyUnitRate}
-                          onChange={(e) => setPhotocopyUnitRate(e.target.value)}
-                          placeholder="যেমন: ২.০০"
-                          className={`w-full px-3 py-2 border rounded-xl focus:outline-none text-xs ${
-                            isCustom
-                              ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
-                              : isDark
-                                ? "bg-slate-850 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                                : "bg-white border-slate-300 text-slate-900"
-                          }`}
-                        />
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
-
-              {/* Supporting Document Upload */}
               <div
                 className={`p-4 rounded-xl border space-y-2 ${
                   isCustom

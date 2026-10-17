@@ -141,8 +141,41 @@
     print-color-adjust: exact !important;
   }
 
+  /* Travel Bill Form SIF-66 print optimization */
+  body:has(#printable-tta-bill) .no-print,
+  body:has(#printable-tta-bill) .bg-slate-900 > div:first-child,
+  body:has(#printable-tta-bill) .bg-slate-50,
+  body:has(#printable-tta-bill) .bg-\[\#f8fafc\],
+  body:has(#printable-tta-bill) .bg-white.border-slate-200.rounded-2xl.p-5.mb-8 {
+    display: none !important;
+  }
+
+  body:has(#printable-tta-bill) .bg-slate-900 {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body:has(#printable-tta-bill) #printable-tta-bill {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+  }
+
+  body:has(#printable-tta-bill) .print-page {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+
+  body:has(#printable-tta-bill) .print-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
+  }
+
   @page {
-    size: auto;
+    size: legal portrait;
     margin: 10mm 12mm;
   }
 }

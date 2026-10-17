@@ -164,6 +164,13 @@ export const ExpensesSchema = z.object({
   photocopyUnitRate: z.preprocess((val) => (val !== undefined && val !== "" ? Number(val) : undefined), z.number().optional()),
   telephoneMonthYear: z.string().optional(),
   telephoneItems: z.any().optional(),
+  electricityMonthYear: z.string().optional(),
+  electricityMeterNo: z.string().optional(),
+  electricityReadingFrom: z.string().optional(),
+  electricityDateFrom: z.string().optional(),
+  electricityReadingTo: z.string().optional(),
+  electricityDateTo: z.string().optional(),
+  electricityTotalUnits: z.any().optional(),
   expenseMonthYear: z.string().optional(),
 }).strip();
 

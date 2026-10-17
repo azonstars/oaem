@@ -75,6 +75,7 @@ export async function syncNoteSheetForExpense(
     expense.financialYearId,
     expense.officeId,
     expense.categoryId,
+    expense.id,
   );
 
   const content = renderExpenseNoteSheetContent(

@@ -691,6 +691,7 @@ export default function App() {
                       setExpensesStatusFilter(filter);
                       setCurrentTab("expenses");
                     }}
+                    openingBalances={openingBalances}
                   />
                 )}
                 {currentTab === "allocations" && (
@@ -708,6 +709,7 @@ export default function App() {
                     isHeadOffice={isHeadOffice}
                     systemSettings={systemSettings}
                     refreshData={fetchAllData}
+                    openingBalances={openingBalances}
                   />
                 )}
                 {currentTab === "postfacto-propose" && (
@@ -752,6 +754,7 @@ export default function App() {
                     setStatusFilter={setExpensesStatusFilter}
                     refreshData={fetchAllData}
                     systemSettings={systemSettings}
+                    openingBalances={openingBalances}
                   />
                 )}
                 {currentTab === "reports" && (
@@ -827,6 +830,7 @@ export default function App() {
                       currentUser={currentUser}
                       allocations={allocations}
                       expenses={expenses}
+                      openingBalances={openingBalances}
                       refreshData={fetchAllData}
                       onOpenCentralManagement={() => setActiveToolId("central-management")}
                     />

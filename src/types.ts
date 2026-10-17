@@ -527,6 +527,13 @@ export interface Expense {
   photocopyUnitRate?: number;
   telephoneMonthYear?: string;
   telephoneItems?: TelephoneExpenseItem[];
+  electricityMonthYear?: string;
+  electricityMeterNo?: string;
+  electricityReadingFrom?: string;
+  electricityDateFrom?: string;
+  electricityReadingTo?: string;
+  electricityDateTo?: string;
+  electricityTotalUnits?: number | string;
   expenseMonthYear?: string;
 }
 

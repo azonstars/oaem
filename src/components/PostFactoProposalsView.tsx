@@ -8,7 +8,6 @@ import {
   SystemSettings,
 } from "../types";
 import { useLanguage } from "../i18n";
-import { useTheme } from "../context/ThemeContext";
 import { apiFetch } from "../api";
 import {
   Plus,
@@ -20,6 +19,9 @@ import {
   Upload,
   X,
   Loader2,
+  Search,
+  Filter,
+  RotateCcw,
 } from "lucide-react";
 import { NoteSheetPreviewModal } from "./NoteSheetPreviewModal";
 
@@ -42,8 +44,7 @@ export function PostFactoProposalsView({
   selectedFY,
   systemSettings,
 }: PostFactoProposalsViewProps) {
-  const { t: _t, language, formatCurrency } = useLanguage();
-  const { isDark: _isDark, isCustom: _isCustom } = useTheme();
+  const { language, formatCurrency } = useLanguage();
 
   const isAdmin =
     currentUser.role === "Super Admin" ||
@@ -55,7 +56,6 @@ export function PostFactoProposalsView({
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [noteSheets, setNoteSheets] = useState<any[]>([]);
-  
 
   const [previewNoteSheet, setPreviewNoteSheet] = useState<any | null>(null);
   const [previewInitialTab, setPreviewInitialTab] = useState<
@@ -86,6 +86,15 @@ export function PostFactoProposalsView({
   const [sanctionStatusFilter, setSanctionStatusFilter] = useState<
     "Pending" | "Sanctioned" | "All"
   >("Pending");
+
+  // Filtering States
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterOfficeId, setFilterOfficeId] = useState("all");
+  const [filterCategoryId, setFilterCategoryId] = useState("all");
+  const [filterSanctionType, setFilterSanctionType] = useState<string>("all");
+  const [filterProposalStatus, setFilterProposalStatus] = useState<string>("all");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
 
   const fetchProposals = async () => {
     try {
@@ -293,7 +302,10 @@ export function PostFactoProposalsView({
     currentUser.role !== "Moderator"
   ) {
     filtered = filtered.filter((p) => p.officeId === currentUser.officeId);
+  } else if (filterOfficeId !== "all") {
+    filtered = filtered.filter((p) => p.officeId === filterOfficeId);
   }
+
   if (mode === "sanction") {
     if (sanctionStatusFilter === "Pending") {
       filtered = filtered.filter((p) => p.status === "Pending");
@@ -302,7 +314,107 @@ export function PostFactoProposalsView({
     }
   } else if (mode === "letters") {
     filtered = filtered.filter((p) => p.status === "Sanctioned");
+  } else if (mode === "propose") {
+    if (filterProposalStatus !== "all") {
+      filtered = filtered.filter((p) => p.status === filterProposalStatus);
+    }
   }
+
+  if (filterCategoryId !== "all") {
+    filtered = filtered.filter((p) => p.categoryId === filterCategoryId);
+  }
+
+  if (filterSanctionType !== "all") {
+    filtered = filtered.filter((p) => p.sanctionType === filterSanctionType);
+  }
+
+  if (filterStartDate) {
+    filtered = filtered.filter((p) => {
+      const dates = [
+        p.sanctionDate,
+        p.tenderDate,
+        p.workOrderDate,
+        p.letterDate,
+        (p as any).createdAt,
+      ].filter(Boolean);
+      if (dates.length === 0) return true;
+      return dates.some((d) => String(d).slice(0, 10) >= filterStartDate);
+    });
+  }
+
+  if (filterEndDate) {
+    filtered = filtered.filter((p) => {
+      const dates = [
+        p.sanctionDate,
+        p.tenderDate,
+        p.workOrderDate,
+        p.letterDate,
+        (p as any).createdAt,
+      ].filter(Boolean);
+      if (dates.length === 0) return true;
+      return dates.some((d) => String(d).slice(0, 10) <= filterEndDate);
+    });
+  }
+
+  if (searchQuery.trim()) {
+    const q = searchQuery.trim().toLowerCase();
+    filtered = filtered.filter((p) => {
+      const off = offices.find((o) => o.id === p.officeId);
+      const cat = categories.find((c) => c.id === p.categoryId);
+      const offName = (off?.name || "").toLowerCase();
+      const offCode = (off?.code || "").toLowerCase();
+      const catName = (cat?.name || "").toLowerCase();
+      const catCode = (cat?.code || "").toLowerCase();
+      const catBudgetHead = (cat?.budgetHead || "").toLowerCase();
+      const desc = (p.description || "").toLowerCase();
+      const memo = (p.sanctionMemoNo || "").toLowerCase();
+      const letterNo = (p.letterNo || "").toLowerCase();
+      const workOrderNo = (p.workOrderNo || "").toLowerCase();
+      const amountStr = String(p.totalAmount || "");
+      const biddersStr = (p.bidders || [])
+        .map((b) => `${b.name} ${b.address}`)
+        .join(" ")
+        .toLowerCase();
+
+      return (
+        desc.includes(q) ||
+        offName.includes(q) ||
+        offCode.includes(q) ||
+        catName.includes(q) ||
+        catCode.includes(q) ||
+        catBudgetHead.includes(q) ||
+        memo.includes(q) ||
+        letterNo.includes(q) ||
+        workOrderNo.includes(q) ||
+        amountStr.includes(q) ||
+        biddersStr.includes(q)
+      );
+    });
+  }
+
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    filterOfficeId !== "all" ||
+    filterCategoryId !== "all" ||
+    filterSanctionType !== "all" ||
+    (mode === "propose" && filterProposalStatus !== "all") ||
+    filterStartDate !== "" ||
+    filterEndDate !== "";
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setFilterOfficeId("all");
+    setFilterCategoryId("all");
+    setFilterSanctionType("all");
+    setFilterProposalStatus("all");
+    setFilterStartDate("");
+    setFilterEndDate("");
+  };
+
+  const totalFilteredAmount = filtered.reduce(
+    (sum, p) => sum + Number(p.totalAmount || 0),
+    0,
+  );
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "-";
@@ -460,6 +572,194 @@ export function PostFactoProposalsView({
             {language === "bn" ? "নতুন প্রস্তাব" : "New Proposal"}
           </button>
         )}
+      </div>
+
+      {/* Post-Facto Filter Bar */}
+      <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-emerald-500" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+              {mode === "propose"
+                ? language === "bn"
+                  ? "খরচোত্তর প্রস্তাব ফিল্টারিং ও অনুসন্ধান"
+                  : "Post-Facto Proposals Filter & Search"
+                : mode === "letters"
+                  ? language === "bn"
+                    ? "মঞ্জুরীপত্র ফিল্টারিং ও অনুসন্ধান"
+                    : "Sanction Letters Filter & Search"
+                  : language === "bn"
+                    ? "খরচোত্তর মঞ্জুর ফিল্টারিং ও অনুসন্ধান"
+                    : "Post-Facto Sanctions Filter & Search"}
+            </h4>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+              {language === "bn"
+                ? `প্রদর্শিত হচ্ছে: ${filtered.length} টি`
+                : `Showing: ${filtered.length}`}
+            </span>
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full font-mono font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
+              {language === "bn" ? "মোট টাকা: " : "Total: "}
+              {formatCurrency(totalFilteredAmount)}
+            </span>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-xs px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition flex items-center gap-1 font-medium"
+              >
+                <RotateCcw className="w-3 h-3" />
+                {language === "bn" ? "ফিল্টার রিসেট" : "Reset Filters"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Search Box */}
+          <div className="lg:col-span-2 relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                language === "bn"
+                  ? "বিবরণ, স্মারক, পত্র নং, কার্যাদেশ বা দরদাতা দিয়ে খুঁজুন..."
+                  : "Search desc, memo, letter, work order, bidder..."
+              }
+              className="w-full pl-8 pr-8 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Office Filter (for Admin / HO) */}
+          {(currentUser.role === "Super Admin" ||
+            currentUser.role === "Head Office Admin" ||
+            currentUser.role === "Admin" ||
+            currentUser.role === "Moderator") && (
+            <div>
+              <select
+                value={filterOfficeId}
+                onChange={(e) => setFilterOfficeId(e.target.value)}
+                className="w-full px-2.5 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="all">
+                  {language === "bn" ? "সকল কার্যালয় / শাখা" : "All Offices"}
+                </option>
+                {offices.map((off) => (
+                  <option key={off.id} value={off.id}>
+                    {off.name} ({off.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category Filter */}
+          <div
+            className={
+              !(
+                currentUser.role === "Super Admin" ||
+                currentUser.role === "Head Office Admin" ||
+                currentUser.role === "Admin" ||
+                currentUser.role === "Moderator"
+              )
+                ? "lg:col-span-2"
+                : ""
+            }
+          >
+            <select
+              value={filterCategoryId}
+              onChange={(e) => setFilterCategoryId(e.target.value)}
+              className="w-full px-2.5 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">
+                {language === "bn" ? "সকল হিসাবের খাত" : "All Categories"}
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.budgetHead ? `[${c.budgetHead}] ` : ""}
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sanction Type Filter */}
+          <div>
+            <select
+              value={filterSanctionType}
+              onChange={(e) => setFilterSanctionType(e.target.value)}
+              className="w-full px-2.5 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="all">
+                {language === "bn" ? "সকল অনুমোদনের ধরন" : "All Types"}
+              </option>
+              <option value="budget_allocation">
+                {language === "bn"
+                  ? "বাজেট বরাদ্দসহ অনুমোদন"
+                  : "With Budget Allocation"}
+              </option>
+              <option value="only_sanction">
+                {language === "bn"
+                  ? "শুধুমাত্র খরচোত্তর অনুমোদন"
+                  : "Only Post-facto Sanction"}
+              </option>
+            </select>
+          </div>
+
+          {/* Status Filter (when in propose mode) */}
+          {mode === "propose" && (
+            <div>
+              <select
+                value={filterProposalStatus}
+                onChange={(e) => setFilterProposalStatus(e.target.value)}
+                className="w-full px-2.5 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="all">
+                  {language === "bn" ? "সকল স্ট্যাটাস" : "All Status"}
+                </option>
+                <option value="Pending">
+                  {language === "bn" ? "অপেক্ষমান (Pending)" : "Pending"}
+                </option>
+                <option value="Sanctioned">
+                  {language === "bn" ? "মঞ্জুরকৃত (Sanctioned)" : "Sanctioned"}
+                </option>
+              </select>
+            </div>
+          )}
+
+          {/* Date Range */}
+          <div>
+            <input
+              type="date"
+              value={filterStartDate}
+              onChange={(e) => setFilterStartDate(e.target.value)}
+              title={language === "bn" ? "শুরুর তারিখ (হতে)" : "Start Date"}
+              className="w-full px-2 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              value={filterEndDate}
+              onChange={(e) => setFilterEndDate(e.target.value)}
+              title={language === "bn" ? "শেষ তারিখ (পর্যন্ত)" : "End Date"}
+              className="w-full px-2 py-2 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Desktop Table View */}

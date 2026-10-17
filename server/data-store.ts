@@ -150,10 +150,74 @@ export async function addAuditLog(
   } catch (_e) {}
 }
 
+function isCategoryMatching(
+  itemCategoryId: string,
+  targetCategoryId: string,
+  targetCategory: any,
+  categories: any[],
+  is134: boolean,
+): boolean {
+  if (!itemCategoryId || !targetCategoryId) return false;
+  if (itemCategoryId === targetCategoryId) return true;
+  const itemCat = categories.find(
+    (c: any) =>
+      c.id === itemCategoryId ||
+      c.code === itemCategoryId ||
+      c.budgetHead === itemCategoryId,
+  );
+  if (itemCat && targetCategory) {
+    if (itemCat.id === targetCategory.id) return true;
+    if (
+      itemCat.code &&
+      targetCategory.code &&
+      itemCat.code.trim().toLowerCase() === targetCategory.code.trim().toLowerCase()
+    )
+      return true;
+    if (
+      itemCat.budgetHead &&
+      targetCategory.budgetHead &&
+      itemCat.budgetHead.trim().toLowerCase() ===
+        targetCategory.budgetHead.trim().toLowerCase()
+    )
+      return true;
+    if (is134 && isCategory134(itemCat)) {
+      const iCode = (
+        itemCat.budgetHead ||
+        itemCat.code ||
+        itemCat.name ||
+        ""
+      ).replace(/\s+/g, "");
+      const tCode = (
+        targetCategory.budgetHead ||
+        targetCategory.code ||
+        targetCategory.name ||
+        ""
+      ).replace(/\s+/g, "");
+      if (iCode && tCode && iCode === tCode) return true;
+      if (
+        (iCode.includes("134/1") ||
+          iCode.includes("134/01") ||
+          iCode.includes("১৩৪/১") ||
+          iCode.includes("১৩৪/০১") ||
+          iCode.includes("আসবাবপত্র")) &&
+        (tCode.includes("134/1") ||
+          tCode.includes("134/01") ||
+          tCode.includes("১৩৪/১") ||
+          tCode.includes("১৩৪/০১") ||
+          tCode.includes("আসবাবপত্র"))
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function getAvailableBalance(
   financialYearId: string,
   officeId: string,
   categoryId: string,
+  currentExpenseId?: string,
 ) {
   const allocations = getSheetData("Allocations");
   const expenses = getSheetData("Expenses");
@@ -161,7 +225,12 @@ export function getAvailableBalance(
   const categories = getSheetData("Categories") || [];
   const offices = getSheetData("Offices") || [];
 
-  const category = categories.find((c: any) => c.id === categoryId);
+  const category = categories.find(
+    (c: any) =>
+      c.id === categoryId ||
+      c.code === categoryId ||
+      c.budgetHead === categoryId,
+  );
   const is134 = isCategory134(category);
 
   const regionalOffice =
@@ -179,7 +248,7 @@ export function getAvailableBalance(
   let categoryAllocations = allocations.filter(
     (a: any) =>
       a.financialYearId === financialYearId &&
-      a.categoryId === categoryId &&
+      isCategoryMatching(a.categoryId, categoryId, category, categories, is134) &&
       (is134
         ? a.officeId === targetAllocOfficeId ||
           a.officeId === "off-ho" ||
@@ -190,17 +259,46 @@ export function getAvailableBalance(
   if (is134 && categoryAllocations.length === 0) {
     categoryAllocations = allocations.filter(
       (a: any) =>
-        a.financialYearId === financialYearId && a.categoryId === categoryId,
+        a.financialYearId === financialYearId &&
+        isCategoryMatching(a.categoryId, categoryId, category, categories, is134),
     );
   }
+
+  const openingBalances = getSheetData("OpeningBalances") || [];
+  let categoryOpeningBalances = openingBalances.filter(
+    (ob: any) =>
+      ob.financialYearId === financialYearId &&
+      isCategoryMatching(ob.categoryId, categoryId, category, categories, is134) &&
+      (is134
+        ? ob.officeId === targetAllocOfficeId ||
+          ob.officeId === "off-ho" ||
+          ob.officeId === officeId
+        : ob.officeId === officeId),
+  );
+
+  if (is134 && categoryOpeningBalances.length === 0) {
+    categoryOpeningBalances = openingBalances.filter(
+      (ob: any) =>
+        ob.financialYearId === financialYearId &&
+        isCategoryMatching(ob.categoryId, categoryId, category, categories, is134),
+    );
+  }
+
+  const openingProvision = categoryOpeningBalances.reduce(
+    (sum: number, ob: any) => sum + Number(ob.amount || 0),
+    0,
+  );
 
   const initialBudget = categoryAllocations
     .filter((a: any) => a.type === "Initial" || !a.type)
     .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
 
-  const provisionAmount = categoryAllocations
+  const adjustmentAmount = categoryAllocations
     .filter((a: any) => a.type === "Adjustment")
     .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
+
+  // provisionAmount includes carried forward opening balance from previous financial year + in-year adjustments/provisions
+  const provisionAmount = openingProvision + adjustmentAmount;
 
   const additionalBudget = categoryAllocations
     .filter((a: any) => a.type === "Additional")
@@ -211,13 +309,15 @@ export function getAvailableBalance(
   const categoryExpenses = expenses.filter(
     (e: any) =>
       e.financialYearId === financialYearId &&
-      e.categoryId === categoryId &&
+      isCategoryMatching(e.categoryId, categoryId, category, categories, is134) &&
       (is134 ? true : e.officeId === officeId) &&
       e.status !== "Rejected",
   );
 
   let totalSpent = 0;
   let totalPending = 0;
+
+  const items: Array<{ id: string; date: string; createdAt: string; gross: number }> = [];
 
   categoryExpenses.forEach((e: any) => {
     const computed = computeExpenseAmounts(e.amount, e.vatRate, e.taxRate);
@@ -227,12 +327,18 @@ export function getAvailableBalance(
     } else {
       totalSpent += gross;
     }
+    items.push({
+      id: e.id,
+      date: e.date || e.voucherDate || e.createdAt || "",
+      createdAt: e.createdAt || e.date || "",
+      gross,
+    });
   });
 
   const categoryProposals = postFactoProposals.filter(
     (p: any) =>
       p.financialYearId === financialYearId &&
-      p.categoryId === categoryId &&
+      isCategoryMatching(p.categoryId, categoryId, category, categories, is134) &&
       (is134 ? true : p.officeId === officeId) &&
       p.status !== "Rejected",
   );
@@ -244,7 +350,41 @@ export function getAvailableBalance(
     } else {
       totalSpent += amt;
     }
+    items.push({
+      id: p.id,
+      date: p.date || p.createdAt || "",
+      createdAt: p.createdAt || p.date || "",
+      gross: amt,
+    });
   });
+
+  items.sort((a, b) => {
+    const dComp = a.date.localeCompare(b.date);
+    if (dComp !== 0) return dComp;
+    const cComp = a.createdAt.localeCompare(b.createdAt);
+    if (cComp !== 0) return cComp;
+    return a.id.localeCompare(b.id);
+  });
+
+  let previousExpense = 0;
+  let foundCurrent = false;
+  items.forEach((item) => {
+    if (currentExpenseId && item.id === currentExpenseId) {
+      foundCurrent = true;
+      return;
+    }
+    if (!foundCurrent) {
+      previousExpense += item.gross;
+    }
+  });
+
+  if (currentExpenseId && !foundCurrent) {
+    previousExpense = items
+      .filter((item) => item.id !== currentExpenseId)
+      .reduce((sum, item) => sum + item.gross, 0);
+  } else if (!currentExpenseId) {
+    previousExpense = totalSpent + totalPending;
+  }
 
   const available = totalAllocated - totalSpent - totalPending;
 
@@ -256,6 +396,7 @@ export function getAvailableBalance(
     totalAllocated,
     spent: totalSpent,
     totalSpent,
+    previousExpense,
     pending: totalPending,
     totalPending,
     available,
@@ -273,7 +414,16 @@ export function getPostFactoBalanceInfo(
   const allocations = getSheetData("Allocations");
   const expenses = getSheetData("Expenses");
   const postFactoProposals = getSheetData("PostFactoProposals") || [];
+  const categories = getSheetData("Categories") || [];
   const offices = getSheetData("Offices") || [];
+
+  const category = categories.find(
+    (c: any) =>
+      c.id === categoryId ||
+      c.code === categoryId ||
+      c.budgetHead === categoryId,
+  );
+  const effectiveIs134 = is134 || isCategory134(category);
 
   const regionalOffice =
     offices.find(
@@ -283,35 +433,64 @@ export function getPostFactoBalanceInfo(
         (o.name && o.name.includes("আঞ্চলিক কার্যালয়")),
     );
 
-  const targetAllocOfficeId = is134
+  const targetAllocOfficeId = effectiveIs134
     ? regionalOffice?.id || "off-ho"
     : officeId;
 
   let categoryAllocations = allocations.filter(
     (a: any) =>
       a.financialYearId === financialYearId &&
-      a.categoryId === categoryId &&
-      (is134
+      isCategoryMatching(a.categoryId, categoryId, category, categories, effectiveIs134) &&
+      (effectiveIs134
         ? a.officeId === targetAllocOfficeId ||
           a.officeId === "off-ho" ||
           a.officeId === officeId
         : a.officeId === officeId),
   );
 
-  if (is134 && categoryAllocations.length === 0) {
+  if (effectiveIs134 && categoryAllocations.length === 0) {
     categoryAllocations = allocations.filter(
       (a: any) =>
-        a.financialYearId === financialYearId && a.categoryId === categoryId,
+        a.financialYearId === financialYearId &&
+        isCategoryMatching(a.categoryId, categoryId, category, categories, effectiveIs134),
     );
   }
+
+  const openingBalances = getSheetData("OpeningBalances") || [];
+  let categoryOpeningBalances = openingBalances.filter(
+    (ob: any) =>
+      ob.financialYearId === financialYearId &&
+      isCategoryMatching(ob.categoryId, categoryId, category, categories, effectiveIs134) &&
+      (effectiveIs134
+        ? ob.officeId === targetAllocOfficeId ||
+          ob.officeId === "off-ho" ||
+          ob.officeId === officeId
+        : ob.officeId === officeId),
+  );
+
+  if (effectiveIs134 && categoryOpeningBalances.length === 0) {
+    categoryOpeningBalances = openingBalances.filter(
+      (ob: any) =>
+        ob.financialYearId === financialYearId &&
+        isCategoryMatching(ob.categoryId, categoryId, category, categories, effectiveIs134),
+    );
+  }
+
+  const openingProvision = categoryOpeningBalances.reduce(
+    (sum: number, ob: any) => sum + Number(ob.amount || 0),
+    0,
+  );
 
   const initialBudget = categoryAllocations
     .filter((a: any) => a.type === "Initial" || !a.type)
     .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
 
-  const provisionAmount = categoryAllocations
+  const adjustmentAmount = categoryAllocations
     .filter((a: any) => a.type === "Adjustment")
     .reduce((sum: number, a: any) => sum + Number(a.allocatedAmount || 0), 0);
+
+  // provisionAmount includes carried forward opening balance from previous financial year + in-year adjustments/provisions
+  const provisionAmount = openingProvision + adjustmentAmount;
 
   const additionalBudget = categoryAllocations
     .filter((a: any) => a.type === "Additional")
@@ -319,14 +498,11 @@ export function getPostFactoBalanceInfo(
 
   const totalAllocated = initialBudget + provisionAmount + additionalBudget;
 
-  // Expenses:
-  // For 134/01 to 134/05: include all offices (RO, ANIKA, and all branches)
-  // For other categories: include officeId
   const categoryExpenses = expenses.filter(
     (e: any) =>
       e.financialYearId === financialYearId &&
-      e.categoryId === categoryId &&
-      (is134 ? true : e.officeId === officeId) &&
+      isCategoryMatching(e.categoryId, categoryId, category, categories, effectiveIs134) &&
+      (effectiveIs134 ? true : e.officeId === officeId) &&
       e.status !== "Rejected",
   );
 
@@ -337,14 +513,11 @@ export function getPostFactoBalanceInfo(
     totalSpent += gross;
   });
 
-  // Post-facto proposals prior to this one:
-  // For 134/01 to 134/05: include all offices
-  // For other categories: include officeId
   const priorProposals = postFactoProposals.filter(
     (p: any) =>
       p.financialYearId === financialYearId &&
-      p.categoryId === categoryId &&
-      (is134 ? true : p.officeId === officeId) &&
+      isCategoryMatching(p.categoryId, categoryId, category, categories, effectiveIs134) &&
+      (effectiveIs134 ? true : p.officeId === officeId) &&
       p.status !== "Rejected" &&
       p.id !== currentProposalId,
   );

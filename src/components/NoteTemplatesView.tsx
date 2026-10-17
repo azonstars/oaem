@@ -726,7 +726,11 @@ export function NoteTemplatesView({
       <table style="width: 100%; border-collapse: collapse; margin-top: 14pt; margin-bottom: 14pt; font-size: inherit; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 6px 0;">
         <tbody>
           <tr>
-            <td style="padding: 4px 8px; text-align: right; padding-right: 12px; white-space: nowrap;">বিবিধ (৩২৫৫১০৫) খাতে ২০২৫-২০২৬ অর্থ বছরে বাজেট বরাদ্দ</td>
+            <td style="padding: 4px 8px; text-align: right; padding-right: 12px; white-space: nowrap;">৩০-০৬-২০২৬ তারিখে প্রভিশণ</td>
+            <td style="padding: 4px 8px; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ২৫,০০০/-</td>
+          </tr>
+          <tr>
+            <td style="padding: 4px 8px; text-align: right; padding-right: 12px; white-space: nowrap;">বিবিধ (৩২৫৫১০৫) খাতে ২০২৬-২০২৭ অর্থ বছরে বাজেট বরাদ্দ</td>
             <td style="padding: 4px 8px; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ১,৫০,০০০/-</td>
           </tr>
           <tr>

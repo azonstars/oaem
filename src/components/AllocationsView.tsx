@@ -8,6 +8,7 @@ import {
   User,
   Expense,
   SystemSettings,
+  OpeningBalance,
 } from "../types";
 import {
   Plus,
@@ -23,6 +24,11 @@ import {
   Printer,
   ChevronRight,
   Eye,
+  Search,
+  Filter,
+  RotateCcw,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -42,6 +48,7 @@ interface AllocationsViewProps {
   isHeadOffice: boolean;
   systemSettings?: SystemSettings | null;
   refreshData?: () => void;
+  openingBalances?: OpeningBalance[];
 }
 
 export function AllocationsView({
@@ -58,6 +65,7 @@ export function AllocationsView({
   isHeadOffice,
   systemSettings,
   refreshData,
+  openingBalances = [],
 }: AllocationsViewProps) {
   const { t, formatCurrency, language } = useLanguage();
   const { isCustom, isDark } = useTheme();
@@ -71,6 +79,12 @@ export function AllocationsView({
   const [selectedOfficeId, setSelectedOfficeId] = useState<string>(
     isHeadOffice ? "all" : currentUser.officeId,
   );
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterCategoryId, setFilterCategoryId] = useState("all");
+  const [filterType, setFilterType] = useState<string>("all");
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
 
   const [floatingOfficeId, setFloatingOfficeId] = useState<string | null>(null);
   const [isFloatingModalOpen, setIsFloatingModalOpen] =
@@ -95,8 +109,8 @@ export function AllocationsView({
 
   const expandAllSummary = () => {
     const next: Record<string, boolean> = {};
-    filteredAllocations.forEach((alc) => {
-      next[`${alc.officeId}_${alc.categoryId}`] = true;
+    Object.keys(summaryMap).forEach((key) => {
+      next[key] = true;
     });
     setExpandedSummaryKeys(next);
   };
@@ -136,6 +150,9 @@ export function AllocationsView({
     const officeAlcs = allocations.filter(
       (a) => a.financialYearId === selectedFY && a.officeId === off.id,
     );
+    const officeOBs = (openingBalances || []).filter(
+      (ob) => ob.financialYearId === selectedFY && ob.officeId === off.id,
+    );
     const initial = officeAlcs
       .filter((a) => a.type === "Initial" || (!a.type as any))
       .reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
@@ -145,7 +162,12 @@ export function AllocationsView({
     const adjustment = officeAlcs
       .filter((a) => a.type === "Adjustment")
       .reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
-    const totalBudget = initial + additional + adjustment;
+    const openingProvision = officeOBs.reduce(
+      (sum, ob) => sum + Number(ob.amount || 0),
+      0,
+    );
+    const provision = openingProvision + adjustment;
+    const totalBudget = initial + additional + provision;
 
     const officeExps = expenses.filter(
       (e) => e.financialYearId === selectedFY && e.officeId === off.id,
@@ -163,13 +185,15 @@ export function AllocationsView({
       0,
     );
     const balance = totalBudget - totalExpense - pendingExpense;
-    const count = officeAlcs.length;
+    const count = officeAlcs.length + officeOBs.length;
 
     return {
       office: off,
       initial,
       additional,
       adjustment,
+      openingProvision,
+      provision,
       totalBudget,
       totalExpense,
       pendingExpense,
@@ -183,6 +207,8 @@ export function AllocationsView({
       initial: acc.initial + item.initial,
       additional: acc.additional + item.additional,
       adjustment: acc.adjustment + item.adjustment,
+      openingProvision: acc.openingProvision + item.openingProvision,
+      provision: acc.provision + item.provision,
       totalBudget: acc.totalBudget + item.totalBudget,
       totalExpense: acc.totalExpense + item.totalExpense,
       pendingExpense: acc.pendingExpense + item.pendingExpense,
@@ -193,6 +219,8 @@ export function AllocationsView({
       initial: 0,
       additional: 0,
       adjustment: 0,
+      openingProvision: 0,
+      provision: 0,
       totalBudget: 0,
       totalExpense: 0,
       pendingExpense: 0,
@@ -201,12 +229,76 @@ export function AllocationsView({
     },
   );
 
+  const hasActiveFilters =
+    searchQuery.trim() !== "" ||
+    filterCategoryId !== "all" ||
+    filterType !== "all" ||
+    filterStartDate !== "" ||
+    filterEndDate !== "" ||
+    (isHeadOffice && selectedOfficeId !== "all");
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setFilterCategoryId("all");
+    setFilterType("all");
+    setFilterStartDate("");
+    setFilterEndDate("");
+    if (isHeadOffice) setSelectedOfficeId("all");
+  };
+
   const filteredAllocations = allocations.filter((a) => {
     const matchFY = a.financialYearId === selectedFY;
     const matchOffice = isHeadOffice
       ? selectedOfficeId === "all" || a.officeId === selectedOfficeId
       : a.officeId === currentUser.officeId;
-    return matchFY && matchOffice;
+
+    if (!matchFY || !matchOffice) return false;
+
+    if (filterCategoryId !== "all" && a.categoryId !== filterCategoryId) {
+      return false;
+    }
+
+    if (filterType !== "all") {
+      if (filterType === "Provision") return false;
+      const aType = a.type || "Initial";
+      if (aType !== filterType) return false;
+    }
+
+    if (filterStartDate && a.date && a.date < filterStartDate) {
+      return false;
+    }
+
+    if (filterEndDate && a.date && a.date > filterEndDate) {
+      return false;
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const cat = categories.find((c) => c.id === a.categoryId);
+      const catName = (cat?.name || "").toLowerCase();
+      const catCode = (cat?.code || "").toLowerCase();
+      const catBudgetHead = (cat?.budgetHead || "").toLowerCase();
+      const refNo = (a.referenceNo || "").toLowerCase();
+      const remarks = (a.remarks || "").toLowerCase();
+      const off = offices.find((o) => o.id === a.officeId);
+      const offName = (off?.name || "").toLowerCase();
+      const offCode = (off?.code || "").toLowerCase();
+      const amountStr = String(a.allocatedAmount || "");
+
+      const matches =
+        catName.includes(q) ||
+        catCode.includes(q) ||
+        catBudgetHead.includes(q) ||
+        refNo.includes(q) ||
+        remarks.includes(q) ||
+        offName.includes(q) ||
+        offCode.includes(q) ||
+        amountStr.includes(q);
+
+      if (!matches) return false;
+    }
+
+    return true;
   });
 
   const selectedOfficeObj =
@@ -343,24 +435,149 @@ export function AllocationsView({
     setShowModal(false);
   };
 
+  const filteredOpeningBalances = (openingBalances || []).filter((ob) => {
+    const matchFY = ob.financialYearId === selectedFY;
+    const matchOffice = isHeadOffice
+      ? selectedOfficeId === "all" || ob.officeId === selectedOfficeId
+      : ob.officeId === currentUser.officeId;
+
+    if (!matchFY || !matchOffice) return false;
+
+    if (filterCategoryId !== "all" && ob.categoryId !== filterCategoryId) {
+      return false;
+    }
+
+    if (
+      filterType !== "all" &&
+      filterType !== "Provision" &&
+      filterType !== "Adjustment"
+    ) {
+      return false;
+    }
+
+    if (filterStartDate && ob.createdAt && ob.createdAt.split("T")[0] < filterStartDate) {
+      return false;
+    }
+
+    if (filterEndDate && ob.createdAt && ob.createdAt.split("T")[0] > filterEndDate) {
+      return false;
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const cat = categories.find((c) => c.id === ob.categoryId);
+      const catName = (cat?.name || "").toLowerCase();
+      const catCode = (cat?.code || "").toLowerCase();
+      const catBudgetHead = (cat?.budgetHead || "").toLowerCase();
+      const off = offices.find((o) => o.id === ob.officeId);
+      const offName = (off?.name || "").toLowerCase();
+      const offCode = (off?.code || "").toLowerCase();
+      const amountStr = String(ob.amount || "");
+      const sourceFY = financialYears.find((f) => f.id === ob.sourceFYId);
+      const sourceFYName = (sourceFY?.name || "").toLowerCase();
+
+      const matches =
+        catName.includes(q) ||
+        catCode.includes(q) ||
+        catBudgetHead.includes(q) ||
+        offName.includes(q) ||
+        offCode.includes(q) ||
+        amountStr.includes(q) ||
+        sourceFYName.includes(q) ||
+        "প্রভিশন".includes(q) ||
+        "provision".includes(q) ||
+        "অবশিষ্ট".includes(q);
+
+      if (!matches) return false;
+    }
+
+    return true;
+  });
+
+  type AllocationRowItem = Allocation & {
+    isOpeningBalance?: boolean;
+    sourceFYName?: string;
+  };
+
   const summaryMap: Record<
     string,
     {
+      officeId: string;
+      categoryId: string;
       initial: number;
       additional: number;
       adjustment: number;
+      openingProvision: number;
+      provision: number;
       total: number;
-      rows: Allocation[];
+      rows: AllocationRowItem[];
     }
   > = {};
 
+  // 1. Incorporate carried forward opening balances from previous FY as provision
+  filteredOpeningBalances.forEach((ob) => {
+    const key = `${ob.officeId}_${ob.categoryId}`;
+    if (!summaryMap[key]) {
+      summaryMap[key] = {
+        officeId: ob.officeId,
+        categoryId: ob.categoryId,
+        initial: 0,
+        additional: 0,
+        adjustment: 0,
+        openingProvision: 0,
+        provision: 0,
+        total: 0,
+        rows: [],
+      };
+    }
+    const amt = Number(ob.amount || 0);
+    const sourceFY = financialYears.find((f) => f.id === ob.sourceFYId);
+    summaryMap[key].openingProvision += amt;
+    summaryMap[key].provision += amt;
+    summaryMap[key].total += amt;
+
+    const sourceFYEndDate = sourceFY?.endDate || ""; // e.g. "2026-06-30"
+    let formattedEndDate = "৩০-০৬-২০২৬";
+    if (sourceFYEndDate) {
+      const [y, m, d] = sourceFYEndDate.split("-");
+      if (y && m && d) {
+        // convert to DD-MM-YYYY or Bengali numerals if needed, or DD-MM-YYYY
+        const engToBnDigits = (str: string) => {
+          const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+          return str.replace(/\d/g, (d) => bnDigits[parseInt(d)]);
+        };
+        formattedEndDate = engToBnDigits(`${d}-${m}-${y}`);
+      }
+    }
+
+    summaryMap[key].rows.push({
+      id: ob.id,
+      financialYearId: ob.financialYearId,
+      officeId: ob.officeId,
+      categoryId: ob.categoryId,
+      type: "Adjustment",
+      allocatedAmount: amt,
+      date: ob.createdAt ? ob.createdAt.split("T")[0] : currentFYObj?.startDate || "",
+      referenceNo: `${formattedEndDate} তারিখে প্রভিশণ`,
+      remarks: `পূর্ববর্তী অর্থবছরের অবশিষ্ট টাকা নতুন অর্থবছরে প্রারম্ভিক প্রভিশন হিসেবে সংরক্ষিত`,
+      allocatedBy: ob.createdBy || "",
+      isOpeningBalance: true,
+      sourceFYName: sourceFY?.name,
+    });
+  });
+
+  // 2. Incorporate allocations for current FY
   filteredAllocations.forEach((alc) => {
     const key = `${alc.officeId}_${alc.categoryId}`;
     if (!summaryMap[key]) {
       summaryMap[key] = {
+        officeId: alc.officeId,
+        categoryId: alc.categoryId,
         initial: 0,
         additional: 0,
         adjustment: 0,
+        openingProvision: 0,
+        provision: 0,
         total: 0,
         rows: [],
       };
@@ -368,8 +585,12 @@ export function AllocationsView({
     const amt = Number(alc.allocatedAmount || 0);
     if (alc.type === "Initial" || (!alc.type as any))
       summaryMap[key].initial += amt;
-    else if (alc.type === "Additional") summaryMap[key].additional += amt;
-    else if (alc.type === "Adjustment") summaryMap[key].adjustment += amt;
+    else if (alc.type === "Additional")
+      summaryMap[key].additional += amt;
+    else if (alc.type === "Adjustment") {
+      summaryMap[key].adjustment += amt;
+      summaryMap[key].provision += amt;
+    }
 
     summaryMap[key].total += amt;
     summaryMap[key].rows.push(alc);
@@ -1056,6 +1277,203 @@ export function AllocationsView({
         </div>
       )}
 
+      {/* Allocations Filter Bar */}
+      <div
+        className={`p-4 rounded-2xl border space-y-3 shadow-sm ${
+          isCustom
+            ? "bg-[#181233] border-[#382b61]"
+            : isDark
+              ? "bg-slate-850 border-slate-800"
+              : "bg-white border-slate-200"
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-emerald-500" />
+            <h4
+              className={`text-xs font-bold uppercase tracking-wider ${
+                isCustom ? "text-purple-200" : isDark ? "text-slate-200" : "text-slate-800"
+              }`}
+            >
+              {language === "bn" ? "বাজেট বরাদ্দ ফিল্টারিং ও অনুসন্ধান" : "Budget Allocation Filtering & Search"}
+            </h4>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-[11px] px-2.5 py-0.5 rounded-full font-medium ${
+                isCustom
+                  ? "bg-[#251d45] text-amber-300 border border-[#3e2e6c]"
+                  : isDark
+                    ? "bg-slate-800 text-slate-300 border border-slate-700"
+                    : "bg-slate-100 text-slate-600 border border-slate-200"
+              }`}
+            >
+              {language === "bn"
+                ? `মোট ফলাফল: ${filteredAllocations.length} টি বরাদ্দ`
+                : `Total: ${filteredAllocations.length} allocations`}
+            </span>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleResetFilters}
+                className="text-xs px-2.5 py-1 rounded-lg text-rose-500 hover:bg-rose-500/10 transition flex items-center gap-1 font-medium"
+              >
+                <RotateCcw className="w-3 h-3" />
+                {language === "bn" ? "ফিল্টার রিসেট" : "Reset Filters"}
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Search Box */}
+          <div className="lg:col-span-2 relative">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={
+                language === "bn"
+                  ? "খাত, স্মারক, বিবরণ বা পরিমাণ দিয়ে খুঁজুন..."
+                  : "Search category, ref no, remarks, amount..."
+              }
+              className={`w-full pl-8 pr-8 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100 placeholder:text-purple-400/50"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                    : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400"
+              }`}
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Office Filter (if HO) */}
+          {isHeadOffice && (
+            <div>
+              <select
+                value={selectedOfficeId}
+                onChange={(e) => setSelectedOfficeId(e.target.value)}
+                className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  isCustom
+                    ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                    : isDark
+                      ? "bg-slate-900 border-slate-700 text-slate-100"
+                      : "bg-slate-50 border-slate-200 text-slate-900"
+                }`}
+              >
+                <option value="all">
+                  {language === "bn" ? "সকল কার্যালয় / শাখা" : "All Offices"}
+                </option>
+                {offices.map((off) => (
+                  <option key={off.id} value={off.id}>
+                    {off.name} ({off.code})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Category Filter */}
+          <div className={!isHeadOffice ? "lg:col-span-2" : ""}>
+            <select
+              value={filterCategoryId}
+              onChange={(e) => setFilterCategoryId(e.target.value)}
+              className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            >
+              <option value="all">
+                {language === "bn" ? "সকল হিসাবের খাত" : "All Budget Heads"}
+              </option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.budgetHead ? `[${c.budgetHead}] ` : ""}
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Type Filter */}
+          <div>
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className={`w-full px-2.5 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            >
+              <option value="all">
+                {language === "bn" ? "সকল বরাদ্দের ধরন" : "All Types"}
+              </option>
+              <option value="Initial">
+                {language === "bn" ? "মূল বরাদ্দ" : "Initial"}
+              </option>
+              <option value="Provision">
+                {language === "bn" ? "প্রারম্ভিক প্রভিশন" : "Opening Provision"}
+              </option>
+              <option value="Additional">
+                {language === "bn" ? "অতিরিক্ত বরাদ্দ" : "Additional"}
+              </option>
+              <option value="Adjustment">
+                {language === "bn" ? "সমন্বয় / উপযোজন" : "Adjustment"}
+              </option>
+            </select>
+          </div>
+
+          {/* Date Range */}
+          <div>
+            <input
+              type="date"
+              value={filterStartDate}
+              onChange={(e) => setFilterStartDate(e.target.value)}
+              title={language === "bn" ? "শুরুর তারিখ (হতে)" : "Start Date"}
+              className={`w-full px-2 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              value={filterEndDate}
+              onChange={(e) => setFilterEndDate(e.target.value)}
+              title={language === "bn" ? "শেষ তারিখ (পর্যন্ত)" : "End Date"}
+              className={`w-full px-2 py-2 rounded-xl text-xs border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                isCustom
+                  ? "bg-[#140e29] border-[#382b61] text-purple-100"
+                  : isDark
+                    ? "bg-slate-900 border-slate-700 text-slate-100"
+                    : "bg-slate-50 border-slate-200 text-slate-900"
+              }`}
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Allocations Summary Table Header with Expand/Collapse All */}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
         <h4
@@ -1314,17 +1732,31 @@ export function AllocationsView({
                             className="p-3 sm:p-4 pl-8 sm:pl-14 border-l-4 border-emerald-500"
                           >
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between text-xs font-semibold text-slate-400">
+                              <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-slate-400">
                                 <span>
                                   {language === "bn"
-                                    ? "বরাদ্দ বিভাজন (মূল, অতিরিক্ত ও সমন্বয় বিবরণী):"
+                                    ? "বরাদ্দ বিভাজন (মূল, অতিরিক্ত, প্রভিশন ও সমন্বয় বিবরণী):"
                                     : "Allocation Tranches Breakdown:"}
                                 </span>
-                                <span className="font-mono text-[11px]">
-                                  মূল: {formatCurrency(data.initial)} |
-                                  অতিরিক্ত: +{formatCurrency(data.additional)} |
-                                  সমন্বয়: {data.adjustment > 0 ? "+" : ""}
-                                  {formatCurrency(data.adjustment)}
+                                <span className="font-mono text-[11px] flex flex-wrap gap-x-2">
+                                  <span>মূল: {formatCurrency(data.initial)}</span>
+                                  {data.openingProvision > 0 && (
+                                    <span className="text-amber-500 dark:text-amber-400 font-bold">
+                                      | প্রারম্ভিক প্রভিশন (পূর্বের অর্থবছর): +{formatCurrency(data.openingProvision)}
+                                    </span>
+                                  )}
+                                  {data.additional > 0 && (
+                                    <span>| অতিরিক্ত: +{formatCurrency(data.additional)}</span>
+                                  )}
+                                  {data.adjustment !== 0 && (
+                                    <span>
+                                      | সমন্বয়: {data.adjustment > 0 ? "+" : ""}
+                                      {formatCurrency(data.adjustment)}
+                                    </span>
+                                  )}
+                                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                    | সর্বমোট: {formatCurrency(data.total)}
+                                  </span>
                                 </span>
                               </div>
 
@@ -1358,7 +1790,7 @@ export function AllocationsView({
                                         টাকার পরিমাণ
                                       </th>
                                       {isHeadOffice && (
-                                        <th className="p-2 text-center w-16">
+                                        <th className="p-2 text-center w-24">
                                           অ্যাকশন
                                         </th>
                                       )}
@@ -1386,19 +1818,26 @@ export function AllocationsView({
                                       >
                                         <td className="p-2 pl-3 font-sans">
                                           <span
-                                            className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                                              row.type === "Additional"
-                                                ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                                                : row.type === "Adjustment"
-                                                  ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                                                  : "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
+                                            className={`px-2 py-0.5 rounded text-[11px] font-bold inline-flex items-center gap-1 ${
+                                              row.isOpeningBalance
+                                                ? "bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/40"
+                                                : row.type === "Additional"
+                                                  ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                                  : row.type === "Adjustment"
+                                                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                                    : "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
                                             }`}
                                           >
-                                            {row.type === "Initial"
-                                              ? "মূল বরাদ্দ"
-                                              : row.type === "Additional"
-                                                ? "অতিরিক্ত বরাদ্দ"
-                                                : "সমন্বয় / উপযোজন"}
+                                            {row.isOpeningBalance && (
+                                              <Sparkles className="w-3 h-3 shrink-0" />
+                                            )}
+                                            {row.isOpeningBalance
+                                              ? "প্রারম্ভিক প্রভিশন"
+                                              : row.type === "Initial"
+                                                ? "মূল বরাদ্দ"
+                                                : row.type === "Additional"
+                                                  ? "অতিরিক্ত বরাদ্দ"
+                                                  : "সমন্বয় / উপযোজন"}
                                           </span>
                                         </td>
                                         <td className="p-2 text-slate-400">
@@ -1407,11 +1846,13 @@ export function AllocationsView({
                                         <td className="p-2 font-bold font-mono">
                                           <span
                                             className={
-                                              isCustom
-                                                ? "text-purple-200"
-                                                : isDark
-                                                  ? "text-slate-300"
-                                                  : "text-slate-700"
+                                              row.isOpeningBalance
+                                                ? "text-amber-500 dark:text-amber-400"
+                                                : isCustom
+                                                  ? "text-purple-200"
+                                                  : isDark
+                                                    ? "text-slate-300"
+                                                    : "text-slate-700"
                                             }
                                           >
                                             {row.referenceNo || "—"}
@@ -1424,19 +1865,22 @@ export function AllocationsView({
                                           className={`p-2 pr-3 text-right font-bold text-xs ${
                                             Number(row.allocatedAmount) < 0
                                               ? "text-rose-400 font-black"
-                                              : row.type === "Additional"
-                                                ? "text-blue-400 font-bold"
-                                                : row.type === "Adjustment"
-                                                  ? "text-amber-400 font-bold"
-                                                  : isCustom
-                                                    ? "text-amber-300"
-                                                    : isDark
-                                                      ? "text-emerald-400"
-                                                      : "text-emerald-800"
+                                              : row.isOpeningBalance
+                                                ? "text-amber-500 dark:text-amber-400 font-black"
+                                                : row.type === "Additional"
+                                                  ? "text-blue-400 font-bold"
+                                                  : row.type === "Adjustment"
+                                                    ? "text-amber-400 font-bold"
+                                                    : isCustom
+                                                      ? "text-amber-300"
+                                                      : isDark
+                                                        ? "text-emerald-400"
+                                                        : "text-emerald-800"
                                           }`}
                                         >
                                           {Number(row.allocatedAmount) > 0 &&
-                                          row.type === "Additional"
+                                          (row.type === "Additional" ||
+                                            row.isOpeningBalance)
                                             ? "+"
                                             : ""}
                                           {formatCurrency(
@@ -1445,30 +1889,41 @@ export function AllocationsView({
                                         </td>
                                         {isHeadOffice && (
                                           <td className="p-2 text-center">
-                                            <div className="flex justify-center gap-1.5">
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setEditingAllocation(row);
-                                                }}
-                                                className="p-1 rounded text-blue-400 hover:bg-blue-500/20 transition"
-                                                title="সম্পাদন করুন"
+                                            {row.isOpeningBalance ? (
+                                              <span
+                                                className="text-[10px] text-amber-500 dark:text-amber-400 font-medium font-sans px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20"
+                                                title="পূর্বের অর্থবছর ক্লোজ করার সময় অবশিষ্ট টাকা প্রারম্ভিক প্রভিশন হিসেবে সংরক্ষিত হয়েছে"
                                               >
-                                                <Edit2 className="w-3.5 h-3.5" />
-                                              </button>
-                                              <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setDeletingId(row.id);
-                                                }}
-                                                className="p-1 rounded text-rose-400 hover:bg-rose-500/20 transition"
-                                                title={t.delete}
-                                              >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                              </button>
-                                            </div>
+                                                {language === "bn"
+                                                  ? "পূর্বের উদ্বৃত্ত"
+                                                  : "Opening"}
+                                              </span>
+                                            ) : (
+                                              <div className="flex justify-center gap-1.5">
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingAllocation(row);
+                                                  }}
+                                                  className="p-1 rounded text-blue-400 hover:bg-blue-500/20 transition"
+                                                  title="সম্পাদন করুন"
+                                                >
+                                                  <Edit2 className="w-3.5 h-3.5" />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeletingId(row.id);
+                                                  }}
+                                                  className="p-1 rounded text-rose-400 hover:bg-rose-500/20 transition"
+                                                  title={t.delete}
+                                                >
+                                                  <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                              </div>
+                                            )}
                                           </td>
                                         )}
                                       </tr>
@@ -2322,6 +2777,7 @@ export function AllocationsView({
           currentUser={currentUser}
           isHeadOffice={isHeadOffice}
           systemSettings={systemSettings}
+          openingBalances={openingBalances}
           onEditAllocation={(alc) => {
             setIsFloatingModalOpen(false);
             setEditingAllocation(alc);

@@ -7,6 +7,7 @@ import {
   FinancialYear,
   User,
   SystemSettings,
+  OpeningBalance,
 } from "../types";
 import {
   X,
@@ -27,6 +28,7 @@ import {
   Trash2,
   Maximize2,
   Minimize2,
+  Sparkles,
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import { useTheme } from "../context/ThemeContext";
@@ -46,6 +48,7 @@ interface OfficeBudgetFloatingModalProps {
   systemSettings?: SystemSettings | null;
   onEditAllocation?: (allocation: Allocation) => void;
   onDeleteAllocation?: (id: string) => void;
+  openingBalances?: OpeningBalance[];
 }
 
 export function OfficeBudgetFloatingModal({
@@ -63,6 +66,7 @@ export function OfficeBudgetFloatingModal({
   systemSettings,
   onEditAllocation,
   onDeleteAllocation,
+  openingBalances = [],
 }: OfficeBudgetFloatingModalProps) {
   const { t, formatCurrency, formatNumber, language } = useLanguage();
   const { isCustom, isDark } = useTheme();
@@ -129,6 +133,7 @@ export function OfficeBudgetFloatingModal({
         initial: number;
         additional: number;
         adjustment: number;
+        openingProvision: number;
         currentAllocation: number;
         approvedExpense: number;
         pendingExpense: number;
@@ -145,6 +150,7 @@ export function OfficeBudgetFloatingModal({
         initial: 0,
         additional: 0,
         adjustment: 0,
+        openingProvision: 0,
         currentAllocation: 0,
         approvedExpense: 0,
         pendingExpense: 0,
@@ -170,6 +176,7 @@ export function OfficeBudgetFloatingModal({
           initial: 0,
           additional: 0,
           adjustment: 0,
+          openingProvision: 0,
           currentAllocation: 0,
           approvedExpense: 0,
           pendingExpense: 0,
@@ -190,6 +197,71 @@ export function OfficeBudgetFloatingModal({
       }
       map[a.categoryId].currentAllocation += amt;
       map[a.categoryId].rows.push(a);
+    });
+
+    const filteredOpeningBalances = (openingBalances || []).filter((ob) => {
+      const matchFY = ob.financialYearId === selectedFY;
+      const matchOffice = officeId === "all" ? true : ob.officeId === officeId;
+      return matchFY && matchOffice;
+    });
+
+    filteredOpeningBalances.forEach((ob) => {
+      if (!map[ob.categoryId]) {
+        const fallbackCat = categories.find((c) => c.id === ob.categoryId) || {
+          id: ob.categoryId,
+          name: "Unknown Category",
+          code: "N/A",
+          budgetHead: "N/A",
+          description: "",
+          status: "Active",
+        };
+        map[ob.categoryId] = {
+          category: fallbackCat,
+          initial: 0,
+          additional: 0,
+          adjustment: 0,
+          openingProvision: 0,
+          currentAllocation: 0,
+          approvedExpense: 0,
+          pendingExpense: 0,
+          totalExpense: 0,
+          balance: 0,
+          rows: [],
+          expenseRows: [],
+        };
+      }
+      const amt = Number(ob.amount || 0);
+      const sourceFY = financialYears.find((f) => f.id === ob.sourceFYId);
+      map[ob.categoryId].openingProvision += amt;
+      map[ob.categoryId].currentAllocation += amt;
+
+      const sourceFYEndDate = sourceFY?.endDate || "";
+      let formattedEndDate = "৩০-০৬-২০২৬";
+      if (sourceFYEndDate) {
+        const [y, m, d] = sourceFYEndDate.split("-");
+        if (y && m && d) {
+          const engToBnDigits = (str: string) => {
+            const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+            return str.replace(/\d/g, (d) => bnDigits[parseInt(d)]);
+          };
+          formattedEndDate = engToBnDigits(`${d}-${m}-${y}`);
+        }
+      }
+
+      const obRow: any = {
+        id: ob.id,
+        financialYearId: ob.financialYearId,
+        officeId: ob.officeId,
+        categoryId: ob.categoryId,
+        type: "Adjustment",
+        allocatedAmount: amt,
+        date: ob.createdAt ? ob.createdAt.split("T")[0] : "",
+        referenceNo: `${formattedEndDate} তারিখে প্রভিশণ`,
+        remarks: `পূর্ববর্তী অর্থবছরের অবশিষ্ট টাকা নতুন অর্থবছরে প্রারম্ভিক প্রভিশন হিসেবে সংরক্ষিত`,
+        allocatedBy: ob.createdBy || "",
+        isOpeningBalance: true,
+      };
+      map[ob.categoryId].rows.push(obRow);
     });
 
     filteredExpenses.forEach((e) => {
@@ -234,7 +306,16 @@ export function OfficeBudgetFloatingModal({
           b.category?.budgetHead || "",
         ),
       );
-  }, [filteredAllocations, filteredExpenses, categories, searchCategory]);
+  }, [
+    filteredAllocations,
+    filteredExpenses,
+    categories,
+    searchCategory,
+    openingBalances,
+    selectedFY,
+    officeId,
+    financialYears,
+  ]);
 
   const overallMetrics = useMemo(() => {
     return categoryBudgetData.reduce(
@@ -242,6 +323,7 @@ export function OfficeBudgetFloatingModal({
         initial: acc.initial + item.initial,
         additional: acc.additional + item.additional,
         adjustment: acc.adjustment + item.adjustment,
+        openingProvision: acc.openingProvision + item.openingProvision,
         currentAllocation: acc.currentAllocation + item.currentAllocation,
         approvedExpense: acc.approvedExpense + item.approvedExpense,
         pendingExpense: acc.pendingExpense + item.pendingExpense,
@@ -254,6 +336,7 @@ export function OfficeBudgetFloatingModal({
         initial: 0,
         additional: 0,
         adjustment: 0,
+        openingProvision: 0,
         currentAllocation: 0,
         approvedExpense: 0,
         pendingExpense: 0,
@@ -1152,6 +1235,16 @@ export function OfficeBudgetFloatingModal({
                                           +{formatCurrency(item.additional)}
                                         </strong>
                                       </span>
+                                       {item.openingProvision > 0 && (
+                                        <span
+                                          className={`px-2 py-0.5 rounded text-amber-500 dark:text-amber-400 font-bold ${isCustom ? "bg-[#1d163a]" : isDark ? "bg-slate-800" : "bg-white border"}`}
+                                        >
+                                          প্রারম্ভিক প্রভিশন:{" "}
+                                          <strong>
+                                            +{formatCurrency(item.openingProvision)}
+                                          </strong>
+                                        </span>
+                                      )}
                                       <span
                                         className={`px-2 py-0.5 rounded ${
                                           item.adjustment < 0
@@ -1239,20 +1332,26 @@ export function OfficeBudgetFloatingModal({
                                               {/* Type Pill */}
                                               <td className="p-2.5 pl-3 font-sans">
                                                 <span
-                                                  className={`px-2 py-0.5 rounded text-[11px] font-bold ${
-                                                    row.type === "Additional"
-                                                      ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
-                                                      : row.type ===
-                                                          "Adjustment"
-                                                        ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                                                        : "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
+                                                  className={`px-2 py-0.5 rounded text-[11px] font-bold inline-flex items-center gap-1 ${
+                                                    (row as any).isOpeningBalance
+                                                      ? "bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/40"
+                                                      : row.type === "Additional"
+                                                        ? "bg-blue-500/15 text-blue-400 border border-blue-500/30"
+                                                        : row.type === "Adjustment"
+                                                          ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                                                          : "bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30"
                                                   }`}
                                                 >
-                                                  {row.type === "Initial"
-                                                    ? "মূল বরাদ্দ"
-                                                    : row.type === "Additional"
-                                                      ? "অতিরিক্ত বরাদ্দ"
-                                                      : "সমন্বয় / উপযোজন"}
+                                                  {(row as any).isOpeningBalance && (
+                                                    <Sparkles className="w-3 h-3 shrink-0" />
+                                                  )}
+                                                  {(row as any).isOpeningBalance
+                                                    ? "প্রারম্ভিক প্রভিশন"
+                                                    : row.type === "Initial"
+                                                      ? "মূল বরাদ্দ"
+                                                      : row.type === "Additional"
+                                                        ? "অতিরিক্ত বরাদ্দ"
+                                                        : "সমন্বয় / উপযোজন"}
                                                 </span>
                                               </td>
 
@@ -1313,34 +1412,43 @@ export function OfficeBudgetFloatingModal({
                                               {/* Actions for Head Office */}
                                               {isHeadOffice && (
                                                 <td className="p-2.5 text-center">
-                                                  <div className="flex items-center justify-center gap-1.5">
-                                                    {onEditAllocation && (
-                                                      <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                          onEditAllocation(row)
-                                                        }
-                                                        className="p-1 rounded text-blue-400 hover:bg-blue-500/20 transition"
-                                                        title="সম্পাদন করুন"
-                                                      >
-                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                      </button>
-                                                    )}
-                                                    {onDeleteAllocation && (
-                                                      <button
-                                                        type="button"
-                                                        onClick={() =>
-                                                          onDeleteAllocation(
-                                                            row.id,
-                                                          )
-                                                        }
-                                                        className="p-1 rounded text-rose-400 hover:bg-rose-500/20 transition"
-                                                        title="মুছে ফেলুন"
-                                                      >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                      </button>
-                                                    )}
-                                                  </div>
+                                                  {(row as any).isOpeningBalance ? (
+                                                    <span
+                                                      className="text-[10px] text-amber-500 dark:text-amber-400 font-medium font-sans px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20"
+                                                      title="পূর্ববর্তী অর্থবছরের অবশিষ্ট টাকা"
+                                                    >
+                                                      {language === "bn" ? "পূর্বের উদ্বৃত্ত" : "Opening"}
+                                                    </span>
+                                                  ) : (
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                      {onEditAllocation && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            onEditAllocation(row)
+                                                          }
+                                                          className="p-1 rounded text-blue-400 hover:bg-blue-500/20 transition"
+                                                          title="সম্পাদন করুন"
+                                                        >
+                                                          <Edit2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                      )}
+                                                      {onDeleteAllocation && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() =>
+                                                            onDeleteAllocation(
+                                                              row.id,
+                                                            )
+                                                          }
+                                                          className="p-1 rounded text-rose-400 hover:bg-rose-500/20 transition"
+                                                          title="মুছে ফেলুন"
+                                                        >
+                                                          <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  )}
                                                 </td>
                                               )}
                                             </tr>

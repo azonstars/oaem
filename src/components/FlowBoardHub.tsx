@@ -91,7 +91,7 @@ const GRADIENT_PRESETS = [
 
 export function FlowBoardHub({
   currentUser,
-  systemSettings: _systemSettings,
+  systemSettings,
   tools,
   onSelectTool,
   onAddTool,
@@ -229,7 +229,7 @@ export function FlowBoardHub({
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs font-semibold backdrop-blur-sm">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>FlowBoard Enterprise Hub</span>
+              <span>{systemSettings?.webAppName || "FlowBoard Enterprise Hub"}</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </div>
 

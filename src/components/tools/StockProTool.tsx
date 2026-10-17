@@ -19,6 +19,7 @@ import {
   Building,
   Database,
   RefreshCw,
+  ArrowLeft,
 } from "lucide-react";
 
 interface StockProToolProps {
@@ -36,15 +37,17 @@ export interface StockProduct {
   name: string;
   sku: string;
   category: string;
+  isSecurity?: boolean;
+  unit?: string;
   purchasePrice: number;
   sellingPrice: number;
   stockQuantity: number;
   isSerialized: boolean;
   padType: "regular" | "pad_only" | "pad_page";
-  fromPad?: number;
-  toPad?: number;
-  startSerial?: number;
-  endSerial?: number;
+  fromPad?: number | string;
+  toPad?: number | string;
+  startSerial?: number | string;
+  endSerial?: number | string;
   pagesPerPad?: number;
 }
 
@@ -55,6 +58,7 @@ export interface StockBranch {
   phone: string;
   address: string;
   branch: string;
+  district?: string;
 }
 
 export interface StockTransaction {
@@ -65,10 +69,10 @@ export interface StockTransaction {
   quantity: number;
   date: string;
   note?: string;
-  fromPad?: number;
-  toPad?: number;
-  startSerial?: number;
-  endSerial?: number;
+  fromPad?: number | string;
+  toPad?: number | string;
+  startSerial?: number | string;
+  endSerial?: number | string;
   padNumber?: string;
 }
 
@@ -88,27 +92,47 @@ export interface StockInvoiceItem {
   id: number;
   invoiceId: number;
   productId: number;
+  productName?: string;
+  sku?: string;
+  category?: string;
+  isSecurity?: boolean;
   quantity: number;
+  unit?: string;
   unitPrice: number;
-  padFrom?: number;
-  padTo?: number;
-  pageFrom?: number;
-  pageTo?: number;
+  totalPrice?: number;
+  padFrom?: number | string;
+  padTo?: number | string;
+  pageFrom?: number | string;
+  pageTo?: number | string;
+  remarks?: string;
 }
 
 export interface StockInvoice {
   id: number;
   date: string;
   agentId: number;
+  branchName?: string;
+  branchAddress?: string;
+  branchDistrict?: string;
   totalAmount: number;
   linkedPadNo?: string;
   linkedPageNo?: number;
   despatchNo?: string;
+  memoNo?: string;
+  subject?: string;
+  reference?: string;
+  suppliedBy?: string;
+  bearerName?: string;
+  authorizedOfficer?: string;
+  authorizedOfficerName?: string;
+  authorizedOfficerDesignation?: string;
+  specialNotes?: string;
+  items?: StockInvoiceItem[];
 }
 
 const STORAGE_PREFIX = "flowboard_stockpro_";
 
-export function StockProTool({ currentUser, systemSettings, offices, onBack: _onBack }: StockProToolProps) {
+export function StockProTool({ currentUser, systemSettings, offices, onBack }: StockProToolProps) {
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "products" | "agents" | "stockout" | "invoices" | "reports" | "settings"
   >("dashboard");
@@ -125,41 +149,123 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
     return [
       {
         id: 1,
-        name: "Credit Receipt Pad (ক্রেডিট রসিদ বহি)",
-        sku: "CRP-001",
-        category: "Receipt",
-        purchasePrice: 40,
-        sellingPrice: 50,
-        stockQuantity: 20,
+        name: "সঞ্চয়ী চেক বই (MICR)",
+        sku: "SB-MICR-01",
+        category: "Security Items",
+        isSecurity: true,
+        unit: "টি",
+        purchasePrice: 65,
+        sellingPrice: 80,
+        stockQuantity: 100,
         isSerialized: true,
         padType: "pad_page",
-        fromPad: 101,
-        toPad: 120,
-        startSerial: 1,
-        endSerial: 2000,
-        pagesPerPad: 100,
+        fromPad: "(0780961",
+        toPad: "0780980)",
+        pagesPerPad: 20,
       },
       {
         id: 2,
-        name: "Debit Voucher Pad (ডেবিট ভাউচার প্যাড)",
-        sku: "DVP-002",
-        category: "Voucher",
-        purchasePrice: 45,
-        sellingPrice: 55,
-        stockQuantity: 15,
+        name: "সঞ্চয়ী চেক বই (Non-MICR)",
+        sku: "SB-NONMICR-02",
+        category: "Security Items",
+        isSecurity: true,
+        unit: "টি",
+        purchasePrice: 65,
+        sellingPrice: 80,
+        stockQuantity: 200,
         isSerialized: true,
-        padType: "pad_only",
-        fromPad: 201,
-        toPad: 215,
+        padType: "pad_page",
+        fromPad: "3695001",
+        toPad: "3696000",
+        pagesPerPad: 20,
       },
       {
         id: 3,
-        name: "Official A4 Paper Box (রিম)",
-        sku: "PAP-003",
-        category: "Stationery",
-        purchasePrice: 350,
-        sellingPrice: 420,
+        name: "ডেবিট ক্যাশ ভাউচার",
+        sku: "DCV-003",
+        category: "Security Items",
+        isSecurity: true,
+        unit: "টি",
+        purchasePrice: 40,
+        sellingPrice: 55,
+        stockQuantity: 150,
+        isSerialized: true,
+        padType: "pad_only",
+        fromPad: "12772001",
+        toPad: "12772500",
+        pagesPerPad: 100,
+      },
+      {
+        id: 4,
+        name: "ট্রান্সফার ভাউচার",
+        sku: "TRV-004",
+        category: "Security Items",
+        isSecurity: true,
+        unit: "টি",
+        purchasePrice: 20,
+        sellingPrice: 30,
+        stockQuantity: 120,
+        isSerialized: true,
+        padType: "pad_only",
+        fromPad: "6940001",
+        toPad: "6940300",
+        pagesPerPad: 100,
+      },
+      {
+        id: 5,
+        name: "এল. এফ. ৪৬",
+        sku: "REG-LF46-05",
+        category: "Non-Security",
+        isSecurity: false,
+        unit: "প্যাড",
+        purchasePrice: 0,
+        sellingPrice: 0,
+        stockQuantity: 50,
+        isSerialized: false,
+        padType: "regular",
+      },
+      {
+        id: 6,
+        name: "ক্রেডিট ক্যাশ ভাউচার",
+        sku: "CCV-006",
+        category: "Security Items",
+        isSecurity: true,
+        unit: "টি",
+        purchasePrice: 40,
+        sellingPrice: 55,
+        stockQuantity: 100,
+        isSerialized: true,
+        padType: "pad_only",
+        fromPad: "13551001",
+        toPad: "13551500",
+        pagesPerPad: 100,
+      },
+      {
+        id: 7,
+        name: "চলতি হিসাব চেক বই (MICR)",
+        sku: "CD-MICR-07",
+        category: "Security Items",
+        isSecurity: true,
+        unit: "টি",
+        purchasePrice: 95,
+        sellingPrice: 120,
         stockQuantity: 40,
+        isSerialized: true,
+        padType: "pad_page",
+        fromPad: "0890101",
+        toPad: "0890150",
+        pagesPerPad: 50,
+      },
+      {
+        id: 8,
+        name: "এ৪ অফসেট পেপার (রিম)",
+        sku: "A4-008",
+        category: "Non-Security",
+        isSecurity: false,
+        unit: "রিম",
+        purchasePrice: 400,
+        sellingPrice: 480,
+        stockQuantity: 60,
         isSerialized: false,
         padType: "regular",
       },
@@ -178,15 +284,18 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
         id: idx + 1,
         name: o.name,
         phone: "0180000000" + (idx + 1),
-        address: o.address || "রাঙ্গামাটি",
+        address: o.address || "Rangamati",
         branch: o.name.replace(" শাখা", ""),
+        district: "Rangamati",
       }));
     }
     return [
-      { id: 1, name: "রাঙ্গামাটি প্রধান শাখা", phone: "01820302571", address: "তবলছড়ি, রাঙ্গামাটি", branch: "Rangamati" },
-      { id: 2, name: "লংগদু শাখা", phone: "01711223344", address: "লংগদু বাজার", branch: "Longadu" },
-      { id: 3, name: "কাপ্তাই শাখা", phone: "01911445566", address: "কাপ্তাই নতুন বাজার", branch: "Kaptai" },
-      { id: 4, name: "বরকল শাখা", phone: "01611778899", address: "বরকল বাজার", branch: "Barkal" },
+      { id: 1, name: "Barkal Branch", phone: "01820302571", address: "Barkal", branch: "Barkal Branch", district: "Rangamati" },
+      { id: 2, name: "Rangamati Main Branch", phone: "01711223344", address: "Rangamati", branch: "Rangamati Main Branch", district: "Rangamati" },
+      { id: 3, name: "Kaptai Branch", phone: "01911445566", address: "Kaptai", branch: "Kaptai Branch", district: "Rangamati" },
+      { id: 4, name: "Longadu Branch", phone: "01611778899", address: "Longadu", branch: "Longadu Branch", district: "Rangamati" },
+      { id: 5, name: "Kawkhali Branch", phone: "01811556677", address: "Kawkhali", branch: "Kawkhali Branch", district: "Rangamati" },
+      { id: 6, name: "Baghaichhari Branch", phone: "01511998877", address: "Baghaichhari", branch: "Baghaichhari Branch", district: "Rangamati" },
     ];
   });
 
@@ -271,18 +380,9 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
     ];
   });
 
-  // Organization settings
   const userOffice = offices?.find((o) => o.id === currentUser.officeId)?.name;
-  const [orgSettings] = useState(() => {
-    return {
-      orgName: systemSettings?.institutionName || "বাংলাদেশ কৃষি ব্যাংক",
-      officeName: userOffice || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি",
-      email: currentUser.email || "rmrangamati@krishibank.org.bd",
-      authorizedOfficer: `${currentUser.designation || "উপ-মহাব্যবস্থাপক / আঞ্চলিক ব্যবস্থাপক"} (${currentUser.name})`,
-      note1: "সরবরাহ গ্রহণে কর্মকর্তা/কর্মচারী প্রেরণ খরচ অনুমোদিত বিধি মোতাবেক প্রদানযোগ্য।",
-      note2: "সিকিউরিটি ডকুমেন্ট ও ভাউচার সামগ্রীর সঠিক হেফাজত নিশ্চিত করতে হবে।",
-    };
-  });
+
+
 
   const [dbSyncStatus, setDbSyncStatus] = useState<"synced" | "syncing" | "offline">("synced");
   const [isDbLoading, setIsDbLoading] = useState<boolean>(false);
@@ -448,9 +548,36 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
 
   // Invoice creation state
   const [invBranchId, setInvBranchId] = useState<number>(branches[0]?.id || 1);
-  const [invDespatchNo, setInvDespatchNo] = useState("");
+  const [invDate, setInvDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [invDespatchNo, setInvDespatchNo] = useState("আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/");
+  const [invSubject, setInvSubject] = useState(
+    "শাখা কর্তৃক চাহিদাকৃত স্টেশনারী ও সিকিউরিটি মালামাল সরবরাহ ও চালানপত্র।",
+  );
+  const [invReference, setInvReference] = useState("");
+  const [invSuppliedBy, setInvSuppliedBy] = useState("স্টোরকিপার / ইনভেন্টরি ইনচার্জ");
+  const [invBearerName, setInvBearerName] = useState("কর্মকর্তা / কর্মচারী মারফত");
+  const [invAuthorizedOfficer, setInvAuthorizedOfficer] = useState(
+    `${currentUser.name || ""}, ${currentUser.designation || "উপ-মহাব্যবস্থাপক / আঞ্চলিক ব্যবস্থাপক"}`
+  );
+  const [invSpecialNotes, setInvSpecialNotes] = useState(
+    "মালামাল গ্রহণের পর প্যাড/বইয়ের পাতা ও সিকিউরিটি সিরিয়াল নম্বর পুঙ্খানুপুঙ্খ পরীক্ষা করে গুনে বুঝে নিয়ে চালানপত্রের ২য় কপিতে সিল ও স্বাক্ষরযুক্ত প্রাপ্তি স্বীকারপত্র অনতিবিলম্বে অত্র কার্যালয়ে ফেরত প্রেরণের জন্য অনুরোধ করা হলো।",
+  );
   const [cartItems, setCartItems] = useState<
-    Array<{ productId: number; quantity: number; unitPrice: number; padFrom?: number; padTo?: number }>
+    Array<{
+      productId: number;
+      productName?: string;
+      sku?: string;
+      category?: string;
+      isSecurity?: boolean;
+      quantity: number;
+      unit?: string;
+      unitPrice: number;
+      padFrom?: number | string;
+      padTo?: number | string;
+      pageFrom?: number | string;
+      pageTo?: number | string;
+      remarks?: string;
+    }>
   >([]);
 
   // Search & Filter state
@@ -619,10 +746,18 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
         ...cartItems,
         {
           productId: pid,
+          productName: prod.name,
+          sku: prod.sku,
+          category: prod.category,
+          isSecurity: prod.isSecurity ?? (prod.padType !== "regular" || prod.category?.toLowerCase().includes("security")),
           quantity: 1,
+          unit: prod.unit || (prod.padType === "regular" ? "টি" : "প্যাড"),
           unitPrice: prod.sellingPrice,
           padFrom: prod.fromPad,
-          padTo: prod.fromPad,
+          padTo: prod.toPad || prod.fromPad,
+          pageFrom: prod.startSerial || 1,
+          pageTo: prod.endSerial || (prod.pagesPerPad ? prod.pagesPerPad : undefined),
+          remarks: "",
         },
       ]);
     }
@@ -633,26 +768,49 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
     if (cartItems.length === 0) return;
     const invId = (invoices.length > 0 ? Math.max(...invoices.map((i) => i.id)) : 1000) + 1;
     const totalAmt = cartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    const selectedBranch = branches.find((b) => b.id === invBranchId);
 
     const newInv: StockInvoice = {
       id: invId,
-      date: new Date().toISOString(),
+      date: invDate || new Date().toISOString(),
       agentId: invBranchId,
+      branchName: selectedBranch?.name || "শাখা",
+      branchAddress: selectedBranch?.address || "",
+      branchDistrict: selectedBranch?.district || "রাঙ্গামাটি",
       totalAmount: totalAmt,
       linkedPadNo: cartItems[0]?.padFrom ? String(cartItems[0].padFrom) : "-",
       linkedPageNo: 1,
-      despatchNo: invDespatchNo || "আঃকাঃ/প্রশা-" + invId,
+      despatchNo: invDespatchNo || `আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/${invId}`,
+      memoNo: invDespatchNo || `আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/${invId}`,
+      subject: invSubject || "শাখা কর্তৃক চাহিদাকৃত স্টেশনারী ও সিকিউরিটি মালামাল সরবরাহ ও চালানপত্র।",
+      reference: invReference || "",
+      suppliedBy: invSuppliedBy || "স্টোরকিপার / ইনভেন্টরি ইনচার্জ",
+      bearerName: invBearerName || "কর্মকর্তা / কর্মচারী মারফত",
+      authorizedOfficer: invAuthorizedOfficer || `${currentUser.designation || "উপ-মহাব্যবস্থাপক / আঞ্চলিক ব্যবস্থাপক"} (${currentUser.name})`,
+      specialNotes: invSpecialNotes,
     };
 
-    const newItems: StockInvoiceItem[] = cartItems.map((ci, idx) => ({
-      id: invoiceItems.length + idx + 1,
-      invoiceId: invId,
-      productId: ci.productId,
-      quantity: ci.quantity,
-      unitPrice: ci.unitPrice,
-      padFrom: ci.padFrom,
-      padTo: ci.padTo,
-    }));
+    const newItems: StockInvoiceItem[] = cartItems.map((ci, idx) => {
+      const p = products.find((pr) => pr.id === ci.productId);
+      return {
+        id: invoiceItems.length + idx + 1,
+        invoiceId: invId,
+        productId: ci.productId,
+        productName: ci.productName || p?.name || "পণ্য",
+        sku: ci.sku || p?.sku,
+        category: ci.category || p?.category,
+        isSecurity: ci.isSecurity ?? p?.isSecurity ?? (p?.padType !== "regular"),
+        quantity: ci.quantity,
+        unit: ci.unit || p?.unit || "টি",
+        unitPrice: ci.unitPrice,
+        totalPrice: ci.quantity * ci.unitPrice,
+        padFrom: ci.padFrom,
+        padTo: ci.padTo,
+        pageFrom: ci.pageFrom,
+        pageTo: ci.pageTo,
+        remarks: ci.remarks || "",
+      };
+    });
 
     // Deduct stocks
     let updatedProducts = [...products];
@@ -662,12 +820,14 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
       );
     });
 
-    setInvoices([newInv, ...invoices]);
+    const fullInv: StockInvoice = { ...newInv, items: newItems };
+
+    setInvoices([fullInv, ...invoices]);
     setInvoiceItems([...invoiceItems, ...newItems]);
     setProducts(updatedProducts);
     setCartItems([]);
     setShowCreateInvoiceModal(false);
-    setInvDespatchNo("");
+    setInvDespatchNo(`আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/`);
 
     // Save to SQLite
     try {
@@ -676,13 +836,13 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: `inv-${invId}-${Date.now()}`,
-          date: new Date().toISOString(),
+          date: newInv.date,
           agentId: String(invBranchId),
           totalAmount: totalAmt,
           linkedPadNo: cartItems[0]?.padFrom ? String(cartItems[0].padFrom) : "-",
           createdBy: currentUser.userId,
           despatchNo: newInv.despatchNo,
-          items: cartItems,
+          items: newItems,
         }),
       });
 
@@ -719,6 +879,15 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
       <aside className="w-full md:w-60 bg-white border-r border-slate-200 p-4 flex flex-col shrink-0">
         <div className="flex items-center justify-between md:justify-start gap-3 mb-6 px-2">
           <div className="flex items-center gap-2.5">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-1.5 -ml-1 text-slate-500 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors"
+                title="পূর্বের মেনুতে ফিরে যান"
+              >
+                <ArrowLeft size={18} />
+              </button>
+            )}
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black shadow-md shadow-blue-500/20">
               📦
             </div>
@@ -850,6 +1019,16 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
         {/* Top bar with quick buttons */}
         <header className="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="p-1.5 -ml-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                title="পূর্বের মেনুতে ফিরে যান"
+              >
+                <ArrowLeft size={16} />
+                <span className="hidden sm:inline">ফিরে যান</span>
+              </button>
+            )}
             <span className="text-sm font-bold text-slate-700 capitalize">
               {activeTab === "dashboard"
                 ? "ড্যাশবোর্ড ও ওভারভিউ"
@@ -1456,102 +1635,375 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
       {/* Modal: Create Invoice */}
       {showCreateInvoiceModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-xl space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="font-bold text-base text-slate-800">নতুন চালান / ইনভয়েস তৈরি</h3>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <h3 className="font-bold text-base text-slate-800">
+                  নতুন মালামাল বিতরণ চালান ও ইনভয়েস প্রস্তুত
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  সিকিউরিটি ও নন-সিকিউরিটি পণ্য নির্বাচন ও স্বয়ংক্রিয় চালান প্রস্তুতকরণ
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCreateInvoiceModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1"
+              >
+                ✕
+              </button>
+            </div>
+
             <form onSubmit={handleSaveInvoice} className="space-y-4 text-xs">
-              <div>
-                <label className="font-semibold block mb-1">গ্রাহক শাখা (Branch)</label>
-                <select
-                  value={invBranchId}
-                  onChange={(e) => setInvBranchId(Number(e.target.value))}
-                  className="w-full p-2 border rounded bg-white"
-                >
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+              {/* Top Meta info */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700">
+                    গ্রাহক শাখা (Recipient Branch) <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={invBranchId}
+                    onChange={(e) => setInvBranchId(Number(e.target.value))}
+                    className="w-full p-2 border rounded-lg bg-white"
+                  >
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} {b.address ? `(${b.address})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700">চালানের তারিখ (Date)</label>
+                  <input
+                    type="date"
+                    value={invDate}
+                    onChange={(e) => setInvDate(e.target.value)}
+                    className="w-full p-2 border rounded-lg bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700">চালান স্মারক নং (Despatch / Memo No)</label>
+                  <input
+                    type="text"
+                    value={invDespatchNo}
+                    onChange={(e) => setInvDespatchNo(e.target.value)}
+                    placeholder="আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/..."
+                    className="w-full p-2 border rounded-lg bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-700">চাহিদাপত্র সূত্র / কার্যাদেশ (ঐচ্ছিক)</label>
+                  <input
+                    type="text"
+                    value={invReference}
+                    onChange={(e) => setInvReference(e.target.value)}
+                    placeholder="শাখার চাহিদাপত্র সূত্র নং-..."
+                    className="w-full p-2 border rounded-lg bg-white"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="font-semibold block mb-1 text-slate-700">চালানের বিষয় (Subject)</label>
+                  <input
+                    type="text"
+                    value={invSubject}
+                    onChange={(e) => setInvSubject(e.target.value)}
+                    className="w-full p-2 border rounded-lg bg-white"
+                  />
+                </div>
               </div>
 
-              <div>
-                <label className="font-semibold block mb-1">Despatch No (ঐচ্ছিক)</label>
-                <input
-                  type="text"
-                  value={invDespatchNo}
-                  onChange={(e) => setInvDespatchNo(e.target.value)}
-                  placeholder="আঃকাঃ/প্রশা-..."
-                  className="w-full p-2 border rounded"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold block mb-1">পণ্য সিলেক্ট করুন</label>
+              {/* Product Selection */}
+              <div className="bg-blue-50/50 p-3 rounded-xl border border-blue-100 space-y-2">
+                <label className="font-bold block text-blue-950">
+                  চালানে পণ্য যোগ করুন (Select Product to Add)
+                </label>
                 <select
                   onChange={(e) => {
                     const pid = Number(e.target.value);
-                    if (pid) handleAddToCart(pid);
+                    if (pid) {
+                      handleAddToCart(pid);
+                      e.target.value = "";
+                    }
                   }}
-                  className="w-full p-2 border rounded bg-white"
+                  className="w-full p-2.5 border rounded-lg bg-white font-medium shadow-sm"
                 >
-                  <option value="">Choose item to add...</option>
-                  {products
-                    .filter((p) => p.stockQuantity > 0)
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name} (Stock: {p.stockQuantity} | ৳ {p.sellingPrice})
-                      </option>
-                    ))}
+                  <option value="">-- তালিকায় ক্লিক করে পণ্য নির্বাচন করুন --</option>
+                  <optgroup label="১. সিকিউরিটি সামগ্রী (Security Items)">
+                    {products
+                      .filter((p) => p.isSecurity || p.padType !== "regular" || p.category?.toLowerCase().includes("security"))
+                      .map((p) => (
+                        <option key={p.id} value={p.id} disabled={p.stockQuantity <= 0}>
+                          {p.name} {p.sku ? `(${p.sku})` : ""} | মজুদ: {p.stockQuantity} {p.unit || "প্যাড"} | ৳ {p.sellingPrice}
+                          {p.stockQuantity <= 0 ? " [স্টক শেষ]" : ""}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="২. নন-সিকিউরিটি সামগ্রী (Non-Security Items)">
+                    {products
+                      .filter((p) => !p.isSecurity && p.padType === "regular" && !p.category?.toLowerCase().includes("security"))
+                      .map((p) => (
+                        <option key={p.id} value={p.id} disabled={p.stockQuantity <= 0}>
+                          {p.name} {p.sku ? `(${p.sku})` : ""} | মজুদ: {p.stockQuantity} {p.unit || "টি"} | ৳ {p.sellingPrice}
+                          {p.stockQuantity <= 0 ? " [স্টক শেষ]" : ""}
+                        </option>
+                      ))}
+                  </optgroup>
                 </select>
               </div>
 
               {/* Cart List */}
               {cartItems.length > 0 && (
-                <div className="space-y-2 bg-slate-50 p-3 rounded-xl border">
-                  <span className="font-bold block text-slate-700">কার্ট আইটেম:</span>
-                  {cartItems.map((ci) => {
-                    const prod = products.find((p) => p.id === ci.productId);
-                    return (
-                      <div key={ci.productId} className="flex items-center justify-between bg-white p-2 rounded border">
-                        <div>
-                          <p className="font-bold text-slate-800">{prod?.name}</p>
-                          <p className="text-[10px] text-slate-400">
-                            {ci.quantity} × ৳ {ci.unitPrice} = ৳ {(ci.quantity * ci.unitPrice).toLocaleString()}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setCartItems(cartItems.filter((c) => c.productId !== ci.productId))}
-                          className="text-red-500 font-bold p-1 hover:bg-red-50 rounded"
+                <div className="space-y-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span className="font-bold text-slate-800 text-sm">
+                      নির্বাচিত পণ্য তালিকা ({cartItems.length} টি আইটেম):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCartItems([])}
+                      className="text-red-600 hover:text-red-700 text-[11px] font-semibold"
+                    >
+                      সব মুছুন
+                    </button>
+                  </div>
+
+                  <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                    {cartItems.map((ci, idx) => {
+                      const prod = products.find((p) => p.id === ci.productId);
+                      const isSec = ci.isSecurity ?? prod?.isSecurity ?? (prod?.padType !== "regular");
+
+                      return (
+                        <div
+                          key={ci.productId}
+                          className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2"
                         >
-                          ✕
-                        </button>
-                      </div>
-                    );
-                  })}
-                  <div className="flex justify-between font-black text-sm pt-2 border-t">
-                    <span>মোট:</span>
-                    <span className="text-blue-600">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-bold text-slate-900">{ci.productName || prod?.name}</span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                    isSec
+                                      ? "bg-purple-100 text-purple-800 border border-purple-200"
+                                      : "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                  }`}
+                                >
+                                  {isSec ? "১. সিকিউরিটি" : "২. নন-সিকিউরিটি"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-500">
+                                একক মূল্য: ৳ {ci.unitPrice} | সর্বোচ্চ মজুদ: {prod?.stockQuantity || 0}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setCartItems(cartItems.filter((_, i) => i !== idx))}
+                              className="text-red-500 hover:bg-red-50 p-1 rounded font-bold"
+                              title="বাদ দিন"
+                            >
+                              ✕
+                            </button>
+                          </div>
+
+                          {/* Editable fields */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 border-t border-slate-100">
+                            <div>
+                              <label className="text-[10px] text-slate-500 font-semibold block">পরিমাণ ({ci.unit || "টি"})</label>
+                              <input
+                                type="number"
+                                min={1}
+                                max={prod?.stockQuantity || 9999}
+                                value={ci.quantity}
+                                onChange={(e) => {
+                                  const val = Math.max(1, Number(e.target.value) || 1);
+                                  setCartItems(
+                                    cartItems.map((item, i) =>
+                                      i === idx ? { ...item, quantity: val } : item,
+                                    ),
+                                  );
+                                }}
+                                className="w-full p-1.5 border rounded text-xs bg-slate-50 font-bold text-blue-900"
+                              />
+                            </div>
+
+                            {isSec ? (
+                              <>
+                                <div>
+                                  <label className="text-[10px] text-slate-500 font-semibold block">প্যাড/বই নং (হতে-পর্যন্ত)</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="text"
+                                      value={ci.padFrom ?? ""}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setCartItems(cartItems.map((item, i) => (i === idx ? { ...item, padFrom: v } : item)));
+                                      }}
+                                      placeholder="শুরু"
+                                      className="w-1/2 p-1.5 border rounded text-[11px]"
+                                    />
+                                    <span>-</span>
+                                    <input
+                                      type="text"
+                                      value={ci.padTo ?? ""}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setCartItems(cartItems.map((item, i) => (i === idx ? { ...item, padTo: v } : item)));
+                                      }}
+                                      placeholder="শেষ"
+                                      className="w-1/2 p-1.5 border rounded text-[11px]"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div>
+                                  <label className="text-[10px] text-slate-500 font-semibold block">পাতা/সিরিয়াল নং (হতে-পর্যন্ত)</label>
+                                  <div className="flex items-center gap-1">
+                                    <input
+                                      type="text"
+                                      value={ci.pageFrom ?? ""}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setCartItems(cartItems.map((item, i) => (i === idx ? { ...item, pageFrom: v } : item)));
+                                      }}
+                                      placeholder="১"
+                                      className="w-1/2 p-1.5 border rounded text-[11px]"
+                                    />
+                                    <span>-</span>
+                                    <input
+                                      type="text"
+                                      value={ci.pageTo ?? ""}
+                                      onChange={(e) => {
+                                        const v = e.target.value;
+                                        setCartItems(cartItems.map((item, i) => (i === idx ? { ...item, pageTo: v } : item)));
+                                      }}
+                                      placeholder="১০০"
+                                      className="w-1/2 p-1.5 border rounded text-[11px]"
+                                    />
+                                  </div>
+                                </div>
+                              </>
+                            ) : (
+                              <div>
+                                <label className="text-[10px] text-slate-500 font-semibold block">একক (Unit)</label>
+                                <input
+                                  type="text"
+                                  value={ci.unit || "টি"}
+                                  onChange={(e) => {
+                                    const v = e.target.value;
+                                    setCartItems(cartItems.map((item, i) => (i === idx ? { ...item, unit: v } : item)));
+                                  }}
+                                  placeholder="রিম / প্যাড / টি"
+                                  className="w-full p-1.5 border rounded text-[11px]"
+                                />
+                              </div>
+                            )}
+
+                            <div>
+                              <label className="text-[10px] text-slate-500 font-semibold block">মন্তব্য (ঐচ্ছিক)</label>
+                              <input
+                                type="text"
+                                value={ci.remarks || ""}
+                                onChange={(e) => {
+                                  const v = e.target.value;
+                                  setCartItems(cartItems.map((item, i) => (i === idx ? { ...item, remarks: v } : item)));
+                                }}
+                                placeholder="সঠিক বা অক্ষত"
+                                className="w-full p-1.5 border rounded text-[11px]"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex justify-between items-center font-black text-sm pt-2 border-t text-slate-800">
+                    <span>সর্বমোট চালান মূল্য:</span>
+                    <span className="text-blue-700">
                       ৳ {cartItems.reduce((s, i) => s + i.quantity * i.unitPrice, 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
               )}
 
+              {/* Bottom Information (Auto from form to print) */}
+              <div className="bg-amber-50/50 p-3.5 rounded-xl border border-amber-200/80 space-y-2.5">
+                <p className="font-bold text-amber-950 text-xs flex items-center gap-1.5">
+                  <span>📝</span> চালানের নিচের লাইন ও স্বাক্ষর তথ্য (প্রিন্ট কপিতে স্বয়ংক্রিয়ভাবে দৃশ্যমান হবে):
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="font-semibold block mb-1 text-[11px] text-slate-700">
+                      মালামাল প্রস্তুতকারী / স্টোরকিপার
+                    </label>
+                    <input
+                      type="text"
+                      value={invSuppliedBy}
+                      onChange={(e) => setInvSuppliedBy(e.target.value)}
+                      placeholder="স্টোরকিপার / ইনচার্জ"
+                      className="w-full p-2 border rounded-lg bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1 text-[11px] text-slate-700">
+                      মালামাল বহনকারী / মারফত (Bearer)
+                    </label>
+                    <input
+                      type="text"
+                      value={invBearerName}
+                      onChange={(e) => setInvBearerName(e.target.value)}
+                      placeholder="কর্মকর্তা / কর্মচারী মারফত"
+                      className="w-full p-2 border rounded-lg bg-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-semibold block mb-1 text-[11px] text-slate-700">
+                      অনুমোদনকারী কর্মকর্তা (প্রেরক)
+                    </label>
+                    <input
+                      type="text"
+                      value={invAuthorizedOfficer}
+                      onChange={(e) => setInvAuthorizedOfficer(e.target.value)}
+                      className="w-full p-2 border rounded-lg bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-semibold block mb-1 text-[11px] text-slate-700">
+                    বিশেষ দ্রষ্টব্য / নির্দেশিকা নোট
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={invSpecialNotes}
+                    onChange={(e) => setInvSpecialNotes(e.target.value)}
+                    className="w-full p-2 border rounded-lg bg-white text-[11px]"
+                  />
+                </div>
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setShowCreateInvoiceModal(false)}
-                  className="flex-1 p-2 bg-slate-100 rounded font-bold"
+                  className="flex-1 p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition-all"
                 >
-                  Cancel
+                  বাতিল করুন
                 </button>
                 <button
                   type="submit"
                   disabled={cartItems.length === 0}
-                  className="flex-1 p-2 bg-blue-600 text-white rounded font-bold disabled:opacity-40"
+                  className="flex-1 p-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow transition-all disabled:opacity-40"
                 >
-                  Confirm &amp; Save Invoice
+                  চালান সম্পন্ন ও সংরক্ষণ করুন
                 </button>
               </div>
             </form>
@@ -1624,101 +2076,205 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack: _on
       )}
 
       {/* Modal / Print Invoice Preview */}
-      {viewingInvoice && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-2xl w-full shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto print:shadow-none print:max-h-none print:p-0 relative">
-            {/* Global Dynamic Watermark */}
-            <GlobalDocumentWatermark systemSettings={systemSettings} />
+      {viewingInvoice && (() => {
+        const invItems = invoiceItems.filter((item) => item.invoiceId === viewingInvoice.id);
+        const secItems = invItems.filter(
+          (item) => item.isSecurity ?? products.find((p) => p.id === item.productId)?.isSecurity ?? (products.find((p) => p.id === item.productId)?.padType !== "regular"),
+        );
+        const nonSecItems = invItems.filter(
+          (item) => !(item.isSecurity ?? products.find((p) => p.id === item.productId)?.isSecurity ?? (products.find((p) => p.id === item.productId)?.padType !== "regular")),
+        );
 
-            <div className="relative z-10 space-y-6">
-              {/* Global Dynamic Pad Header */}
-              <GlobalDocumentPadHeader
-                systemSettings={systemSettings}
-                officeName={orgSettings.officeName}
-              />
+        // Security items first, then non-security items
+        const sortedItems = [...secItems, ...nonSecItems];
+        const totalQty = sortedItems.reduce((sum, it) => sum + (it.quantity || 0), 0);
+        const totalPrice = sortedItems.reduce((sum, it) => sum + (it.quantity * it.unitPrice || 0), 0);
 
-            <div className="flex justify-between text-xs font-semibold">
-              <span>চালান নম্বর: #{viewingInvoice.id}</span>
-              <span>তারিখ: {new Date(viewingInvoice.date).toLocaleDateString("bn-BD")}</span>
-            </div>
+        const targetBranch = branches.find((b) => b.id === viewingInvoice.agentId);
+        const branchDisplayName = viewingInvoice.branchName || targetBranch?.name || "Barkal Branch";
+        const branchDisplayAddr = viewingInvoice.branchAddress || targetBranch?.address || "Rangamati";
 
-            <div className="text-xs">
-              <p className="font-bold">
-                গ্রাহক: {branches.find((b) => b.id === viewingInvoice.agentId)?.name || "শাখা"}
-              </p>
-              <p className="text-slate-500">
-                {branches.find((b) => b.id === viewingInvoice.agentId)?.address}
-              </p>
-            </div>
+        const formattedDate = new Date(viewingInvoice.date).toLocaleDateString("en-GB").replace(/\//g, "-");
 
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-100 border">
-                  <th className="p-2 border">ক্র/নং</th>
-                  <th className="p-2 border">বিবরণ</th>
-                  <th className="p-2 text-center border">পরিমাণ</th>
-                  <th className="p-2 text-right border">একক দর</th>
-                  <th className="p-2 text-right border">মোট মূল্য</th>
-                </tr>
-              </thead>
-              <tbody>
-                {invoiceItems
-                  .filter((item) => item.invoiceId === viewingInvoice.id)
-                  .map((item, i) => {
-                    const pr = products.find((p) => p.id === item.productId);
-                    return (
-                      <tr key={item.id} className="border">
-                        <td className="p-2 border text-center">{i + 1}</td>
-                        <td className="p-2 border font-bold">{pr?.name}</td>
-                        <td className="p-2 border text-center">{item.quantity}</td>
-                        <td className="p-2 border text-right">৳ {item.unitPrice}</td>
-                        <td className="p-2 border text-right font-bold">
-                          ৳ {(item.quantity * item.unitPrice).toLocaleString()}
+        return (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:bg-white print:fixed print:inset-0 print:p-0 print:m-0 print:overflow-visible print:z-50">
+            <div className="bg-white rounded-xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto print:shadow-none print:max-h-none print:p-4 print:m-0 print:border-none print:w-full print:max-w-none print:relative print:overflow-visible relative text-slate-900 font-sans">
+              {/* Global Dynamic Watermark */}
+              <GlobalDocumentWatermark systemSettings={systemSettings} />
+
+              <div className="relative z-10 space-y-4">
+                {/* Global Dynamic Pad Header */}
+                <GlobalDocumentPadHeader
+                  systemSettings={systemSettings}
+                  officeName={userOffice || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"}
+                />
+
+                {/* Despatch and Date Row */}
+                <div className="flex justify-between items-center text-xs font-semibold pt-1 pb-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-700">Despatch no:</span>
+                    <span className="font-mono text-slate-900 border-b border-slate-900 pb-0.5 px-1">
+                      {viewingInvoice.despatchNo || "আঃকাঃ(রাঙ্গা) প্রশা-১(৪০)/২০২৫-২০২৬/"}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-slate-700">Date:</span>
+                    <span className="font-mono text-slate-900 border-b border-slate-900 pb-0.5 px-1">
+                      {formattedDate}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="text-center pt-1 pb-2">
+                  <h3 className="text-sm font-bold tracking-wide text-slate-900">
+                    Stationery Item Supply Challan Copy
+                  </h3>
+                  <p className="text-xs font-semibold text-slate-700">
+                    (মুদ্রিত মনোহারী সরবরাহের চালান)
+                  </p>
+                </div>
+
+                {/* Main Table matching image format exactly with sorted items only */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse border border-slate-800">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-900 font-bold text-center border-b border-slate-800">
+                        <th className="p-2 border border-slate-800 w-12 align-middle" rowSpan={2}>
+                          No.
+                        </th>
+                        <th className="p-2 border border-slate-800" colSpan={3}>
+                          Description of Supplied Items
+                        </th>
+                        <th className="p-2 border border-slate-800 w-28 align-middle" rowSpan={2}>
+                          Quantity
+                        </th>
+                        <th className="p-2 border border-slate-800 w-20 align-middle" rowSpan={2}>
+                          Rate
+                        </th>
+                        <th className="p-2 border border-slate-800 w-24 align-middle" rowSpan={2}>
+                          Price
+                        </th>
+                      </tr>
+                      <tr className="bg-slate-50 text-slate-800 font-semibold text-center border-b border-slate-800 text-[11px]">
+                        <th className="p-1.5 border border-slate-800 text-left pl-3">(Security Items)</th>
+                        <th className="p-1.5 border border-slate-800 w-28">From</th>
+                        <th className="p-1.5 border border-slate-800 w-28">To</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedItems.map((item, idx) => {
+                        const pr = products.find((p) => p.id === item.productId);
+                        const isSec = item.isSecurity ?? pr?.isSecurity ?? (pr?.padType !== "regular");
+                        const itemPadFrom = item.padFrom || (isSec ? pr?.fromPad || "" : "");
+                        const itemPadTo = item.padTo || (isSec ? pr?.toPad || "" : "");
+                        const qtyText = `${item.quantity} ${item.unit || pr?.unit || (isSec ? "টি" : "প্যাড")}`;
+                        const rateText = item.unitPrice.toFixed(2);
+                        const priceText = (item.quantity * item.unitPrice).toFixed(2);
+
+                        return (
+                          <tr key={item.id || idx} className="h-7 hover:bg-slate-50">
+                            <td className="p-1.5 border border-slate-800 text-center font-bold">
+                              {idx + 1}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 font-medium text-slate-900 pl-3">
+                              {item.productName || pr?.name || "পণ্য"}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center font-mono text-slate-800">
+                              {itemPadFrom}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center font-mono text-slate-800">
+                              {itemPadTo}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-center font-medium">
+                              {qtyText}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-right font-mono">
+                              {rateText}
+                            </td>
+                            <td className="p-1.5 border border-slate-800 text-right font-mono font-bold">
+                              {priceText}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {sortedItems.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="p-4 text-center text-slate-400 italic">
+                            কোনো আইটেম পাওয়া যায়নি।
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                    <tfoot>
+                      <tr className="bg-slate-100 font-bold border-t border-slate-800">
+                        <td colSpan={4} className="p-2 border border-slate-800 text-right">
+                          সর্বমোট (Total):
+                        </td>
+                        <td className="p-2 border border-slate-800 text-center font-black">
+                          {totalQty}
+                        </td>
+                        <td className="p-2 border border-slate-800"></td>
+                        <td className="p-2 border border-slate-800 text-right font-mono font-black">
+                          {totalPrice.toFixed(2)}
                         </td>
                       </tr>
-                    );
-                  })}
-              </tbody>
-              <tfoot>
-                <tr className="border font-bold bg-slate-50">
-                  <td colSpan={4} className="p-2 text-right border">
-                    সর্বমোট:
-                  </td>
-                  <td className="p-2 text-right border font-black text-blue-900">
-                    ৳ {viewingInvoice.totalAmount.toLocaleString()}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
+                    </tfoot>
+                  </table>
+                </div>
 
-            <div className="flex justify-between pt-8 text-xs font-semibold">
-              <div>
-                <p>গ্রহণকারীর স্বাক্ষর</p>
-              </div>
-              <div className="text-right">
-                <p>{orgSettings.authorizedOfficer}</p>
-                <p className="text-[10px] text-slate-400">অনুমোদিত স্বাক্ষরকারী</p>
-              </div>
-            </div>
+                {/* Bottom Signatures Matching Reference Image */}
+                <div className="grid grid-cols-3 gap-4 pt-8 text-xs font-semibold">
+                  <div>
+                    <p className="text-slate-800">Manager</p>
+                    <p className="text-slate-800">Bangladesh Krishi Bank</p>
+                    <p className="font-bold text-slate-900 underline decoration-slate-900 underline-offset-2">
+                      {branchDisplayName}
+                    </p>
+                    <p className="text-slate-700">{branchDisplayAddr}</p>
+                  </div>
 
-            </div>
-            <div className="flex justify-end gap-2 pt-4 border-t print:hidden">
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2 bg-blue-600 text-white rounded font-bold text-xs"
-              >
-                Print / PDF
-              </button>
-              <button
-                onClick={() => setViewingInvoice(null)}
-                className="px-4 py-2 bg-slate-500 text-white rounded font-bold text-xs"
-              >
-                Close
-              </button>
+                  <div className="text-center pt-6">
+                    <p className="text-slate-600">Accepted By</p>
+                  </div>
+
+                  <div className="text-right space-y-1">
+                    <p className="text-slate-800 font-bold pb-8">Authorized Officer</p>
+                    <div className="w-48 ml-auto border-b border-slate-900 pt-2"></div>
+                    <p className="font-bold text-slate-900 text-xs pt-1">
+                      {viewingInvoice.authorizedOfficer || `${currentUser.name || ""}, ${currentUser.designation || "উপ-মহাব্যবস্থাপক / আঞ্চলিক ব্যবস্থাপক"}`}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Notes (দ্রষ্টব্য) */}
+                <div className="text-[11px] leading-relaxed text-slate-800 pt-3 space-y-0.5">
+                  <p className="font-bold text-slate-900">দ্রষ্টব্যঃ</p>
+                  <p>০১. সরবরাহ গ্রহণে কর্মকর্তা/কর্মচারী প্রেরণ খরচ মাসে সর্বোচ্চ দু'বার গ্রহণযোগ্য।</p>
+                  <p>০২. সিকিউরিটি ডকুমেন্ট এর সরবরাহ গ্রহণে কর্মকর্তা প্রেরণ আবশ্যিকী।</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-200 print:hidden">
+                <button
+                  onClick={() => window.print()}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center gap-1.5 transition-all"
+                >
+                  <span>🖨️</span>
+                  <span>প্রিন্ট / PDF সংরক্ষণ</span>
+                </button>
+                <button
+                  onClick={() => setViewingInvoice(null)}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold text-xs transition-all"
+                >
+                  বন্ধ করুন
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

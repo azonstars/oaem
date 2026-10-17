@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { apiFetch } from "../../api";
-import { Database, Save, FolderOpen, CheckCircle2, Trash2 } from "lucide-react";
+import { Database, Save, FolderOpen, CheckCircle2, Trash2, ArrowLeft } from "lucide-react";
 import {
   GlobalDocumentPadHeader,
   GlobalDocumentWatermark,
@@ -63,7 +63,7 @@ interface ExpenseRow {
   a: string;
 }
 
-export function ConferenceNoteTool({ currentUser, systemSettings, offices, financialYears, selectedFY, onBack: _onBack }: ConferenceNoteToolProps) {
+export function ConferenceNoteTool({ currentUser, systemSettings, offices, financialYears, selectedFY, onBack }: ConferenceNoteToolProps) {
   const activeFY = financialYears?.find((f) => f.id === selectedFY)?.name || "2024-25";
   const userOffice = offices?.find((o) => o.id === currentUser.officeId)?.name;
 
@@ -357,6 +357,17 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
+                title="পূর্বের মেনুতে ফিরে যান"
+              >
+                <ArrowLeft size={15} />
+                <span>ফিরে যান</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 loadSavedDocs();

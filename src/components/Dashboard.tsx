@@ -9,6 +9,7 @@ import {
   NoteSheet,
   SystemSettings,
   isStaffOrAdmin,
+  OpeningBalance,
 } from "../types";
 import {
   DollarSign,
@@ -37,6 +38,7 @@ interface DashboardProps {
     filter: "All" | "Pending" | "Approved" | "Rejected",
   ) => void;
   onOpenAbout?: () => void;
+  openingBalances?: OpeningBalance[];
 }
 
 export function Dashboard({
@@ -52,6 +54,7 @@ export function Dashboard({
   setCurrentTab,
   onNavigateExpenses,
   onOpenAbout: _onOpenAbout,
+  openingBalances = [],
 }: DashboardProps) {
   const { t, language, formatCurrency, formatNumber } = useLanguage();
   const { theme, isCustom } = useTheme();
@@ -69,6 +72,14 @@ export function Dashboard({
     return matchFY && matchOffice;
   });
 
+  const filteredOpeningBalances = (openingBalances || []).filter((ob) => {
+    const matchFY = ob.financialYearId === selectedFY;
+    const matchOffice = isHeadOffice
+      ? true
+      : ob.officeId === currentUser.officeId;
+    return matchFY && matchOffice;
+  });
+
   const filteredExpenses = expenses.filter((e) => {
     const matchFY = e.financialYearId === selectedFY;
     const matchOffice = isHeadOffice
@@ -77,6 +88,10 @@ export function Dashboard({
     return matchFY && matchOffice;
   });
 
+  const openingProvision = filteredOpeningBalances.reduce(
+    (sum, ob) => sum + Number(ob.amount || 0),
+    0,
+  );
 
   const initialAllocation = filteredAllocations
     .filter((a) => a.type === "Initial" || (!a.type as any))
@@ -90,7 +105,8 @@ export function Dashboard({
     .filter((a) => a.type === "Adjustment")
     .reduce((sum, a) => sum + Number(a.allocatedAmount || 0), 0);
 
-  const totalAllocated = initialAllocation + additionalAllocation + adjustments;
+  const totalAllocated =
+    initialAllocation + additionalAllocation + adjustments + openingProvision;
 
   const approvedExpenses = filteredExpenses.filter(
     (e) => e.status === "Approved" || !e.status,
@@ -116,9 +132,13 @@ export function Dashboard({
 
   const categorySummary = categories
     .map((cat) => {
-      const allocated = filteredAllocations
-        .filter((a) => a.categoryId === cat.id)
-        .reduce((s, a) => s + Number(a.allocatedAmount || 0), 0);
+      const catOpening = filteredOpeningBalances
+        .filter((ob) => ob.categoryId === cat.id)
+        .reduce((s, ob) => s + Number(ob.amount || 0), 0);
+      const allocated =
+        filteredAllocations
+          .filter((a) => a.categoryId === cat.id)
+          .reduce((s, a) => s + Number(a.allocatedAmount || 0), 0) + catOpening;
       const spent = filteredExpenses
         .filter((e) => e.categoryId === cat.id)
         .reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -131,9 +151,14 @@ export function Dashboard({
   const officeSummary = isHeadOffice
     ? offices
         .map((off) => {
-          const allocated = filteredAllocations
-            .filter((a) => a.officeId === off.id)
-            .reduce((s, a) => s + Number(a.allocatedAmount || 0), 0);
+          const offOpening = filteredOpeningBalances
+            .filter((ob) => ob.officeId === off.id)
+            .reduce((s, ob) => s + Number(ob.amount || 0), 0);
+          const allocated =
+            filteredAllocations
+              .filter((a) => a.officeId === off.id)
+              .reduce((s, a) => s + Number(a.allocatedAmount || 0), 0) +
+            offOpening;
           const spent = filteredExpenses
             .filter((e) => e.officeId === off.id)
             .reduce((s, e) => s + Number(e.amount || 0), 0);

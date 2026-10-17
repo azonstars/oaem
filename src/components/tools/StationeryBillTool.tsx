@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { User, SystemSettings, Office, FinancialYear } from "../../types";
+import { User, SystemSettings, Office, FinancialYear, isStaffOrAdmin } from "../../types";
 import { apiFetch } from "../../api";
-import { Database, Save, FolderOpen, CheckCircle2, Trash2 } from "lucide-react";
+import { Database, Save, FolderOpen, CheckCircle2, Trash2, ArrowLeft } from "lucide-react";
 import {
   GlobalDocumentPadHeader,
   GlobalDocumentWatermark,
@@ -18,8 +18,6 @@ interface StationeryBillToolProps {
 
 const BN = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 const toBn = (s: string | number) => String(s).replace(/[0-9]/g, (d) => BN[+d]);
-const _toNum = (s: string | number) =>
-  parseFloat(String(s).replace(/[০-৯]/g, (d) => String(BN.indexOf(d))).replace(/,/g, "")) || 0;
 
 function formatPriceBn(num: number | string): string {
   const n = typeof num === "number" ? num : parseFloat(String(num)) || 0;
@@ -73,7 +71,7 @@ interface StationeryItem {
   v3_note: string;
 }
 
-export function StationeryBillTool({ currentUser, systemSettings, offices, financialYears, selectedFY, onBack: _onBack }: StationeryBillToolProps) {
+export function StationeryBillTool({ currentUser, systemSettings, offices, financialYears, selectedFY, onBack }: StationeryBillToolProps) {
   const activeFY = financialYears?.find((f) => f.id === selectedFY)?.name || "2024-25";
 
   const userOffice = offices?.find((o) => o.id === currentUser.officeId)?.name;
@@ -185,12 +183,7 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
 
   // Grand totals
   const grandTotalV1 = items.reduce((sum, it) => sum + Math.round((it.v1_up || 0) * (it.qty || 1)), 0);
-  const totalAlloc = budgetAlloc + budgetPrev;
-  const grandAlloc = totalAlloc + budgetExtra;
-  const spentTotal = budgetTillNow + grandTotalV1;
-  const _remBudget = grandAlloc - spentTotal;
 
-  const _deductRate = vatRate + taxRate;
   const vatDeductAmt = Math.round((grandTotalV1 * vatRate) / (100 + vatRate));
   const taxDeductAmt = Math.round((grandTotalV1 * taxRate) / (100 + vatRate));
   const totalDeduct = vatDeductAmt + taxDeductAmt;
@@ -216,7 +209,14 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
-          setSavedDocs(data.filter((d: any) => d.toolType === "stationery_bill"));
+          const isHeadOffice = isStaffOrAdmin(currentUser?.role);
+          setSavedDocs(
+            data.filter((d: any) => {
+              if (d.toolType !== "stationery_bill") return false;
+              if (isHeadOffice) return true;
+              return d.officeId && currentUser?.officeId && d.officeId === currentUser.officeId;
+            })
+          );
         }
       }
     } catch (e) {
@@ -270,6 +270,7 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
           title: `মুদ্রিত স্টেশনারী চালান (${items.length} টি আইটেম)`,
           docDate,
           totalAmount: netPayment,
+          officeId: currentUser?.officeId || "off-ho",
           payload,
           createdBy: currentUser.userId,
         }),
@@ -364,6 +365,17 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5"
+                title="পূর্বের মেনুতে ফিরে যান"
+              >
+                <ArrowLeft size={15} />
+                <span>ফিরে যান</span>
+              </button>
+            )}
+
             <button
               onClick={() => {
                 loadSavedDocs();
