@@ -41,10 +41,10 @@ export const initialData: Record<string, any[]> = {
     </div>
   </div>
   
-  <div class="form1-approval-chain" style="margin-top: 25pt; line-height: 1.6;">
-    <div style="margin-bottom: 56pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, {{OFFICE_NAME}} বরাবরে প্রেরণ করুন।</div>
-    <div style="margin-bottom: 56pt;"><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> {{OFFICE_NAME}} এর জন্য {{ITEMS_DESCRIPTION}} ক্রয় বাবদ {{TAX_VAT_TEXT}} ৮= {{CURRENT_EXPENSE}}/- ({{AMOUNT_IN_WORDS}}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।</div>
-    <div style="margin-bottom: 45pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+  <div class="form1-approval-chain" style="margin-top: 12pt; line-height: 1.4;">
+    <div style="margin-bottom: 16pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, {{OFFICE_NAME}} বরাবরে প্রেরণ করুন।</div>
+    <div style="margin-bottom: 16pt;"><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> {{OFFICE_NAME}} এর জন্য {{ITEMS_DESCRIPTION}} ক্রয় বাবদ {{TAX_VAT_TEXT}} ৮= {{CURRENT_EXPENSE}}/- ({{AMOUNT_IN_WORDS}}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।</div>
+    <div style="margin-bottom: 12pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
   </div>
 </div>`,
       userId: "usr-1",

@@ -21,9 +21,10 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../i18n";
 import {
-  getCleanInstitutionName,
   GlobalDocumentWatermark,
+  GlobalDocumentPadHeader,
 } from "../utils/documentBranding";
+import { ReportPrintModal } from "./ReportPrintModal";
 
 interface ReportsViewProps {
   allocations: Allocation[];
@@ -76,6 +77,7 @@ export function ReportsView({
   const [filterVoucher, setFilterVoucher] = useState("");
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const toggleCategory = (id: string) => {
     setSelectedCategories((prev) =>
@@ -239,8 +241,114 @@ export function ReportsView({
   ]);
 
   const handlePrint = () => {
-    window.print();
+    setIsPrintModalOpen(true);
   };
+
+  const activeDisplayData = useMemo(() => {
+    if (
+      reportType === "CONSOLIDATED" ||
+      reportType === "CATEGORY_WISE" ||
+      reportType === "OFFICE_WISE"
+    ) {
+      if (reportType === "CATEGORY_WISE") {
+        const catGroup: Record<string, any> = {};
+        consolidatedData.forEach((d) => {
+          if (!catGroup[d.categoryId])
+            catGroup[d.categoryId] = {
+              opening: 0,
+              initial: 0,
+              additional: 0,
+              adjustment: 0,
+              expense: 0,
+              totalAlloc: 0,
+              balance: 0,
+            };
+          catGroup[d.categoryId].opening += d.opening || 0;
+          catGroup[d.categoryId].initial += d.initial;
+          catGroup[d.categoryId].additional += d.additional;
+          catGroup[d.categoryId].adjustment += d.adjustment;
+          catGroup[d.categoryId].expense += d.expense;
+          catGroup[d.categoryId].totalAlloc += d.totalAlloc;
+          catGroup[d.categoryId].balance += d.balance;
+        });
+        return Object.keys(catGroup).map((catId) => ({
+          categoryId: catId,
+          officeId: "ALL",
+          ...catGroup[catId],
+        }));
+      } else if (reportType === "OFFICE_WISE") {
+        const offGroup: Record<string, any> = {};
+        consolidatedData.forEach((d) => {
+          if (!offGroup[d.officeId])
+            offGroup[d.officeId] = {
+              opening: 0,
+              initial: 0,
+              additional: 0,
+              adjustment: 0,
+              expense: 0,
+              totalAlloc: 0,
+              balance: 0,
+            };
+          offGroup[d.officeId].opening += d.opening || 0;
+          offGroup[d.officeId].initial += d.initial;
+          offGroup[d.officeId].additional += d.additional;
+          offGroup[d.officeId].adjustment += d.adjustment;
+          offGroup[d.officeId].expense += d.expense;
+          offGroup[d.officeId].totalAlloc += d.totalAlloc;
+          offGroup[d.officeId].balance += d.balance;
+        });
+        return Object.keys(offGroup).map((offId) => ({
+          categoryId: "ALL",
+          officeId: offId,
+          ...offGroup[offId],
+        }));
+      }
+      return consolidatedData;
+    } else if (
+      reportType === "EXPENSE_TRANSACTION" ||
+      reportType === "APPLICANT_WISE"
+    ) {
+      return filteredExpenses;
+    } else if (reportType === "PENDING_NOTESHEET") {
+      return filteredExpenses.filter((e) => !e.noteSheetId);
+    }
+    return [];
+  }, [reportType, consolidatedData, filteredExpenses]);
+
+  const activeTableType = useMemo<"consolidated" | "expense" | "combined">(() => {
+    if (
+      reportType === "CONSOLIDATED" ||
+      reportType === "CATEGORY_WISE" ||
+      reportType === "OFFICE_WISE"
+    ) {
+      return "consolidated";
+    }
+    if (reportType === "COMBINED_PDF") {
+      return "combined";
+    }
+    return "expense";
+  }, [reportType]);
+
+  const reportTitleBn = useMemo(() => {
+    switch (reportType) {
+      case "CONSOLIDATED":
+        return "একীভূত বাজেট ও ব্যয় বিবরণী (Consolidated Overview)";
+      case "CATEGORY_WISE":
+        return "খাতভিত্তিক বাজেট ও ব্যয়ের হিসাব বিবরণী (Category-wise Summary)";
+      case "OFFICE_WISE":
+        return "কার্যালয়ভিত্তিক বাজেট ও ব্যয় বিবরণী (Office-wise Summary)";
+      case "EXPENSE_TRANSACTION":
+        return "ব্যয় ও ভাউচার লেনদেনের পূর্ণাঙ্গ বিবরণী (Expense Transactions)";
+      case "APPLICANT_WISE":
+        return "কর্মকর্তা/আবেদনকারীভিত্তিক ব্যয় বিবরণী (Applicant-wise Expenses)";
+      case "PENDING_NOTESHEET":
+        return "নোট শিট অপেক্ষমাণ ব্যয়ের হিসাব বিবরণী (Pending Note Sheets)";
+      case "COMBINED_PDF":
+        return "বহু-খাতভিত্তিক পূর্ণাঙ্গ আর্থিক প্রতিবেদন (Combined PDF Report)";
+      default:
+        return "আর্থিক প্রতিবেদন ও হিসাব বিবরণী";
+    }
+  }, [reportType]);
 
   const handleExportCSV = () => {
     let csv = "";
@@ -667,90 +775,37 @@ export function ReportsView({
       ? offices.find((o) => o.id === filterOffice)?.name
       : "All Offices";
 
-    const reportLogo =
-      systemSettings?.brandingPolicy?.logoUrl || systemSettings?.logoUrl;
-    const cleanInstName = getCleanInstitutionName(
-      systemSettings?.brandingPolicy?.institutionName ||
-        systemSettings?.institutionName
-    );
-
     return (
       <div
         className="hidden print:flex flex-col items-center justify-center mb-6 w-full text-center report-print-header"
         data-print-header="true"
       >
-        <div className="flex items-center justify-center gap-4 mb-3">
-          {reportLogo ? (
-            <img
-              src={reportLogo}
-              alt="Logo"
-              className="w-16 h-16 object-contain"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <svg
-              width="56"
-              height="56"
-              viewBox="0 0 100 100"
-              className="shrink-0"
-            >
-              <circle
-                cx="50"
-                cy="50"
-                r="46"
-                fill="none"
-                stroke="#006a4e"
-                strokeWidth="6"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="38"
-                fill="none"
-                stroke="#006a4e"
-                strokeWidth="1.5"
-                strokeDasharray="3,2"
-              />
-              <path
-                d="M 50 16 L 50 84 M 32 30 C 40 45 40 60 50 78 M 68 30 C 60 45 60 60 50 78 M 25 50 C 38 52 45 65 50 82 M 75 50 C 62 52 55 65 50 82"
-                fill="none"
-                stroke="#006a4e"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <circle cx="50" cy="22" r="3" fill="#f42a41" />
-            </svg>
-          )}
-          <div className="text-left">
-            <h1 className="text-xl font-bold text-slate-900 mb-0.5 tracking-tight">
-              {cleanInstName}
-            </h1>
-            <p className="text-[13px] text-slate-700">
-              {systemSettings?.webAppName ||
-                "Office Allocation & Expense Management System"}
-            </p>
-          </div>
-        </div>
+        <GlobalDocumentPadHeader
+          systemSettings={systemSettings}
+          officeName={selectedOfficeName}
+          toolId="reports"
+          docId={reportType}
+        />
 
         <div className="text-center w-full mt-1">
           <h2 className="text-base font-bold text-slate-800 mb-1">
             আর্থিক প্রতিবেদন ও হিসাব বিবরণী: {reportType.replace(/_/g, " ")}
           </h2>
           <div className="text-[12px] font-medium text-slate-700 flex justify-center items-center gap-2 mb-1">
-            <span>FY: {currentFYObj?.name || "2026-2027"}</span>
+            <span>অর্থবছর: {currentFYObj?.name || "2026-2027"}</span>
             <span className="text-slate-400">|</span>
-            <span>Office: {selectedOfficeName}</span>
+            <span>কার্যালয়: {selectedOfficeName}</span>
           </div>
           <div className="text-[12px] text-slate-600 flex justify-center items-center gap-2">
             <span>
-              Generated by: {currentUser.name} ({currentUser.role})
+              প্রস্তুতকারী: {currentUser.name} ({currentUser.role})
             </span>
             <span className="text-slate-400">|</span>
-            <span>Date: {new Date().toLocaleDateString("en-US")}</span>
+            <span>তারিখ: {new Date().toLocaleDateString("bn-BD")}</span>
           </div>
         </div>
 
-        <div className="w-full border-b-[3px] border-slate-900 mt-4 mb-4"></div>
+        <div className="w-full border-b-[2px] border-slate-900 mt-3 mb-4"></div>
       </div>
     );
   };
@@ -1010,6 +1065,37 @@ export function ReportsView({
           </div>
         </div>
       </div>
+
+      {/* Professional Report Print & Layout Modal */}
+      {isPrintModalOpen && (
+        <ReportPrintModal
+          isOpen={isPrintModalOpen}
+          onClose={() => setIsPrintModalOpen(false)}
+          reportType={reportType}
+          reportTitle={reportTitleBn}
+          reportSubtitle={
+            reportType === "COMBINED_PDF"
+              ? "নির্বাচিত খাতসমূহের সমন্বিত আর্থিক প্রতিবেদন ও হিসাব বিবরণী"
+              : "বাজেট বরাদ্দ ও ব্যয়ের পূর্ণাঙ্গ হিসাব বিবরণী"
+          }
+          offices={offices}
+          categories={categories}
+          financialYears={financialYears}
+          selectedFY={filterFY}
+          filterOffice={effectiveOffice}
+          filterCategory={filterCategory}
+          filterDateFrom={filterDateFrom}
+          filterDateTo={filterDateTo}
+          currentUser={currentUser}
+          systemSettings={systemSettings}
+          displayData={activeDisplayData}
+          tableType={activeTableType}
+          combinedCategories={selectedCategories}
+          filteredAllocations={filteredAllocations}
+          filteredExpenses={filteredExpenses}
+          formatCurrency={formatCurrency}
+        />
+      )}
     </div>
   );
 }

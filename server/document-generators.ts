@@ -462,31 +462,31 @@ export function generateBudgetProvisionTableHtml(
   const provisionLineLabel = getDynamicProvisionLabel(financialYear);
 
   let budgetHtml = `
-    <table class="budget-provision-table" style="width: 100%; border-collapse: collapse; margin-top: 14pt; margin-bottom: 12pt; font-size: inherit; page-break-inside: avoid; break-inside: avoid; border: none !important; table-layout: auto;">
+    <table class="budget-provision-table" style="width: 100%; border-collapse: collapse; margin-top: 6pt; margin-bottom: 6pt; font-size: inherit; page-break-inside: avoid; break-inside: avoid; border: none !important; table-layout: auto;">
       <tbody>
   `;
 
   if (balanceInfo.provisionAmount > 0) {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">${provisionLineLabel}</td>
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.provisionAmount.toLocaleString("en-IN"))}/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">${provisionLineLabel}</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.provisionAmount.toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
   }
 
   budgetHtml += `
     <tr style="page-break-inside: avoid; break-inside: avoid;">
-      <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">${category?.name || ""} (${budgetHeadDisplay}) খাতে ${convertToBengaliNumber(fyText)} অর্থ বছরে বাজেট বরাদ্দ</td>
-      <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.initialBudget.toLocaleString("en-IN"))}/-</td>
+      <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">${category?.name || ""} (${budgetHeadDisplay}) খাতে ${convertToBengaliNumber(fyText)} অর্থ বছরে বাজেট বরাদ্দ</td>
+      <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.initialBudget.toLocaleString("en-IN"))}/-</td>
     </tr>
   `;
 
   if (balanceInfo.provisionAmount > 0 && balanceInfo.additionalBudget > 0) {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">মোট বরাদ্দ</td>
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber((balanceInfo.initialBudget + balanceInfo.provisionAmount).toLocaleString("en-IN"))}/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">মোট বরাদ্দ</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber((balanceInfo.initialBudget + balanceInfo.provisionAmount).toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
   }
@@ -494,8 +494,8 @@ export function generateBudgetProvisionTableHtml(
   if (balanceInfo.additionalBudget > 0) {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অতিরিক্ত বরাদ্দ</td>
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.additionalBudget.toLocaleString("en-IN"))}/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অতিরিক্ত বরাদ্দ</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.additionalBudget.toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
   }
@@ -503,8 +503,8 @@ export function generateBudgetProvisionTableHtml(
   if (balanceInfo.provisionAmount > 0 || balanceInfo.additionalBudget > 0) {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">সর্বমোট বাজেট</td>
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.totalAllocated.toLocaleString("en-IN"))}/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">সর্বমোট বাজেট</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; white-space: nowrap;">= ${convertToBengaliNumber(balanceInfo.totalAllocated.toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
   }
@@ -512,23 +512,23 @@ export function generateBudgetProvisionTableHtml(
   if (previousExpense > 0) {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচসহ সর্বমোট খরচের পরিমাণ (${convertToBengaliNumber(previousExpense.toLocaleString("en-IN"))} + ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))})/-</td>
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber((previousExpense + currentBill).toLocaleString("en-IN"))}/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচসহ সর্বমোট খরচের পরিমাণ (${convertToBengaliNumber(previousExpense.toLocaleString("en-IN"))} + ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))})/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber((previousExpense + currentBill).toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
   } else {
     budgetHtml += `
       <tr style="page-break-inside: avoid; break-inside: avoid;">
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচের পরিমাণ</td>
-        <td style="border: none !important; padding: 4px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/-</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; padding-right: 12px; white-space: nowrap;">অত্র খরচের পরিমাণ</td>
+        <td style="border: none !important; padding: 2.5pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: 600; border-bottom: 1.5px solid #000 !important; white-space: nowrap;">= ${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/-</td>
       </tr>
     `;
   }
 
   budgetHtml += `
     <tr style="page-break-inside: avoid; break-inside: avoid;">
-      <td style="border: none !important; padding: 6px 8px; font-size: inherit; text-align: right; padding-right: 12px; font-weight: bold; white-space: nowrap;">এ খাতে অবশিষ্ট বাজেটের পরিমাণ</td>
-      <td style="border: none !important; padding: 6px 8px; font-size: inherit; text-align: right; width: 1%; font-weight: bold; border-bottom: 3px double #000 !important; white-space: nowrap;">= ${convertToBengaliNumber(remainingBalance.toLocaleString("en-IN"))}/-</td>
+      <td style="border: none !important; padding: 3pt 6px; font-size: inherit; text-align: right; padding-right: 12px; font-weight: bold; white-space: nowrap;">এ খাতে অবশিষ্ট বাজেটের পরিমাণ</td>
+      <td style="border: none !important; padding: 3pt 6px; font-size: inherit; text-align: right; width: 1%; font-weight: bold; border-bottom: 3px double #000 !important; white-space: nowrap;">= ${convertToBengaliNumber(remainingBalance.toLocaleString("en-IN"))}/-</td>
     </tr>
   `;
   budgetHtml += `</tbody></table>`;
@@ -1430,33 +1430,33 @@ export function generateForm2NoteSheetHtml(
     "usr-1";
 
   return `
-    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 15px; line-height: 1.6; text-align: justify;">
-      <div style="font-weight: bold; margin-bottom: 20pt; text-align: center; font-size: 16px;">
+    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: inherit; line-height: 1.35; text-align: justify;">
+      <div style="font-weight: bold; margin-bottom: 8pt; text-align: center; font-size: 1.05em;">
         বিষয়ঃ অঞ্চলাধীন শাখা সমূহের জন্য ${itemTypeWord} মুদ্রণের বিল প্রদান প্রসঙ্গে ।
       </div>
       
-      <p style="text-indent: 40px; margin-bottom: 10pt;">
+      <p style="text-indent: 24px; margin-bottom: 6pt;">
         অত্র অঞ্চলাধীন শাখা সমূহের চাহিদা পূরণের নিমিত্তে নিম্নোক্ত ${convertToBengaliNumber(itemsCount)} টি আইটেমের ${itemTypeWord} অফ-দ্যা-সেল্ফ ক্রয় প্রক্রিয়ায় মুদ্রণের লক্ষ্যে স্থানীয় ${itemTypeWord} সরবরাহকারী প্রতিষ্ঠান হতে কোটেশন চাওয়া হয় । নিম্ন বর্ণিতভাবে প্রাপ্ত ${totalBiddersStr} টি প্রতিষ্ঠানের দরপত্র সমূহ যাচাই করত: সর্বনিম্ন দরদাতা প্রতিষ্ঠান হতে ${taxVatStr} সর্বমোট ৳=${formattedAmount} (${amountWords}) টাকা মাত্র মূল্যে উক্ত দ্রব্যাদি মুদ্রণ করা হয় ।
       </p>
       
-      <p style="margin-bottom: 5pt; font-weight: bold; text-decoration: underline;">প্রাপ্ত দরপত্র সমূহের বিবরণ নিম্নরূপ :-</p>
+      <p style="margin-bottom: 4pt; font-weight: bold; text-decoration: underline;">প্রাপ্ত দরপত্র সমূহের বিবরণ নিম্নরূপ :-</p>
       
       ${biddersHtml}
       
-      <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 15pt;">
+      <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 6pt;">
         উক্ত ${convertToBengaliNumber(totalBiddersCount)} টি দরপত্র এর মধ্যে '${lowestBidderName}' কর্তৃক ${itemTypeWord} মুদ্রণ বাবদ ${taxVatStr} সর্বনিম্ন দর ৳=${formattedAmount} (${amountWords}) টাকা প্রদান করায় উক্ত প্রতিষ্ঠান হতে উক্ত দ্রব্যাদি মুদ্রণ করা হয়।
       </p>
       
-      <p style="text-indent: 40px; margin-bottom: 25pt;">
+      <p style="text-indent: 24px; margin-bottom: 8pt;">
         এমতাবস্থায়, অত্র অঞ্চলাধীন শাখা সমূহের জন্য ${itemTypeWord} মুদ্রণ বাবদ ${taxVatStr} ৳=${formattedAmount} (${amountWords}) টাকা মাত্র খরচের বিষয়টি ${applicantDesignation}, আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"} এর আর্থিক সম্মতি গ্রহণপূর্বক ${taxVatStr} সর্বমোট ৳=${formattedAmount} (${amountWords}) টাকা মাত্র বিলের অর্থ প্রদানের অনুমোদন দেয়া যেতে পারে।
       </p>
       
       ${budgetHtml}
       
-      <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+      <div style="margin-top: 8pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
         <div style="text-align: center; min-width: 170pt; display: inline-block;">
-          <div style="height: 35pt;"></div>
-          <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+          <div style="height: 18pt;"></div>
+          <div style="border-top: 1pt solid #000; padding-top: 2pt; font-weight: bold;">
             প্রস্তুতকারী কর্মকর্তা
           </div>
           <div style="font-size: 0.85em; color: #444; font-family: monospace;">
@@ -1465,10 +1465,10 @@ export function generateForm2NoteSheetHtml(
         </div>
       </div>
       
-      <div class="form1-approval-chain" style="margin-top: 25pt; line-height: 1.6;">
-        <div style="margin-bottom: 56pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"} বরাবরে প্রেরণ করুন।</div>
-        <div style="margin-bottom: 56pt;"><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> অত্র অঞ্চলাধীন শাখা সমূহের জন্য ${itemTypeWord} মুদ্রণ বাবদ ${taxVatStr} সর্বমোট ৳=${formattedAmount} (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।</div>
-        <div style="margin-bottom: 45pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
+      <div class="form1-approval-chain" style="margin-top: 8pt; line-height: 1.3;">
+        <div style="margin-bottom: 6pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি"} বরাবরে প্রেরণ করুন।</div>
+        <div style="margin-bottom: 6pt;"><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> অত্র অঞ্চলাধীন শাখা সমূহের জন্য ${itemTypeWord} মুদ্রণ বাবদ ${taxVatStr} সর্বমোট ৳=${formattedAmount} (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।</div>
+        <div style="margin-bottom: 4pt;"><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
       </div>
     </div>`;
 }
@@ -1589,33 +1589,33 @@ export function generateForm1NoteSheetHtml(
     : `<strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> ${targetOfficeForText} ${formattedItems} ক্রয় বাবদ ${taxVatStr} ৮= ${formattedAmount}/- (${amountWords}) টাকা মাত্র বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।`;
 
   return `
-    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: 15px; line-height: 1.6; text-align: justify;">
-      <div style="font-weight: bold; margin-bottom: 20pt; text-align: center;">
+    <div style="font-family: 'Hind Siliguri', 'Kalpurush', sans-serif; font-size: inherit; line-height: 1.35; text-align: justify;">
+      <div style="font-weight: bold; margin-bottom: 8pt; text-align: center; font-size: 1.05em;">
         ${subjectText}
       </div>
       
-      <p style="text-indent: 40px; margin-bottom: 10pt;">
+      <p style="text-indent: 24px; margin-bottom: 6pt;">
         ${para1Text}
       </p>
       
-      <p style="margin-bottom: 5pt; font-weight: bold; text-decoration: underline;">প্রাপ্ত দরপত্র সমূহের বিবরণ নিম্নরূপ :-</p>
+      <p style="margin-bottom: 4pt; font-weight: bold; text-decoration: underline;">প্রাপ্ত দরপত্র সমূহের বিবরণ নিম্নরূপ :-</p>
       
       ${biddersHtml}
       
-      <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 15pt;">
+      <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 6pt;">
         ${para2Text}
       </p>
       
-      <p style="text-indent: 40px; margin-bottom: 25pt;">
+      <p style="text-indent: 24px; margin-bottom: 8pt;">
         ${para3Text}
       </p>
       
       ${budgetHtml}
       
-      <div style="margin-top: 15pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
+      <div style="margin-top: 8pt; margin-bottom: 0pt; display: flex; justify-content: flex-end;">
         <div style="text-align: center; min-width: 170pt; display: inline-block;">
-          <div style="height: 35pt;"></div>
-          <div style="border-top: 1pt solid #000; padding-top: 3pt; font-weight: bold;">
+          <div style="height: 18pt;"></div>
+          <div style="border-top: 1pt solid #000; padding-top: 2pt; font-weight: bold;">
             প্রস্তুতকারী কর্মকর্তা
           </div>
           <div style="font-size: 0.85em; color: #444; font-family: monospace;">
@@ -1624,14 +1624,14 @@ export function generateForm1NoteSheetHtml(
         </div>
       </div>
       
-      <div class="form1-approval-chain" style="margin-top: 25pt; line-height: 1.6;">
-        <div style="margin-bottom: 56pt;">
+      <div class="form1-approval-chain" style="margin-top: 8pt; line-height: 1.3;">
+        <div style="margin-bottom: 6pt;">
           <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${office?.name || ""} বরাবরে প্রেরণ করুন।
         </div>
-        <div style="margin-bottom: 56pt;">
+        <div style="margin-bottom: 6pt;">
           ${auditNoteText}
         </div>
-        <div style="margin-bottom: 45pt;">
+        <div style="margin-bottom: 4pt;">
           <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।
         </div>
       </div>
@@ -2538,11 +2538,11 @@ export function generateMotorFuelNoteSheetHtml(
 
   ${budgetHtml}
 
-  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 1in; text-align: justify; line-height: 1.6;">
+  <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 8pt; text-align: justify; line-height: 1.35;">
     অতএব, ৳=${currentBillFormatted}/-, (${amountWords}) টাকা মাত্র আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, ${auditOfficeLocation} মহোদয়ের বরাবরে আর্থিক সম্মতির নিমিত্তে প্রেরণ করা যেতে পারে।
   </p>
   
-  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 1in; line-height: 1.6;">
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, ${auditOfficeLocation} মহোদয়ের নিকট প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, ${auditOfficeLocation} এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -2615,11 +2615,11 @@ export function generateMotorVehicleNoteSheetHtml(
 
   ${budgetHtml}
 
-  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 1in; text-align: justify; line-height: 1.6;">
+  <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 8pt; text-align: justify; line-height: 1.35;">
     আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
   </p>
   
-  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 1in; line-height: 1.6;">
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর ${categoryLabel} খাতে${vatTaxStr} সর্বমোট ৳=${convertToBengaliNumber(currentBill.toLocaleString("en-IN"))}/- (কথায়: ${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -3051,11 +3051,11 @@ export function generateTelephoneNoteSheetHtml(
     </div>
   </div>
 
-  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+  <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 8pt; text-align: justify; line-height: 1.35;">
     আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
   </p>
   
-  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর টেলিফোন দাপ্তরিক (১৩৩/২৩ (এ)) খাতে সর্বমোট ৳=${formattedTotal}/- (${totalWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -3167,11 +3167,11 @@ export function generateLocalTransportNoteSheetHtml(
     </div>
   </div>
 
-  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+  <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 8pt; text-align: justify; line-height: 1.35;">
     আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
   </p>
   
-  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর যাতায়াত (স্থানীয়) (১৩৩/২৪) খাতে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -3318,11 +3318,11 @@ export function generateElectricityNoteSheetHtml(
     </div>
   </div>
 
-  <p style="text-indent: 40px; margin-top: 15pt; margin-bottom: 30pt; text-align: justify; line-height: 1.6;">
+  <p style="text-indent: 24px; margin-top: 6pt; margin-bottom: 8pt; text-align: justify; line-height: 1.35;">
     আর্থিক সম্মতি প্রদানের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করা যেতে পারে।
   </p>
   
-  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 30pt; line-height: 1.6;">
+  <div class="audit-approval-section" style="display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহণের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, বিকেবি, আঞ্চলিক নিরীক্ষা কার্যালয়, রাঙ্গামাটি মহোদয়ের নিকট প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> আঞ্চলিক কার্যালয়, রাঙ্গামাটি এর বিদ্যুৎ ও পানি (১৩৩/১৭) খাতে সর্বমোট ৳=${formattedAmount}/- (${amountWords} টাকা মাত্র) বিল প্রদানের আর্থিক সম্মতি প্রদান করা হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -3477,7 +3477,7 @@ export function renderExpenseNoteSheetContent(
     </div>
   </div>
   
-  <div class="audit-approval-section" style="margin-top: 20pt; display: flex; flex-direction: column; gap: 20pt;">
+  <div class="audit-approval-section" style="margin-top: 8pt; display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> {{DESCRIPTION}} বাবদ {{VAT_TEXT}} ও {{TAX_TEXT}}সহ সর্বমোট ৳={{AMOUNT_WITH_WORDS}} টাকা খরচের আর্থিক সম্মতির গ্রহনের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, {{OFFICE_NAME}} বরাবরে নথি প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> {{OFFICE_NAME}} এর জন্য {{DESCRIPTION}} বাবদ {{VAT_TEXT}} ও {{TAX_TEXT}}সহ সর্বমোট ৳={{AMOUNT_WITH_WORDS}} টাকা বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -3603,7 +3603,7 @@ export function renderExpenseNoteSheetContent(
       expense.expenseType !== "Quotation";
     const isBillUnder1500 = (isRegularExpense && currentBillAmount <= 1500) || shouldSkipAuditParagraphs(category);
 
-    const auditApprovalHtml = `<div class="audit-approval-section" style="margin-top: 20pt; display: flex; flex-direction: column; gap: 20pt;">
+    const auditApprovalHtml = `<div class="audit-approval-section" style="margin-top: 8pt; display: flex; flex-direction: column; gap: 6pt; line-height: 1.3;">
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> {{DESCRIPTION}} বাবদ {{VAT_TEXT}} ও {{TAX_TEXT}}সহ সর্বমোট ৳={{AMOUNT_WITH_WORDS}} টাকা খরচের আর্থিক সম্মতির গ্রহনের জন্য আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, {{OFFICE_NAME}} বরাবরে নথি প্রেরণ করুন।</div>
     <div><strong>আঞ্চলিক নিরীক্ষা কর্মকর্তা :-</strong> {{OFFICE_NAME}} এর জন্য {{DESCRIPTION}} বাবদ {{VAT_TEXT}} ও {{TAX_TEXT}}সহ সর্বমোট ৳={{AMOUNT_WITH_WORDS}} টাকা বিল প্রদানের নিমিত্তে খরচের আর্থিক সম্মতি দেয়া হলো।</div>
     <div><strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।</div>
@@ -4760,14 +4760,14 @@ export function generatePostFactoSanctionNoteSheetHtml(
         </div>
       </div>
       
-      <div class="form1-approval-chain" style="margin-top: 25pt; line-height: 1.6;">
-        <div style="margin-bottom: 56pt;">
+      <div class="form1-approval-chain" style="margin-top: 8pt; line-height: 1.3;">
+        <div style="margin-bottom: 6pt;">
           <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> আর্থিক সম্মতি গ্রহনের নিমিত্তে নথি আঞ্চলিক নিরীক্ষা কর্মকর্তা, আঞ্চলিক নিরীক্ষা কার্যালয়, ${regOfficeName} বরাবরে প্রেরণ করুন।
         </div>
-        <div style="margin-bottom: 56pt;">
+        <div style="margin-bottom: 6pt;">
           ${auditNoteText}
         </div>
-        <div style="margin-bottom: 45pt;">
+        <div style="margin-bottom: 4pt;">
           <strong>আঞ্চলিক ব্যবস্থাপক :-</strong> অনুমোদিত।
         </div>
       </div>

@@ -32,8 +32,8 @@ import {
   Save,
   AlertCircle,
   CheckCircle2,
-  RefreshCw,
   Scissors,
+  RefreshCw,
 } from "lucide-react";
 import {
   NoteSheet,
@@ -76,24 +76,24 @@ interface NoteSheetPreviewModalProps {
 
 export const DEFAULT_NOTESHEET_SETTINGS: PrintLayoutSettings = {
   position: "TOP",
-  customTopOffset: 20,
-  customLeftOffset: 20,
+  customTopOffset: 12,
+  customLeftOffset: 16,
   pageSize: "Legal",
   customWidth: 216,
   customHeight: 356,
   orientation: "portrait",
   margins: {
-    top: 20,
-    bottom: 20,
-    left: 20,
-    right: 20,
+    top: 12,
+    bottom: 10,
+    left: 16,
+    right: 12,
   },
   fontSizeScale: 100,
-  fontSizePt: 12, // Google Docs standard 12pt
-  lineSpacing: 1.5, // 1.5 line height standard
+  fontSizePt: 10.5, // Standard for Bangladesh Krishi Bank 1-Page Legal Note Sheets
+  lineSpacing: 1.35, // Clean line height standard
   textAlign: "justify", // standard official justification
   fontFamily: "'Hind Siliguri', 'Kalpurush', sans-serif",
-  paragraphSpacing: 10, // 10pt space between paragraphs
+  paragraphSpacing: 5, // 5pt space between paragraphs
   firstLineIndent: 0, // 0mm
   isBold: false,
   isItalic: false,
@@ -253,6 +253,8 @@ export function NoteSheetPreviewModal({
   const [legalPartition, setLegalPartition] = useState<
     "part1" | "part2" | "part3" | "all3" | "full"
   >("part1");
+
+
 
   const isRegularExpenseUnder1500 = useMemo(() => {
     if ((currentNoteSheet as any).isUnder1500 !== undefined) {
@@ -844,10 +846,20 @@ export function NoteSheetPreviewModal({
           enforcedWidth = 210;
           enforcedHeight = 297;
         } else if (docType === "notesheet" || docType === "sanctionnotesheet") {
-          if (!enforcedPageSize || enforcedPageSize === "A4") {
-            enforcedPageSize = "Legal";
-            enforcedWidth = 216;
-            enforcedHeight = 356;
+          enforcedPageSize = "Legal";
+          enforcedWidth = 216;
+          enforcedHeight = 356;
+          if (parsed.margins && (parsed.margins.top >= 18 || parsed.margins.bottom >= 18)) {
+            parsed.margins = { top: 12, bottom: 10, left: 16, right: 12 };
+          }
+          if (!parsed.fontSizePt || parsed.fontSizePt > 11) {
+            fontSizePt = 10.5;
+          }
+          if (!parsed.lineSpacing || parsed.lineSpacing > 1.4) {
+            parsed.lineSpacing = 1.35;
+          }
+          if (parsed.paragraphSpacing === undefined || parsed.paragraphSpacing > 8) {
+            parsed.paragraphSpacing = 5;
           }
         }
 
@@ -1353,6 +1365,17 @@ export function NoteSheetPreviewModal({
       `$1${provDateBn} তারিখে প্রভিশণ$2`
     );
 
+    // Ensure 1-page fit: compress excessive blank spaces/margins in note sheet HTML
+    if (activeDocTab === "notesheet" || activeDocTab === "sanctionnotesheet") {
+      raw = raw
+        .replace(/margin-bottom:\s*(?:1in|30pt|2[0-9]pt|1[5-9]pt)/gi, "margin-bottom: 6pt;")
+        .replace(/margin-top:\s*(?:1in|30pt|2[0-9]pt|1[5-9]pt)/gi, "margin-top: 5pt;")
+        .replace(/gap:\s*(?:1in|30pt|2[0-9]pt)/gi, "gap: 6pt;")
+        .replace(/height:\s*(?:3[5-9]|4[0-9]|5[0-9])p[tx]/gi, "height: 18pt;")
+        .replace(/line-height:\s*1\.[5-9]/gi, "line-height: 1.35;")
+        .replace(/font-size:\s*1[5-9]px/gi, "font-size: inherit;");
+    }
+
     if (
       !raw.includes("<p>") &&
       !raw.includes("<table") &&
@@ -1446,15 +1469,39 @@ export function NoteSheetPreviewModal({
                   html, body {
                     width: ${pageWidthMm}mm !important;
                     height: ${pageHeightMm}mm !important;
+                    max-height: ${pageHeightMm}mm !important;
                     margin: 0 !important;
                     padding: 0 !important;
                     background: #ffffff !important;
+                    overflow: hidden !important;
                     -webkit-print-color-adjust: exact !important;
                     print-color-adjust: exact !important;
+                    page-break-after: avoid !important;
+                    break-after: avoid !important;
                   }
                   .page-wrapper {
-                    page-break-after: always;
-                    break-after: page;
+                    margin: 0 !important;
+                    box-shadow: none !important;
+                    width: ${pageWidthMm}mm !important;
+                    height: ${pageHeightMm}mm !important;
+                    max-height: ${pageHeightMm}mm !important;
+                    min-height: ${pageHeightMm}mm !important;
+                    overflow: hidden !important;
+                    box-sizing: border-box !important;
+                    page-break-after: avoid !important;
+                    page-break-inside: avoid !important;
+                    page-break-before: avoid !important;
+                    break-after: avoid !important;
+                    break-before: avoid !important;
+                    break-inside: avoid !important;
+                  }
+                  .content-container, .sheet-body {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                  }
+                  table, tr, td, th, div, p, .signatures-section, .form1-approval-chain, .audit-approval-section {
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
                   }
                 }
 
@@ -1502,6 +1549,7 @@ export function NoteSheetPreviewModal({
                 .page-wrapper {
                   width: ${pageWidthMm}mm;
                   min-height: ${pageHeightMm}mm;
+                  height: auto;
                   margin: 20px auto;
                   background: #ffffff;
                   box-shadow: 0 10px 25px rgba(0,0,0,0.1);
@@ -1512,15 +1560,6 @@ export function NoteSheetPreviewModal({
                   display: flex;
                   flex-direction: column;
                   box-sizing: border-box;
-                }
-
-                @media print {
-                  .page-wrapper {
-                    margin: 0 !important;
-                    box-shadow: none !important;
-                    max-height: ${pageHeightMm}mm;
-                    overflow: hidden;
-                  }
                 }
 
                 .spacer-top { flex: ${positionStyles.spacerTopFlex}; min-height: 0; }
@@ -1584,13 +1623,15 @@ export function NoteSheetPreviewModal({
                 table.budget-provision-table,
                 .budget-provision-table {
                   border: none !important;
-                  font-size: ${settings.fontSizePt}pt !important;
+                  font-size: ${Math.min(settings.fontSizePt, 10.5)}pt !important;
+                  margin: 4pt 0 !important;
                 }
                 table.budget-provision-table td,
                 .budget-provision-table td {
                   border: none !important;
-                  font-size: ${settings.fontSizePt}pt !important;
-                  line-height: 1.4 !important;
+                  font-size: ${Math.min(settings.fontSizePt, 10.5)}pt !important;
+                  padding: 1.5pt 4pt !important;
+                  line-height: 1.25 !important;
                 }
                 table:not(.budget-provision-table),
                 table[border="1"],
@@ -1699,6 +1740,18 @@ export function NoteSheetPreviewModal({
                   color: #475569;
                   margin-top: 2pt;
                 }
+
+                .form1-approval-chain,
+                .audit-approval-section {
+                  margin-top: 6pt !important;
+                  gap: 4pt !important;
+                  line-height: 1.25 !important;
+                }
+                .form1-approval-chain > div,
+                .audit-approval-section > div {
+                  margin-bottom: 4pt !important;
+                  line-height: 1.25 !important;
+                }
               </style>
             </head>
             <body>
@@ -1760,7 +1813,23 @@ export function NoteSheetPreviewModal({
               `
               }
               <script>
-                setTimeout(() => { window.print(); }, 500);
+                window.addEventListener('load', function() {
+                  try {
+                    var pageWrapper = document.querySelector('.page-wrapper');
+                    var content = document.querySelector('.content-container');
+                    if (pageWrapper && content) {
+                      var availableHeight = pageWrapper.clientHeight;
+                      var scrollHeight = content.scrollHeight;
+                      if (scrollHeight > availableHeight && availableHeight > 0) {
+                        var ratio = Math.max(0.68, Math.min(1, (availableHeight - 2) / (scrollHeight + 2)));
+                        content.style.transform = 'scale(' + ratio + ')';
+                        content.style.transformOrigin = 'top center';
+                        content.style.width = (100 / ratio) + '%';
+                      }
+                    }
+                  } catch(e) {}
+                  setTimeout(function() { window.print(); }, 400);
+                });
               </script>
             </body>
           </html>
@@ -1801,14 +1870,24 @@ export function NoteSheetPreviewModal({
             @media print {
               html, body {
                 width: ${pageWidthMm}mm !important;
-                height: ${pageHeightMm}mm !important;
+                height: auto !important;
+                min-height: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #ffffff !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
               }
-              .page-wrapper { page-break-after: always; break-after: page; }
+              .page-wrapper {
+                margin: 0 !important;
+                box-shadow: none !important;
+                height: auto !important;
+                min-height: ${pageHeightMm}mm !important;
+                max-height: none !important;
+                overflow: visible !important;
+                page-break-after: always;
+                break-after: page;
+              }
             }
             * { box-sizing: border-box; }
             body {
@@ -1819,14 +1898,15 @@ export function NoteSheetPreviewModal({
             }
             .page-wrapper {
               width: ${pageWidthMm}mm;
-              height: ${pageHeightMm}mm;
-              max-height: ${pageHeightMm}mm;
+              min-height: ${pageHeightMm}mm;
+              height: auto;
+              max-height: none;
               padding-top: ${positionStyles.paddingTop};
               padding-bottom: ${positionStyles.paddingBottom};
               padding-left: ${positionStyles.paddingLeft};
               padding-right: ${positionStyles.paddingRight};
               display: flex; flex-direction: column;
-              box-sizing: border-box; overflow: hidden;
+              box-sizing: border-box; overflow: visible;
             }
             .spacer-top { flex: ${positionStyles.spacerTopFlex}; min-height: 0; }
             .spacer-bottom { flex: ${positionStyles.spacerBottomFlex}; min-height: 0; }
