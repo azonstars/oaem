@@ -454,6 +454,21 @@ export async function saveDbSheetData(
         sql: `DELETE FROM ${sheetName} WHERE id NOT IN (${placeholders})`,
         args: currentIds,
       });
+    } else if (currentIds.length >= 500) {
+      const existingRows = await dbClient.execute(`SELECT id FROM ${sheetName}`);
+      const currentIdSet = new Set(currentIds.map((id) => String(id)));
+      const toDeleteIds = existingRows.rows
+        .map((r: any) => String(r.id))
+        .filter((id) => !currentIdSet.has(id));
+      const DEL_CHUNK = 200;
+      for (let i = 0; i < toDeleteIds.length; i += DEL_CHUNK) {
+        const chunkIds = toDeleteIds.slice(i, i + DEL_CHUNK);
+        const placeholders = chunkIds.map(() => "?").join(",");
+        statements.push({
+          sql: `DELETE FROM ${sheetName} WHERE id IN (${placeholders})`,
+          args: chunkIds,
+        });
+      }
     }
 
     for (const item of items) {
@@ -742,6 +757,49 @@ export function getItemStatement(
         ]),
       };
 
+    case "FlowTools":
+      return {
+        sql: `INSERT OR REPLACE INTO FlowTools (id, name, nameBn, category, status, data) VALUES (?, ?, ?, ?, ?, ?)`,
+        args: cleanArgs([
+          item.id,
+          item.name || "",
+          item.nameBn || "",
+          item.category || "custom",
+          item.status || "active",
+          dataStr,
+        ]),
+      };
+
+    case "StockProProducts":
+      return {
+        sql: `INSERT OR REPLACE INTO StockProProducts (id, name, sku, padType, fromPad, perPadPages, stockQuantity, sellingPrice, costPrice, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: cleanArgs([
+          item.id,
+          item.name || "",
+          item.sku || "",
+          item.padType || "regular",
+          Number(item.fromPad || 0),
+          Number(item.perPadPages || 100),
+          Number(item.stockQuantity || 0),
+          Number(item.sellingPrice || 0),
+          Number(item.costPrice ?? item.purchasePrice ?? 0),
+          dataStr,
+        ]),
+      };
+
+    case "StockProBranches":
+      return {
+        sql: `INSERT OR REPLACE INTO StockProBranches (id, name, code, phone, address, data) VALUES (?, ?, ?, ?, ?, ?)`,
+        args: cleanArgs([
+          item.id,
+          item.name || "",
+          item.code || item.branch || "",
+          item.phone || "",
+          item.address || "",
+          dataStr,
+        ]),
+      };
+
     case "StockProInvoices":
       return {
         sql: `INSERT OR REPLACE INTO StockProInvoices (id, date, agentId, totalAmount, linkedPadNo, createdBy, data) VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -752,6 +810,19 @@ export function getItemStatement(
           Number(item.totalAmount || 0),
           item.linkedPadNo || "",
           item.createdBy || "",
+          dataStr,
+        ]),
+      };
+
+    case "StockProVoucherPads":
+      return {
+        sql: `INSERT OR REPLACE INTO StockProVoucherPads (id, padNo, category, totalPages, currentPage, data) VALUES (?, ?, ?, ?, ?, ?)`,
+        args: cleanArgs([
+          item.id,
+          item.padNo || item.padNumber || "",
+          item.category || "",
+          Number(item.totalPages || item.pageEnd || 100),
+          Number(item.currentPage || 1),
           dataStr,
         ]),
       };

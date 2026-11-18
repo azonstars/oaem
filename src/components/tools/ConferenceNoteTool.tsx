@@ -1,11 +1,28 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User, SystemSettings, Office, FinancialYear } from "../../types";
 import { apiFetch } from "../../api";
-import { Database, Save, FolderOpen, CheckCircle2, Trash2, ArrowLeft } from "lucide-react";
+import {
+  Database,
+  Save,
+  FolderOpen,
+  CheckCircle2,
+  Trash2,
+  ArrowLeft,
+  Edit3,
+  Eye,
+  RotateCcw,
+  AlertTriangle,
+} from "lucide-react";
 import {
   GlobalDocumentPadHeader,
   GlobalDocumentWatermark,
 } from "../../utils/documentBranding";
+import { RichDocumentEditor } from "../RichDocumentEditor";
+import { sanitizeHtml } from "../../utils/sanitize";
+import {
+  printHtmlDocument,
+  downloadWordHtmlDocument,
+} from "../../utils/documentPrint";
 
 interface ConferenceNoteToolProps {
   currentUser: User;
@@ -152,47 +169,47 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
   const adv = includeAdv ? toNum(advAmt) : 0;
   const extAmt = curExpenseTotal - adv;
 
+  const printableSectionRef = useRef<HTMLDivElement>(null);
+  const [isRichEditMode, setIsRichEditMode] = useState(false);
+  const [customPages, setCustomPages] = useState<Record<string, string>>({});
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [dbErrorMsg, setDbErrorMsg] = useState("");
+
   // Print PDF helper
   const handlePrint = () => {
-    window.print();
+    const isNote = activeTab === "note";
+    const label = isNote ? "সভার নোট শিট" : "আবেদনপত্র";
+    const fullEl = printableSectionRef.current;
+    if (!fullEl) {
+      window.print();
+      return;
+    }
+    printHtmlDocument({
+      title: label,
+      htmlContent: fullEl.innerHTML,
+      pageSize: "A4",
+      orientation: "portrait",
+    });
   };
 
   // Word export
   const handleDownloadWord = () => {
     const isNote = activeTab === "note";
     const label = isNote ? "নোট" : "আবেদন";
+    const fullEl = printableSectionRef.current;
     const elem = document.getElementById(isNote ? "doc-preview-note" : "doc-preview-app");
-    if (!elem) return;
+    const content = fullEl ? fullEl.innerHTML : elem?.innerHTML || "";
+    if (!content) return;
 
-    const content = elem.innerHTML;
-    const wordDoc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
-<head><meta charset="UTF-8"/><title>${label}</title>
-<style>
-  @page Section1 { size: 21cm 29.7cm; margin: 2cm; }
-  body { font-family: 'Vrinda', 'Noto Serif Bengali', serif; font-size: 12pt; line-height: 1.8; color: #111; }
-  table { border-collapse: collapse; width: 100%; margin: 10pt 0; }
-  th, td { border: 1pt solid #333; padding: 4pt 6pt; text-align: center; }
-  .nt { text-align: center; font-weight: bold; text-decoration: underline; margin-bottom: 12pt; }
-</style>
-</head>
-<body><div class="Section1">${content}</div></body></html>`;
-
-    const blob = new Blob([wordDoc], { type: "application/vnd.ms-word;charset=UTF-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label}_${new Date().toISOString().slice(0, 10)}.doc`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      a.remove();
-    }, 1200);
+    downloadWordHtmlDocument({
+      title: label,
+      fileName: `${label}_${new Date().toISOString().slice(0, 10)}.doc`,
+      htmlContent: content,
+    });
   };
 
   const [savedDocs, setSavedDocs] = useState<any[]>([]);
+  const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [isSavingDb, setIsSavingDb] = useState(false);
   const [dbSuccessMsg, setDbSuccessMsg] = useState("");
@@ -215,9 +232,10 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
     loadSavedDocs();
   }, []);
 
-  const handleSaveToDatabase = async () => {
+  const handleSaveToDatabase = async (saveAsNew: boolean = false) => {
     setIsSavingDb(true);
-    const docId = `conf-${Date.now()}`;
+    const isUpdate = Boolean(currentDocId && !saveAsNew);
+    const docId = isUpdate ? currentDocId! : `conf-${Date.now()}`;
     const payload = {
       meetingDate,
       meetingBar,
@@ -248,34 +266,61 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
       auditNoteNote,
       ccList,
       expenses,
+      customPages,
+    };
+
+    const requestBody = {
+      id: docId,
+      toolId: "conference-note",
+      toolType: "conference_note",
+      title: sabhaName || "পর্যালোচনা সভা সংক্রান্ত নোট",
+      docDate: meetingDate,
+      totalAmount: curExpenseTotal,
+      officeId: currentUser?.officeId || "off-ho",
+      financialYearId: selectedFY || "",
+      payload,
+      customPages,
+      createdBy: currentUser.userId,
     };
 
     try {
-      const res = await apiFetch("/api/tooldocuments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: docId,
-          toolType: "conference_note",
-          title: sabhaName || "পর্যালোচনা সভা সংক্রান্ত নোট",
-          docDate: meetingDate,
-          totalAmount: curExpenseTotal,
-          payload,
-          createdBy: currentUser.userId,
-        }),
-      });
+      let res = await apiFetch(
+        isUpdate ? `/api/tooldocuments/${docId}` : "/api/tooldocuments",
+        {
+          method: isUpdate ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        },
+      );
+      if (isUpdate && res.status === 404) {
+        res = await apiFetch("/api/tooldocuments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+      }
 
       if (res.ok) {
+        const saved = await res.json().catch(() => ({}));
+        setCurrentDocId(saved?.id || docId);
         setDbSuccessMsg(
-          currentUser?.role === "Super Admin"
-            ? "সেন্ট্রাল SQLite ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!"
-            : "সফলভাবে সংরক্ষিত হয়েছে!"
+          isUpdate
+            ? "সংরক্ষিত নোটটি সফলভাবে আপডেট হয়েছে!"
+            : currentUser?.role === "Super Admin"
+              ? "সেন্ট্রাল SQLite ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!"
+              : "সফলভাবে সংরক্ষিত হয়েছে!",
         );
         setTimeout(() => setDbSuccessMsg(""), 4000);
         loadSavedDocs();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setDbErrorMsg(errData.error || "ডাটাবেজে সংরক্ষণে সমস্যা হয়েছে।");
+        setTimeout(() => setDbErrorMsg(""), 4000);
       }
     } catch (err) {
       console.warn("Save to DB failed:", err);
+      setDbErrorMsg("ডাটাবেজে সংরক্ষণে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     } finally {
       setIsSavingDb(false);
     }
@@ -313,19 +358,48 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
     if (p.auditNoteNote) setAuditNoteNote(p.auditNoteNote);
     if (p.ccList) setCcList(p.ccList);
     if (p.expenses) setExpenses(p.expenses);
+    if (p.customPages && typeof p.customPages === "object") {
+      setCustomPages(p.customPages);
+    } else if (doc.customPages && typeof doc.customPages === "object") {
+      setCustomPages(doc.customPages);
+    } else {
+      setCustomPages({});
+    }
+    setCurrentDocId(doc.id || null);
+    setIsRichEditMode(false);
     setShowSavedModal(false);
     setDbSuccessMsg("ডাটাবেজ থেকে সফলভাবে লোড হয়েছে!");
     setTimeout(() => setDbSuccessMsg(""), 3000);
   };
 
-  const handleDeleteDoc = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteDoc = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("আপনি কি নিশ্চিত এই রেকর্ডটি মুছে ফেলতে চান?")) return;
+    setDeletingDocId(id);
+  };
+
+  const confirmDeleteDoc = async () => {
+    if (!deletingDocId) return;
+    const targetId = deletingDocId;
     try {
-      await apiFetch(`/api/tooldocuments/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/tooldocuments/${targetId}`, {
+        method: "DELETE",
+      });
+      setDeletingDocId(null);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        setDbErrorMsg(errData.error || "রেকর্ডটি মুছে ফেলা যায়নি।");
+        setTimeout(() => setDbErrorMsg(""), 4000);
+        return;
+      }
+      if (currentDocId === targetId) setCurrentDocId(null);
+      setDbSuccessMsg("রেকর্ডটি সফলভাবে মুছে ফেলা হয়েছে!");
+      setTimeout(() => setDbSuccessMsg(""), 3000);
       loadSavedDocs();
-    } catch (e) {
-      console.warn("Delete doc error:", e);
+    } catch (err) {
+      console.warn("Delete doc error:", err);
+      setDeletingDocId(null);
+      setDbErrorMsg("রেকর্ডটি মুছতে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     }
   };
 
@@ -337,6 +411,12 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
           <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-fadeIn">
             <CheckCircle2 size={16} className="text-emerald-600" />
             <span>{dbSuccessMsg}</span>
+          </div>
+        )}
+        {dbErrorMsg && (
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-fadeIn">
+            <AlertTriangle size={16} className="text-rose-600" />
+            <span>{dbErrorMsg}</span>
           </div>
         )}
 
@@ -380,7 +460,7 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
             </button>
 
             <button
-              onClick={handleSaveToDatabase}
+              onClick={() => handleSaveToDatabase(false)}
               disabled={isSavingDb}
               className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
             >
@@ -388,11 +468,23 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
               <span>
                 {isSavingDb
                   ? "সংরক্ষণ হচ্ছে..."
-                  : currentUser?.role === "Super Admin"
-                    ? "SQLite-এ সংরক্ষণ"
-                    : "সংরক্ষণ করুন"}
+                  : currentDocId
+                    ? "আপডেট সংরক্ষণ"
+                    : currentUser?.role === "Super Admin"
+                      ? "SQLite-এ সংরক্ষণ"
+                      : "সংরক্ষণ করুন"}
               </span>
             </button>
+            {currentDocId && (
+              <button
+                onClick={() => handleSaveToDatabase(true)}
+                disabled={isSavingDb}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
+                title="নতুন ডকুমেন্ট হিসেবে সংরক্ষণ করুন"
+              >
+                নতুন কপি
+              </button>
+            )}
 
             <button
               onClick={() => setShowModal(true)}
@@ -839,28 +931,89 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
               </button>
             </div>
 
-            {/* Modal Tabs */}
-            <div className="flex bg-slate-200 border-b border-slate-300 px-4">
-              <button
-                onClick={() => setActiveTab("note")}
-                className={`px-5 py-2.5 font-bold font-serif text-sm border-b-2 transition-all ${
-                  activeTab === "note"
-                    ? "bg-white text-[#1a3a5c] border-[#1a3a5c]"
-                    : "text-slate-600 border-transparent hover:text-slate-900"
-                }`}
-              >
-                📋 নোট শিট
-              </button>
-              <button
-                onClick={() => setActiveTab("app")}
-                className={`px-5 py-2.5 font-bold font-serif text-sm border-b-2 transition-all ${
-                  activeTab === "app"
-                    ? "bg-white text-[#1a3a5c] border-[#1a3a5c]"
-                    : "text-slate-600 border-transparent hover:text-slate-900"
-                }`}
-              >
-                📝 আবেদনপত্র
-              </button>
+            {/* Modal Tabs & Rich Editor Toggle */}
+            <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-200 border-b border-slate-300 px-4 py-1">
+              <div className="flex">
+                <button
+                  onClick={() => {
+                    setActiveTab("note");
+                    setIsRichEditMode(false);
+                  }}
+                  className={`px-5 py-2 font-bold font-serif text-sm border-b-2 transition-all cursor-pointer ${
+                    activeTab === "note"
+                      ? "bg-white text-[#1a3a5c] border-[#1a3a5c]"
+                      : "text-slate-600 border-transparent hover:text-slate-900"
+                  }`}
+                >
+                  📋 নোট শিট
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab("app");
+                    setIsRichEditMode(false);
+                  }}
+                  className={`px-5 py-2 font-bold font-serif text-sm border-b-2 transition-all cursor-pointer ${
+                    activeTab === "app"
+                      ? "bg-white text-[#1a3a5c] border-[#1a3a5c]"
+                      : "text-slate-600 border-transparent hover:text-slate-900"
+                  }`}
+                >
+                  📝 আবেদনপত্র
+                </button>
+              </div>
+              <div className="flex items-center gap-2 py-1">
+                {customPages[activeTab] && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomPages((prev) => {
+                        const copy = { ...prev };
+                        delete copy[activeTab];
+                        return copy;
+                      });
+                      setIsRichEditMode(false);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    title="মূল ফরম জেনারেটেড লেআউটে ফিরে যান"
+                  >
+                    <RotateCcw size={13} />
+                    <span>রিসেট</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isRichEditMode) {
+                      if (!customPages[activeTab]) {
+                        const targetEl = document.getElementById(
+                          activeTab === "note" ? "doc-preview-note" : "doc-preview-app",
+                        );
+                        if (targetEl) {
+                          setCustomPages((prev) => ({
+                            ...prev,
+                            [activeTab]: targetEl.innerHTML,
+                          }));
+                        }
+                      }
+                      setIsRichEditMode(true);
+                    } else {
+                      setIsRichEditMode(false);
+                    }
+                  }}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition cursor-pointer ${
+                    isRichEditMode
+                      ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                      : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  }`}
+                >
+                  {isRichEditMode ? <Eye size={14} /> : <Edit3 size={14} />}
+                  <span>
+                    {isRichEditMode
+                      ? "প্রিভিউ দেখুন"
+                      : "টেক্সট ও টেবিল এডিটর (Insert/Merge/Delete)"}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Modal Document Body */}
@@ -872,7 +1025,7 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
                 docId={activeTab === "note" ? "conf-notesheet" : "conf-application"}
               />
 
-              <div className="relative z-10 space-y-4">
+              <div ref={printableSectionRef} className="relative z-10 space-y-4">
                 {/* Official Bank Pad Header */}
                 <GlobalDocumentPadHeader
                   systemSettings={systemSettings}
@@ -881,10 +1034,27 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
                   docId={activeTab === "note" ? "conf-notesheet" : "conf-application"}
                 />
 
-                <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-xs text-amber-800 mb-4 flex items-center gap-2">
-                  <span>✏️</span>
-                  <span>যেকোনো লেখায় সরাসরি ক্লিক করে এডিট করতে পারবেন।</span>
-                </div>
+                {isRichEditMode ? (
+                  <RichDocumentEditor
+                    value={customPages[activeTab] || ""}
+                    onChange={(html) =>
+                      setCustomPages((prev) => ({ ...prev, [activeTab]: html }))
+                    }
+                    minHeight={480}
+                  />
+                ) : customPages[activeTab] ? (
+                  <div
+                    id={activeTab === "note" ? "doc-preview-note" : "doc-preview-app"}
+                    className="space-y-4 hub-rich-preview"
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHtml(customPages[activeTab]),
+                    }}
+                  />
+                ) : (
+                  <>
+                    <div className="bg-amber-50 border border-amber-200 p-2.5 rounded-lg text-xs text-amber-800 mb-4 flex items-center justify-between gap-2 no-print">
+                      <span>✏️ সাধারণ লেখায় সরাসরি ক্লিক করে এডিট করতে পারবেন অথবা ওপরের <strong>টেক্সট ও টেবিল এডিটর</strong> দিয়ে টেবিল ইনসার্ট/মার্জ/ডিলিট করতে পারবেন।</span>
+                    </div>
 
               {/* Note Tab */}
               {activeTab === "note" && (
@@ -1092,6 +1262,8 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
                   </div>
                 </div>
               )}
+                  </>
+                )}
               </div>
             </div>
 
@@ -1194,6 +1366,37 @@ export function ConferenceNoteTool({ currentUser, systemSettings, offices, finan
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all"
               >
                 বন্ধ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Delete Confirmation Modal */}
+      {deletingDocId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <AlertTriangle size={22} />
+              <h4 className="font-bold text-base text-slate-900">রেকর্ডটি মুছে ফেলবেন?</h4>
+            </div>
+            <p className="text-xs text-slate-600">
+              আপনি কি নিশ্চিত এই সংরক্ষিত সভার নোট/আবেদনটি স্থায়ীভাবে মুছে ফেলতে চান?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingDocId(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteDoc}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+              >
+                হ্যাঁ, মুছে ফেলুন
               </button>
             </div>
           </div>

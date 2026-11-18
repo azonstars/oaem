@@ -19,6 +19,8 @@ import { getNotificationPrefs, saveNotificationPrefs } from '../../services/noti
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../services/supabase'
 import LucideIcon, { MenuIcon, isLucideIcon } from '../../components/ui/LucideIcon'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 
 const LUCIDE_ICONS = [
@@ -688,6 +690,8 @@ export default function Settings() {
   const [logoUploading, setLogoUploading] = useState(false)
   const [customLink, setCustomLink] = useState({ label: '', path: '', icon: '📌', link_type: 'path' })
   const [showIconPicker, setShowIconPicker] = useState(false)
+  const [confirmAction, setConfirmAction] = useState(null)
+  const navigate = useNavigate()
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -723,23 +727,30 @@ export default function Settings() {
     favicon_url: '',
   }
 
-  const handleResetTheme = async () => {
-    if (!window.confirm('Default theme-এ ফিরে যাবেন? সব পরিবর্তন মুছে যাবে।')) return
-    setThemeSaving(true)
-    try {
-      const keys = Object.keys(DEFAULT_THEME)
-      for (const key of keys) {
-        await supabase.from('app_settings')
-          .upsert({ key, value: DEFAULT_THEME[key], label: key }, { onConflict: 'key' })
-      }
-      setThemeDraft({ ...DEFAULT_THEME })
-      updateGlobalTheme(DEFAULT_THEME)
-      toast.success('Default theme-এ ফিরে গেছে!')
-    } catch (e) {
-      toast.error(e.message)
-    } finally {
-      setThemeSaving(false)
-    }
+  const handleResetTheme = () => {
+    setConfirmAction({
+      title: 'থিম রিসেট করবেন?',
+      message: 'Default theme-এ ফিরে যাবেন? সব পরিবর্তন মুছে যাবে।',
+      confirmLabel: 'হ্যাঁ, রিসেট করুন',
+      danger: true,
+      action: async () => {
+        setThemeSaving(true)
+        try {
+          const keys = Object.keys(DEFAULT_THEME)
+          for (const key of keys) {
+            await supabase.from('app_settings')
+              .upsert({ key, value: DEFAULT_THEME[key], label: key }, { onConflict: 'key' })
+          }
+          setThemeDraft({ ...DEFAULT_THEME })
+          updateGlobalTheme(DEFAULT_THEME)
+          toast.success('Default theme-এ ফিরে গেছে!')
+        } catch (e) {
+          toast.error(e.message)
+        } finally {
+          setThemeSaving(false)
+        }
+      },
+    })
   }
 
   const handleSaveTheme = async () => {
@@ -996,19 +1007,26 @@ export default function Settings() {
   }
 
   const handleEditForm = (form) => {
-    window.open(`/forms/builder?edit=${form.id}`, '_blank')
+    navigate(`/forms/builder?edit=${form.id}`)
   }
 
-  const handleDeleteForm = async (form) => {
-    if (!window.confirm(`"${form.title}" ফর্মটি স্থায়ীভাবে ডিলিট করবেন?\nএই কাজটি আর ফেরানো যাবে না!`)) return
-    try {
-      await deleteForm(form.id)
-      setAllForms(prev => prev.filter(f => f.id !== form.id))
-      setMenuStructure(prev => prev.filter(m => m.id !== form.id))
-      toast.success(`"${form.title}" ডিলিট হয়েছে!`)
-    } catch (error) {
-      toast.error('ডিলিট করতে সমস্যা হয়েছে: ' + error.message)
-    }
+  const handleDeleteForm = (form) => {
+    setConfirmAction({
+      title: 'ফর্ম ডিলিট করবেন?',
+      message: `"${form.title}" ফর্মটি স্থায়ীভাবে ডিলিট করবেন?\nএই কাজটি আর ফেরানো যাবে না!`,
+      confirmLabel: 'হ্যাঁ, ডিলিট করুন',
+      danger: true,
+      action: async () => {
+        try {
+          await deleteForm(form.id)
+          setAllForms(prev => prev.filter(f => f.id !== form.id))
+          setMenuStructure(prev => prev.filter(m => m.id !== form.id))
+          toast.success(`"${form.title}" ডিলিট হয়েছে!`)
+        } catch (error) {
+          toast.error('ডিলিট করতে সমস্যা হয়েছে: ' + error.message)
+        }
+      },
+    })
   }
 
   const handleAddCustomLink = async () => {
@@ -1060,20 +1078,27 @@ export default function Settings() {
     }
   }
 
-  const handleResetMenu = async () => {
-    if (!window.confirm('আপনি কি নিশ্চিত যে সকল মেনু ডিফল্ট কাঠামোর সাথে রিসেট করতে চান? আপনার কাস্টম পরিবর্তন মুছে যাবে।')) return
-    setSaving(true)
-    try {
-      await resetMenuToDefault()
-      await fetchAllMenuData()
-      toast.success('মেনু ডিফল্ট কাঠামোর সাথে সফলভাবে রিসেট হয়েছে!')
-      await loadAll()
-    } catch (error) {
-      console.error('Menu reset error:', error)
-      toast.error('রিসেট করতে ব্যর্থ হয়েছে: ' + error.message)
-    } finally {
-      setSaving(false)
-    }
+  const handleResetMenu = () => {
+    setConfirmAction({
+      title: 'মেনু রিসেট করবেন?',
+      message: 'আপনি কি নিশ্চিত যে সকল মেনু ডিফল্ট কাঠামোর সাথে রিসেট করতে চান? আপনার কাস্টম পরিবর্তন মুছে যাবে।',
+      confirmLabel: 'হ্যাঁ, রিসেট করুন',
+      danger: true,
+      action: async () => {
+        setSaving(true)
+        try {
+          await resetMenuToDefault()
+          await fetchAllMenuData()
+          toast.success('মেনু ডিফল্ট কাঠামোর সাথে সফলভাবে রিসেট হয়েছে!')
+          await loadAll()
+        } catch (error) {
+          console.error('Menu reset error:', error)
+          toast.error('রিসেট করতে ব্যর্থ হয়েছে: ' + error.message)
+        } finally {
+          setSaving(false)
+        }
+      },
+    })
   }
 
   const inMenuIds = menuStructure.map(m => m.id)
@@ -1627,6 +1652,19 @@ export default function Settings() {
       )}
       </>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(confirmAction)}
+        title={confirmAction?.title}
+        message={confirmAction?.message}
+        confirmLabel={confirmAction?.confirmLabel}
+        danger={Boolean(confirmAction?.danger)}
+        onConfirm={async () => {
+          const fn = confirmAction?.action
+          setConfirmAction(null)
+          if (fn) await fn()
+        }}
+        onCancel={() => setConfirmAction(null)}
+      />
     </div>
   )
 }

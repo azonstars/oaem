@@ -268,6 +268,76 @@ export const FlowToolsSchema = z.object({
   createdAt: z.string().optional().default(""),
 }).strip();
 
+export const ToolDocumentsBaseSchema = z.object({
+  id: z.string().optional(),
+  toolId: z.string().optional().default(""),
+  toolType: z.string().optional().default(""),
+  title: z.string().optional().default(""),
+  docDate: z.string().optional().default(""),
+  monthName: z.string().optional().default(""),
+  officerName: z.string().optional().default(""),
+  designation: z.string().optional().default(""),
+  totalAmount: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional().default(0),
+  netPayable: z.preprocess((val) => Number(val) || 0, z.number()).optional().default(0),
+  journeyCount: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional().default(0),
+  financialYearId: z.string().optional().default(""),
+  officeId: z.string().optional().default(""),
+  content: z.string().optional(),
+  payload: z.any().optional(),
+  customHtml: z.string().optional(),
+  customPages: z.record(z.string()).optional(),
+  createdBy: z.string().optional().default(""),
+  createdAt: z.string().optional().default(""),
+  updatedAt: z.string().optional().default(""),
+}).passthrough();
+
+export const ToolDocumentsSchema = ToolDocumentsBaseSchema.refine(
+  (data) => Boolean(data.toolId || data.toolType),
+  {
+    message: "Tool ID অথবা Tool Type আবশ্যক।",
+    path: ["toolType"],
+  },
+);
+
+export const StockProProductsSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "পণ্যের নাম আবশ্যক"),
+  sku: z.string().optional().default(""),
+  category: z.string().optional().default("Stationery"),
+  padType: z.string().optional().default("regular"),
+  costPrice: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional(),
+  purchasePrice: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional(),
+  sellingPrice: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional().default(0),
+  stockQuantity: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional().default(0),
+  fromPad: z.preprocess((val) => (val === null || val === undefined || val === "" ? null : Number(val)), z.number().nullable()).optional(),
+  toPad: z.preprocess((val) => (val === null || val === undefined || val === "" ? null : Number(val)), z.number().nullable()).optional(),
+  perPadPages: z.preprocess((val) => Number(val) || 100, z.number().min(1)).optional().default(100),
+}).passthrough();
+
+export const StockProBranchesSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "শাখার নাম আবশ্যক"),
+  phone: z.string().optional().default(""),
+  address: z.string().optional().default(""),
+  code: z.string().optional().default(""),
+}).passthrough();
+
+export const StockProInvoicesSchema = z.object({
+  id: z.string().optional(),
+  date: z.string().optional().default(""),
+  agentId: z.string().min(1, "শাখা/এজেন্ট আবশ্যক"),
+  totalAmount: z.preprocess((val) => Number(val) || 0, z.number().min(0)).optional().default(0),
+  linkedPadNo: z.string().optional().default("-"),
+  createdBy: z.string().optional().default(""),
+  despatchNo: z.string().optional().default(""),
+  officeId: z.string().optional().default(""),
+  items: z.array(z.any()).optional().default([]),
+}).passthrough();
+
+export const StockProVoucherPadsSchema = z.object({
+  id: z.string().optional(),
+}).passthrough();
+
 export const SheetSchemas: Record<string, z.ZodTypeAny> = {
   Settings: SettingsSchema,
   FinancialYears: FinancialYearsSchema,
@@ -281,6 +351,11 @@ export const SheetSchemas: Record<string, z.ZodTypeAny> = {
   OpeningBalances: OpeningBalancesSchema,
   PostFactoProposals: PostFactoProposalsSchema,
   FlowTools: FlowToolsSchema,
+  ToolDocuments: ToolDocumentsSchema,
+  StockProProducts: StockProProductsSchema,
+  StockProBranches: StockProBranchesSchema,
+  StockProInvoices: StockProInvoicesSchema,
+  StockProVoucherPads: StockProVoucherPadsSchema,
 };
 
 export const SheetUpdateSchemas: Record<string, z.ZodTypeAny> = {
@@ -296,6 +371,11 @@ export const SheetUpdateSchemas: Record<string, z.ZodTypeAny> = {
   OpeningBalances: OpeningBalancesSchema.partial(),
   PostFactoProposals: PostFactoProposalsSchema.partial(),
   FlowTools: FlowToolsSchema.partial(),
+  ToolDocuments: ToolDocumentsBaseSchema.partial(),
+  StockProProducts: StockProProductsSchema.partial(),
+  StockProBranches: StockProBranchesSchema.partial(),
+  StockProInvoices: StockProInvoicesSchema.partial(),
+  StockProVoucherPads: StockProVoucherPadsSchema.partial(),
 };
 
 export function validateReferentialIntegrity(

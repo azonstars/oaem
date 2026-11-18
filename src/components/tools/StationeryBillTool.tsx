@@ -1,11 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User, SystemSettings, Office, FinancialYear, isStaffOrAdmin } from "../../types";
 import { apiFetch } from "../../api";
-import { Database, Save, FolderOpen, CheckCircle2, Trash2, ArrowLeft } from "lucide-react";
+import {
+  Database,
+  Save,
+  FolderOpen,
+  CheckCircle2,
+  Trash2,
+  ArrowLeft,
+  Edit3,
+  Eye,
+  RotateCcw,
+  AlertTriangle,
+  FileDown,
+} from "lucide-react";
 import {
   GlobalDocumentPadHeader,
   GlobalDocumentWatermark,
 } from "../../utils/documentBranding";
+import { RichDocumentEditor } from "../RichDocumentEditor";
+import { sanitizeHtml } from "../../utils/sanitize";
+import {
+  printHtmlDocument,
+  downloadWordHtmlDocument,
+} from "../../utils/documentPrint";
 
 interface StationeryBillToolProps {
   currentUser: User;
@@ -199,9 +217,16 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
     : "[তারিখ]";
 
   const [savedDocs, setSavedDocs] = useState<any[]>([]);
+  const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [isSavingDb, setIsSavingDb] = useState(false);
   const [dbSuccessMsg, setDbSuccessMsg] = useState("");
+  const [dbErrorMsg, setDbErrorMsg] = useState("");
+  const [deletingDocId, setDeletingDocId] = useState<string | null>(null);
+  const [isRichEditMode, setIsRichEditMode] = useState(false);
+  const [customPages, setCustomPages] = useState<Record<string, string>>({});
+  const printableDocRef = useRef<HTMLDivElement>(null);
+  const pageBodyRef = useRef<HTMLDivElement>(null);
 
   const loadSavedDocs = async () => {
     try {
@@ -228,9 +253,10 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
     loadSavedDocs();
   }, []);
 
-  const handleSaveToDatabase = async () => {
+  const handleSaveToDatabase = async (saveAsNew: boolean = false) => {
     setIsSavingDb(true);
-    const docId = `stat-${Date.now()}`;
+    const isUpdate = Boolean(currentDocId && !saveAsNew);
+    const docId = isUpdate ? currentDocId! : `stat-${Date.now()}`;
     const payload = {
       branchName,
       docDate,
@@ -258,35 +284,61 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
       budgetExtra,
       budgetTillNow,
       budgetYear,
+      customPages,
+    };
+
+    const requestBody = {
+      id: docId,
+      toolId: "stationery-bill",
+      toolType: "stationery_bill",
+      title: `মুদ্রিত স্টেশনারী চালান (${items.length} টি আইটেম)`,
+      docDate,
+      totalAmount: netPayment,
+      officeId: currentUser?.officeId || "off-ho",
+      financialYearId: selectedFY || "",
+      payload,
+      customPages,
+      createdBy: currentUser.userId,
     };
 
     try {
-      const res = await apiFetch("/api/tooldocuments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: docId,
-          toolType: "stationery_bill",
-          title: `মুদ্রিত স্টেশনারী চালান (${items.length} টি আইটেম)`,
-          docDate,
-          totalAmount: netPayment,
-          officeId: currentUser?.officeId || "off-ho",
-          payload,
-          createdBy: currentUser.userId,
-        }),
-      });
+      let res = await apiFetch(
+        isUpdate ? `/api/tooldocuments/${docId}` : "/api/tooldocuments",
+        {
+          method: isUpdate ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        },
+      );
+      if (isUpdate && res.status === 404) {
+        res = await apiFetch("/api/tooldocuments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+      }
 
       if (res.ok) {
+        const saved = await res.json().catch(() => ({}));
+        setCurrentDocId(saved?.id || docId);
         setDbSuccessMsg(
-          currentUser?.role === "Super Admin"
-            ? "সেন্ট্রাল SQLite ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!"
-            : "সফলভাবে সংরক্ষিত হয়েছে!"
+          isUpdate
+            ? "সংরক্ষিত চালানটি সফলভাবে আপডেট হয়েছে!"
+            : currentUser?.role === "Super Admin"
+              ? "সেন্ট্রাল SQLite ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!"
+              : "সফলভাবে সংরক্ষিত হয়েছে!",
         );
         setTimeout(() => setDbSuccessMsg(""), 4000);
         loadSavedDocs();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setDbErrorMsg(errData.error || "ডাটাবেজে সংরক্ষণ করতে ব্যর্থ হয়েছে।");
+        setTimeout(() => setDbErrorMsg(""), 4000);
       }
     } catch (err) {
       console.warn("Save to DB failed:", err);
+      setDbErrorMsg("ডাটাবেজে সংরক্ষণে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     } finally {
       setIsSavingDb(false);
     }
@@ -321,19 +373,45 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
     if (p.budgetExtra !== undefined) setBudgetExtra(p.budgetExtra);
     if (p.budgetTillNow !== undefined) setBudgetTillNow(p.budgetTillNow);
     if (p.budgetYear) setBudgetYear(p.budgetYear);
+    if (p.customPages && typeof p.customPages === "object") {
+      setCustomPages(p.customPages);
+    } else if (doc.customPages && typeof doc.customPages === "object") {
+      setCustomPages(doc.customPages);
+    } else {
+      setCustomPages({});
+    }
+    setCurrentDocId(doc.id || null);
+    setIsRichEditMode(false);
     setShowSavedModal(false);
     setDbSuccessMsg("ডাটাবেজ থেকে সফলভাবে লোড হয়েছে!");
     setTimeout(() => setDbSuccessMsg(""), 3000);
   };
 
-  const handleDeleteDoc = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteDoc = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("আপনি কি নিশ্চিত এই রেকর্ডটি মুছে ফেলতে চান?")) return;
+    setDeletingDocId(id);
+  };
+
+  const confirmDeleteDoc = async () => {
+    if (!deletingDocId) return;
+    const id = deletingDocId;
+    setDeletingDocId(null);
     try {
-      await apiFetch(`/api/tooldocuments/${id}`, { method: "DELETE" });
-      loadSavedDocs();
+      const res = await apiFetch(`/api/tooldocuments/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        if (currentDocId === id) setCurrentDocId(null);
+        setDbSuccessMsg("রেকর্ডটি সফলভাবে মুছে ফেলা হয়েছে!");
+        setTimeout(() => setDbSuccessMsg(""), 3000);
+        loadSavedDocs();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        setDbErrorMsg(errData.error || "রেকর্ডটি মুছতে ব্যর্থ হয়েছে।");
+        setTimeout(() => setDbErrorMsg(""), 4000);
+      }
     } catch (e) {
       console.warn("Delete doc error:", e);
+      setDbErrorMsg("রেকর্ডটি মুছতে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     }
   };
 
@@ -344,6 +422,12 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
           <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-fadeIn">
             <CheckCircle2 size={16} className="text-emerald-600" />
             <span>{dbSuccessMsg}</span>
+          </div>
+        )}
+        {dbErrorMsg && (
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-fadeIn">
+            <AlertTriangle size={16} className="text-rose-600" />
+            <span>{dbErrorMsg}</span>
           </div>
         )}
 
@@ -388,7 +472,7 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
             </button>
 
             <button
-              onClick={handleSaveToDatabase}
+              onClick={() => handleSaveToDatabase(false)}
               disabled={isSavingDb}
               className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md transition-all flex items-center gap-1.5"
             >
@@ -396,11 +480,23 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
               <span>
                 {isSavingDb
                   ? "সংরক্ষণ হচ্ছে..."
-                  : currentUser?.role === "Super Admin"
-                    ? "SQLite-এ সংরক্ষণ"
-                    : "সংরক্ষণ করুন"}
+                  : currentDocId
+                    ? "আপডেট সংরক্ষণ"
+                    : currentUser?.role === "Super Admin"
+                      ? "SQLite-এ সংরক্ষণ"
+                      : "সংরক্ষণ করুন"}
               </span>
             </button>
+            {currentDocId && (
+              <button
+                onClick={() => handleSaveToDatabase(true)}
+                disabled={isSavingDb}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all"
+                title="নতুন ডকুমেন্ট হিসেবে সংরক্ষণ করুন"
+              >
+                নতুন কপি
+              </button>
+            )}
 
             <button
               onClick={() => {
@@ -733,7 +829,7 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
           <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
             {/* Modal Top Bar */}
-            <div className="bg-blue-900 text-white px-6 py-3.5 flex items-center justify-between">
+            <div className="bg-blue-900 text-white px-6 py-3.5 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-3">
                 <span className="font-bold text-sm sm:text-base font-serif">
                   ডকুমেন্ট প্রিভিউ (পৃষ্ঠা {toBn(currentModalPage + 1)} / ২)
@@ -742,12 +838,65 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                   {currentModalPage === 0 ? "১. নোট শিট" : "২. কার্যাদেশ (Work Order)"}
                 </span>
               </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-white/80 hover:text-white text-lg font-bold p-1"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {customPages[String(currentModalPage)] && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const k = String(currentModalPage);
+                      setCustomPages((prev) => {
+                        const copy = { ...prev };
+                        delete copy[k];
+                        return copy;
+                      });
+                      setIsRichEditMode(false);
+                    }}
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    title="মূল লেআউটে ফিরে যান"
+                  >
+                    <RotateCcw size={13} />
+                    <span>রিসেট</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const k = String(currentModalPage);
+                    if (!isRichEditMode) {
+                      if (!customPages[k] && pageBodyRef.current) {
+                        setCustomPages((prev) => ({
+                          ...prev,
+                          [k]: pageBodyRef.current!.innerHTML,
+                        }));
+                      }
+                      setIsRichEditMode(true);
+                    } else {
+                      setIsRichEditMode(false);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition ${
+                    isRichEditMode
+                      ? "bg-amber-400 text-slate-950 hover:bg-amber-300"
+                      : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                  }`}
+                >
+                  {isRichEditMode ? <Eye size={14} /> : <Edit3 size={14} />}
+                  <span>
+                    {isRichEditMode
+                      ? "প্রিভিউ দেখুন"
+                      : "টেক্সট ও টেবিল এডিটর (Insert/Merge/Delete)"}
+                  </span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsRichEditMode(false);
+                    setShowModal(false);
+                  }}
+                  className="text-white/80 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
             {/* Document Content */}
@@ -759,7 +908,7 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                 docId={currentModalPage === 0 ? "stationery-notesheet" : "stationery-order"}
               />
 
-              <div className="relative z-10 space-y-4">
+              <div ref={printableDocRef} className="relative z-10 space-y-4">
                 {/* Official Bank Pad Header */}
                 <GlobalDocumentPadHeader
                   systemSettings={systemSettings}
@@ -768,6 +917,27 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                   docId={currentModalPage === 0 ? "stationery-notesheet" : "stationery-order"}
                 />
 
+                {isRichEditMode ? (
+                  <RichDocumentEditor
+                    value={customPages[String(currentModalPage)] || ""}
+                    onChange={(html) =>
+                      setCustomPages((prev) => ({
+                        ...prev,
+                        [String(currentModalPage)]: html,
+                      }))
+                    }
+                    minHeight={480}
+                  />
+                ) : customPages[String(currentModalPage)] ? (
+                  <div
+                    ref={pageBodyRef}
+                    className="rich-doc-rendered space-y-3"
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeHtml(customPages[String(currentModalPage)]),
+                    }}
+                  />
+                ) : (
+                  <div ref={pageBodyRef}>
                 {/* PAGE 1: Note Sheet */}
                 {currentModalPage === 0 && (
                   <div className="space-y-4">
@@ -922,16 +1092,21 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                     </div>
                   </div>
                 )}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Modal Footer Controls */}
-            <div className="bg-slate-100 p-4 px-6 flex items-center justify-between border-t border-slate-300">
+            <div className="bg-slate-100 p-4 px-6 flex flex-wrap items-center justify-between gap-2 border-t border-slate-300">
               <div className="flex items-center gap-2">
                 <button
                   disabled={currentModalPage <= 0}
-                  onClick={() => setCurrentModalPage((p) => Math.max(0, p - 1))}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-bold transition-all"
+                  onClick={() => {
+                    setIsRichEditMode(false);
+                    setCurrentModalPage((p) => Math.max(0, p - 1));
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer"
                 >
                   ◀ Previous Page
                 </button>
@@ -940,8 +1115,11 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                 </span>
                 <button
                   disabled={currentModalPage >= 1}
-                  onClick={() => setCurrentModalPage((p) => Math.min(1, p + 1))}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-bold transition-all"
+                  onClick={() => {
+                    setIsRichEditMode(false);
+                    setCurrentModalPage((p) => Math.min(1, p + 1));
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-600 hover:bg-slate-700 disabled:opacity-40 text-white text-xs font-bold transition-all cursor-pointer"
                 >
                   Next Page ▶
                 </button>
@@ -949,14 +1127,48 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => window.print()}
-                  className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white font-bold text-xs shadow transition-all flex items-center gap-1.5"
+                  onClick={() => {
+                    const pageLabel =
+                      currentModalPage === 0 ? "স্টেশনারী নোট শিট" : "স্টেশনারী কার্যাদেশ";
+                    const html = printableDocRef.current?.innerHTML || "";
+                    if (!html) {
+                      window.print();
+                      return;
+                    }
+                    printHtmlDocument({
+                      title: pageLabel,
+                      htmlContent: html,
+                      pageSize: "A4",
+                      orientation: "portrait",
+                    });
+                  }}
+                  className="px-4 py-2 rounded-lg bg-red-700 hover:bg-red-800 text-white font-bold text-xs shadow transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>⬇️ Print / PDF</span>
                 </button>
                 <button
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-lg bg-slate-500 hover:bg-slate-600 text-white font-bold text-xs transition-all"
+                  onClick={() => {
+                    const pageLabel =
+                      currentModalPage === 0 ? "Stationery_NoteSheet" : "Stationery_WorkOrder";
+                    const html = printableDocRef.current?.innerHTML || "";
+                    if (!html) return;
+                    downloadWordHtmlDocument({
+                      title: pageLabel,
+                      fileName: `${pageLabel}_${new Date().toISOString().slice(0, 10)}.doc`,
+                      htmlContent: html,
+                    });
+                  }}
+                  className="px-4 py-2 rounded-lg bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <FileDown size={14} />
+                  <span>Word (.doc)</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setIsRichEditMode(false);
+                    setShowModal(false);
+                  }}
+                  className="px-4 py-2 rounded-lg bg-slate-500 hover:bg-slate-600 text-white font-bold text-xs transition-all cursor-pointer"
                 >
                   Close
                 </button>
@@ -1038,6 +1250,37 @@ export function StationeryBillTool({ currentUser, systemSettings, offices, finan
                 className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-all"
               >
                 বন্ধ করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Delete Confirmation Modal */}
+      {deletingDocId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[70] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <AlertTriangle size={22} />
+              <h4 className="font-bold text-base text-slate-900">রেকর্ডটি মুছে ফেলবেন?</h4>
+            </div>
+            <p className="text-xs text-slate-600">
+              আপনি কি নিশ্চিত এই সংরক্ষিত স্টেশনারী চালানটি স্থায়ীভাবে মুছে ফেলতে চান?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingDocId(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                বাতিল
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteDoc}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+              >
+                হ্যাঁ, মুছে ফেলুন
               </button>
             </div>
           </div>

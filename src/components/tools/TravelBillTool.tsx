@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { User, SystemSettings, Office, FinancialYear, isStaffOrAdmin } from "../../types";
 import { apiFetch } from "../../api";
 import {
@@ -18,7 +18,14 @@ import {
   FileCheck,
   Search,
   FileDown,
+  Type,
+  Minus,
+  Edit3,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
+import { RichDocumentEditor } from "../RichDocumentEditor";
+import { sanitizeHtml } from "../../utils/sanitize";
 
 interface TravelBillToolProps {
   currentUser: User;
@@ -31,6 +38,41 @@ interface TravelBillToolProps {
 
 const BN = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
 const toBn = (s: string | number) => String(s).replace(/[0-9]/g, (d) => BN[+d]);
+const toEnDigits = (s: string) =>
+  s.replace(/[০-৯]/g, (d) => {
+    const idx = BN.indexOf(d);
+    return idx >= 0 ? String(idx) : d;
+  });
+
+const formatDateDMY = (raw?: string): string => {
+  const val = (raw || "").trim();
+  if (!val) return "";
+  const en = toEnDigits(val);
+  const ymd = en.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (ymd) {
+    const [, y, m, d] = ymd;
+    return toBn(`${d.padStart(2, "0")}-${m.padStart(2, "0")}-${y}`);
+  }
+  const dmy = en.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{2,4})$/);
+  if (dmy) {
+    const [, d, m, y] = dmy;
+    return toBn(`${d.padStart(2, "0")}-${m.padStart(2, "0")}-${y}`);
+  }
+  return toBn(val);
+};
+
+const TTA_FONT_FAMILIES = [
+  { id: "'Hind Siliguri', 'SolaimanLipi', 'Noto Sans Bengali', sans-serif", name: "হিন্দ শিলিগুড়ি (Hind Siliguri)" },
+  { id: "'Kalpurush', 'Hind Siliguri', serif", name: "কালপুরুষ (Kalpurush)" },
+  { id: "'SolaimanLipi', 'Hind Siliguri', sans-serif", name: "সোলায়মান লিপি (SolaimanLipi)" },
+  { id: "'Nikosh', 'SolaimanLipi', 'Noto Sans Bengali', serif", name: "নিকষ (Nikosh)" },
+  { id: "'Noto Sans Bengali', 'Hind Siliguri', sans-serif", name: "নোটো স্যান্স বাংলা (Noto Sans Bengali)" },
+  { id: "'Noto Serif Bengali', 'Kalpurush', serif", name: "নোটো সেরিফ বাংলা (Noto Serif Bengali)" },
+  { id: "'Times New Roman', 'Hind Siliguri', serif", name: "টাইমস নিউ রোমান (Times New Roman)" },
+  { id: "'Arial', 'Hind Siliguri', sans-serif", name: "এরিয়াল (Arial)" },
+  { id: "'Georgia', 'Kalpurush', serif", name: "জর্জিয়া (Georgia)" },
+  { id: "'Courier New', 'Hind Siliguri', monospace", name: "মনোস্পেস (Courier New)" },
+];
 
 // Number to Bengali words converter for TTA Bill
 function numberToBengaliWords(num: number): string {
@@ -123,8 +165,8 @@ interface JourneyItem {
 
 export function TravelBillTool({
   currentUser,
-  systemSettings: _systemSettings,
-  offices: _offices,
+  systemSettings,
+  offices,
   financialYears: _financialYears,
   selectedFY,
   onBack,
@@ -138,6 +180,9 @@ export function TravelBillTool({
   const [voucherNo, setVoucherNo] = useState("");
   const [docDate, setDocDate] = useState(new Date().toISOString().slice(0, 10));
   const [savingsAccountNo, setSavingsAccountNo] = useState("");
+  const [fallbackOffices, setFallbackOffices] = useState<Office[]>([]);
+  const [billOfficeId, setBillOfficeId] = useState<string>(currentUser?.officeId || "off-ho");
+  const [loadedOfficeName, setLoadedOfficeName] = useState<string>("");
 
   // Advance info
   const [advanceDate, setAdvanceDate] = useState("");
@@ -188,12 +233,24 @@ export function TravelBillTool({
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [savedDocs, setSavedDocs] = useState<any[]>([]);
   const [dbSuccessMsg, setDbSuccessMsg] = useState("");
+  const [dbErrorMsg, setDbErrorMsg] = useState("");
   const [isSavingDb, setIsSavingDb] = useState(false);
   const [activeTab, setActiveTab] = useState<"form" | "preview" | "archive">("form");
+  const [printOrientation, setPrintOrientation] = useState<"portrait" | "landscape">("portrait");
+  const [fontFamily, setFontFamily] = useState<string>(TTA_FONT_FAMILIES[0].id);
+  const [fontScale, setFontScale] = useState<number>(100);
   const [isBillSubmitted, setIsBillSubmitted] = useState(false);
   const [submitSuccessMsg, setSubmitSuccessMsg] = useState("");
   const [currentDocId, setCurrentDocId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isRichEditMode, setIsRichEditMode] = useState(false);
+  const [richEditPage, setRichEditPage] = useState<"1" | "2">("1");
+  const [customPages, setCustomPages] = useState<Record<string, string>>({});
+  const [confirmActionModal, setConfirmActionModal] = useState<
+    { type: "new_bill" } | { type: "delete_doc"; id: string } | null
+  >(null);
+  const page1InnerRef = useRef<HTMLDivElement>(null);
+  const page2InnerRef = useRef<HTMLDivElement>(null);
 
   // Load saved docs from SQLite database with office/branch isolation
   const loadSavedDocs = async () => {
@@ -225,6 +282,53 @@ export function TravelBillTool({
   useEffect(() => {
     loadSavedDocs();
   }, []);
+
+  useEffect(() => {
+    if (!offices || offices.length === 0) {
+      apiFetch("/api/offices")
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => {
+          if (Array.isArray(data)) setFallbackOffices(data);
+        })
+        .catch(() => {});
+    }
+  }, [offices]);
+
+  useEffect(() => {
+    if (!currentDocId && currentUser?.officeId) {
+      setBillOfficeId(currentUser.officeId);
+    }
+  }, [currentUser?.officeId, currentDocId]);
+
+  const effectiveOffices = offices && offices.length > 0 ? offices : fallbackOffices;
+  const activeOffice =
+    effectiveOffices.find((o) => o.id === billOfficeId) ||
+    effectiveOffices.find((o) => o.id === currentUser?.officeId);
+  const rawOfficeName = (activeOffice?.name || loadedOfficeName || "আঞ্চলিক কার্যালয়, রাঙ্গামাটি").trim();
+  const cleanOfficeName = rawOfficeName
+    .replace(/\s*\([0-9০-৯]+\)\s*$/, "")
+    .replace(/[।.,\s]+$/, "")
+    .trim();
+  const addressParts = (activeOffice?.address || "")
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  const addressDistrict =
+    addressParts.length > 0
+      ? addressParts[addressParts.length - 1].replace(/[।.]+$/, "").trim()
+      : "রাঙ্গামাটি";
+  const officeLocationSuffix = addressDistrict || "রাঙ্গামাটি";
+  const resolvedOfficePadName =
+    cleanOfficeName.endsWith(officeLocationSuffix) || cleanOfficeName.endsWith("রাঙ্গামাটি")
+      ? `${cleanOfficeName}।`
+      : `${cleanOfficeName}, ${officeLocationSuffix}।`;
+  const rawInstitution = (
+    systemSettings?.brandingPolicy?.institutionName ||
+    systemSettings?.institutionName ||
+    "বাংলাদেশ কৃষি ব্যাংক"
+  ).trim();
+  const resolvedInstitutionName =
+    (rawInstitution.split("/")[0] || "বাংলাদেশ কৃষি ব্যাংক").trim() || "বাংলাদেশ কৃষি ব্যাংক";
 
   const handleSaveJourneyForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,7 +465,7 @@ export function TravelBillTool({
         netPayable: netPayable,
         journeyCount: journeys.length,
         financialYearId: selectedFY || "fy-3",
-        officeId: currentUser?.officeId || "off-ho",
+        officeId: billOfficeId || currentUser?.officeId || "off-ho",
         content: JSON.stringify({
           header: {
             name,
@@ -374,8 +478,13 @@ export function TravelBillTool({
             savingsAccountNo,
             advanceDate,
             advanceAmount,
+            fontFamily,
+            fontScale,
+            officeId: billOfficeId || currentUser?.officeId || "off-ho",
+            officeName: rawOfficeName,
           },
           journeys,
+          customPages,
           grandTotalGross,
           netPayable,
           totalFare,
@@ -386,22 +495,22 @@ export function TravelBillTool({
       };
 
       if (currentDocId) {
-        await apiFetch(`/api/tooldocuments/${currentDocId}`, {
+        const res = await apiFetch(`/api/tooldocuments/${currentDocId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
+        if (!res.ok) throw new Error("Update failed");
       } else {
         const res = await apiFetch("/api/tooldocuments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
-        if (res.ok) {
-          const created = await res.json();
-          if (created?.id) {
-            setCurrentDocId(created.id);
-          }
+        if (!res.ok) throw new Error("Create failed");
+        const created = await res.json();
+        if (created?.id) {
+          setCurrentDocId(created.id);
         }
       }
 
@@ -412,7 +521,8 @@ export function TravelBillTool({
       }
     } catch (e) {
       console.warn("Save travel bill error:", e);
-      alert("ডাটাবেজে সংরক্ষণে ত্রুটি হয়েছে।");
+      setDbErrorMsg("ডাটাবেজে সংরক্ষণে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     } finally {
       setIsSavingDb(false);
     }
@@ -436,10 +546,18 @@ export function TravelBillTool({
         setSavingsAccountNo(data.header.savingsAccountNo || "");
         setAdvanceDate(data.header.advanceDate || "");
         setAdvanceAmount(Number(data.header.advanceAmount || 0));
+        if (data.header.fontFamily) setFontFamily(data.header.fontFamily);
+        if (data.header.fontScale) setFontScale(Number(data.header.fontScale));
+        setLoadedOfficeName(data.header.officeName || "");
+      } else {
+        setLoadedOfficeName("");
       }
+      setBillOfficeId(doc.officeId || data?.header?.officeId || currentUser?.officeId || "off-ho");
       if (Array.isArray(data?.journeys)) {
         setJourneys(data.journeys);
       }
+      setCustomPages(data?.customPages && typeof data.customPages === "object" ? data.customPages : {});
+      setIsRichEditMode(false);
       setCurrentDocId(doc.id);
       setIsBillSubmitted(true);
       setShowPreviewModal(false);
@@ -457,17 +575,19 @@ export function TravelBillTool({
       }
     } catch (e) {
       console.warn("Load doc parse error:", e);
-      alert("বিলটি লোড করতে ত্রুটি হয়েছে।");
+      setDbErrorMsg("বিলটি লোড করতে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     }
   };
 
-  const handleStartNewBill = () => {
-    if (journeys.length > 0 && !confirm("নতুন ভ্রমণ বিল শুরু করতে চান? বর্তমান অসংরক্ষিত কোনো পরিবর্তন থাকলে তা মুছে যেতে পারে।")) {
-      return;
-    }
+  const resetToNewBill = () => {
     setCurrentDocId(null);
+    setBillOfficeId(currentUser?.officeId || "off-ho");
+    setLoadedOfficeName("");
     setIsBillSubmitted(false);
     setJourneys([]);
+    setCustomPages({});
+    setIsRichEditMode(false);
     setVoucherNo("");
     setMonthName("");
     setAdvanceAmount(0);
@@ -475,27 +595,50 @@ export function TravelBillTool({
     setActiveTab("form");
   };
 
-  const handleDeleteDoc = async (id: string, e: React.MouseEvent) => {
+  const handleStartNewBill = () => {
+    if (journeys.length > 0) {
+      setConfirmActionModal({ type: "new_bill" });
+      return;
+    }
+    resetToNewBill();
+  };
+
+  const handleDeleteDoc = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("আপনি কি নিশ্চিত এই সংরক্ষিত ভ্রমণ বিলটি মুছে ফেলতে চান?")) return;
+    setConfirmActionModal({ type: "delete_doc", id });
+  };
+
+  const executeConfirmAction = async () => {
+    if (!confirmActionModal) return;
+    const action = confirmActionModal;
+    setConfirmActionModal(null);
+
+    if (action.type === "new_bill") {
+      resetToNewBill();
+      return;
+    }
+
     try {
-      await apiFetch(`/api/tooldocuments/${id}`, { method: "DELETE" });
+      const res = await apiFetch(`/api/tooldocuments/${action.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
       setDbSuccessMsg("সংরক্ষিত ভ্রমণ বিলটি সফলভাবে মুছে ফেলা হয়েছে!");
-      if (currentDocId === id) {
+      if (currentDocId === action.id) {
         setCurrentDocId(null);
       }
       loadSavedDocs();
       setTimeout(() => setDbSuccessMsg(""), 3000);
     } catch (e) {
       console.warn("Delete doc error:", e);
-      alert("বিলটি মুছতে ত্রুটি হয়েছে।");
+      setDbErrorMsg("বিলটি মুছতে ত্রুটি হয়েছে।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
     }
   };
 
   // Submit Full Month Bill & Auto-Save to Database
   const handleSubmitFullMonthBill = async () => {
     if (journeys.length === 0) {
-      alert("অনুগ্রহ করে অন্তত একটি দিনের ভ্রমণ তথ্য এন্ট্রি করুন।");
+      setDbErrorMsg("অনুগ্রহ করে অন্তত একটি দিনের ভ্রমণ তথ্য এন্ট্রি করুন।");
+      setTimeout(() => setDbErrorMsg(""), 4000);
       return;
     }
     // Auto-save to database immediately with the submission
@@ -514,9 +657,465 @@ export function TravelBillTool({
     }, 200);
   };
 
-  // Comprehensive, bulletproof print function for Travel Bill Form SIF-66 (Legal Paper, Portrait or Landscape)
+  const buildTravelBillCss = (
+    orientation: "portrait" | "landscape",
+    forStandalone: boolean,
+    selectedFont: string = fontFamily,
+    selectedScale: number = fontScale
+  ) => {
+    const isLandscape = orientation === "landscape";
+    const fullW = isLandscape ? 355.6 : 215.9;
+    const fullH = isLandscape ? 215.9 : 355.6;
+    const printH = isLandscape ? 201 : 341;
+    const printW = isLandscape ? 341 : 201;
+    const f = Math.max(0.7, Math.min(1.4, (selectedScale || 100) / 100));
+    const pt = (base: number) => `${(base * f).toFixed(2)}pt`;
+
+    return `
+      @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&display=swap');
+      @page {
+        size: legal ${orientation};
+        margin: 7mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      ${
+        forStandalone
+          ? `
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #cbd5e1;
+        color: #000000;
+        font-family: ${selectedFont};
+        font-size: ${pt(9.5)};
+        -webkit-font-smoothing: antialiased;
+      }
+      .print-toolbar {
+        background: #0f172a;
+        color: #ffffff;
+        padding: 12px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top: 0;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        font-family: 'Hind Siliguri', sans-serif;
+      }
+      .print-btn {
+        background: #059669;
+        color: #ffffff;
+        border: none;
+        padding: 8px 18px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .print-btn:hover { background: #10b981; }
+      .close-btn {
+        background: #334155;
+        color: #ffffff;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .close-btn:hover { background: #475569; }
+      .bill-wrapper {
+        padding: 20px 12px 40px;
+      }
+      `
+          : ""
+      }
+      #printable-tta-bill,
+      .bill-wrapper {
+        color: #000000;
+        font-family: ${selectedFont};
+      }
+      .tta-page,
+      .tta-page * {
+        font-family: ${selectedFont};
+      }
+      .tta-page {
+        width: ${fullW}mm;
+        height: ${fullH}mm;
+        padding: 7mm;
+        margin: 0 auto 24px auto;
+        background: #ffffff;
+        color: #000000;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+        border: 1px solid #cbd5e1;
+        position: relative;
+        overflow: hidden;
+      }
+      .tta-page-viewport {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+      }
+      .tta-page-inner {
+        width: 100%;
+        transform-origin: top left;
+      }
+      .tta-p1-header,
+      .tta-p2-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 12px;
+        font-size: ${pt(isLandscape ? 9.5 : 9)};
+        line-height: 1.35;
+        color: #000000;
+      }
+      .tta-p1-header-left {
+        width: 28%;
+        text-align: left;
+      }
+      .tta-p1-header-center {
+        width: 44%;
+        text-align: center;
+      }
+      .tta-p1-header-right {
+        width: 28%;
+        text-align: right;
+      }
+      .tta-p2-header-left {
+        width: 22%;
+      }
+      .tta-p2-header-center {
+        width: 56%;
+        text-align: center;
+      }
+      .tta-p2-header-right {
+        width: 22%;
+        text-align: right;
+      }
+      .tta-bank-title {
+        font-weight: 700;
+        font-size: ${pt(12.5)};
+        line-height: 1.2;
+      }
+      .tta-bank-sub {
+        font-weight: 700;
+        font-size: ${pt(10.5)};
+        line-height: 1.25;
+      }
+      .tta-form-title {
+        font-weight: 700;
+        text-decoration: underline;
+        margin-top: 3px;
+        font-size: ${pt(9.8)};
+      }
+      .tta-form-ref {
+        font-size: ${pt(8.2)};
+        color: #334155;
+      }
+      .tta-form-code {
+        font-weight: 700;
+        font-size: ${pt(9.5)};
+      }
+      .tta-p1-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        font-size: ${pt(isLandscape ? 8.4 : 7.2)};
+        line-height: 1.22;
+      }
+      .tta-p1-table th,
+      .tta-p1-table td {
+        border: 1px solid #000000 !important;
+        color: #000000 !important;
+        padding: ${isLandscape ? "3px 3px" : "2px 1.5px"} !important;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        vertical-align: middle;
+      }
+      .tta-th-row th {
+        background-color: #f8fafc !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        font-size: ${pt(isLandscape ? 7.8 : 6.7)} !important;
+      }
+      .tta-colnum-row th {
+        background-color: #f1f5f9 !important;
+        font-weight: 700 !important;
+        text-align: center !important;
+        font-size: ${pt(isLandscape ? 7.5 : 6.6)} !important;
+        padding: 1.5px 1px !important;
+      }
+      .tta-p1-notes {
+        margin-top: 12px;
+        font-size: ${pt(isLandscape ? 9 : 8.6)};
+        line-height: 1.4;
+        color: #1e293b;
+      }
+      .tta-p1-notes > div + div {
+        margin-top: 3px;
+      }
+      .tta-p1-signature {
+        margin-top: 34px;
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+      }
+      .tta-p1-sig-box {
+        text-align: center;
+        font-size: ${pt(9.2)};
+      }
+      .tta-p2-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+        align-items: start;
+        width: 100%;
+      }
+      .tta-p2-col {
+        width: 100%;
+      }
+      .tta-summary-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        table-layout: fixed !important;
+        font-size: ${pt(isLandscape ? 9 : 9.2)};
+        line-height: 1.3;
+      }
+      .tta-summary-table td {
+        border: 1px solid #000000 !important;
+        color: #000000 !important;
+        padding: ${isLandscape ? "3.5px 5px" : "4.5px 6px"} !important;
+        vertical-align: middle;
+      }
+      .tta-total-row {
+        background-color: #f8fafc !important;
+        font-weight: 700 !important;
+      }
+      .tta-words-line {
+        text-align: center;
+        font-size: ${pt(9)};
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .tta-cert-lines {
+        font-size: ${pt(8.4)};
+        line-height: 1.38;
+        color: #1e293b;
+        margin-top: 8px;
+      }
+      .tta-cert-lines > div + div {
+        margin-top: 3px;
+      }
+      .tta-sig-pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        text-align: center;
+        margin-top: 22px;
+        font-size: ${pt(8.5)};
+        font-weight: 700;
+      }
+      .tta-sanction-block {
+        width: 100%;
+        margin-top: 16px;
+        font-size: ${pt(8.5)};
+        line-height: 1.45;
+      }
+      .tta-sanction-item {
+        width: 100%;
+      }
+      .tta-sanction-item + .tta-sanction-item {
+        margin-top: 8px;
+      }
+      .tta-sanction-row {
+        display: flex;
+        align-items: baseline;
+        width: 100%;
+        gap: 4px;
+      }
+      .tta-sanction-row + .tta-sanction-row {
+        margin-top: 4px;
+      }
+      .tta-sanction-label {
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .tta-dot-line {
+        flex: 1;
+        min-width: 24px;
+        border-bottom: 1.5px dotted #000000;
+        height: 0.9em;
+      }
+      .tta-dot-amt {
+        flex: 0 0 28%;
+      }
+      .tta-sig-right-row {
+        display: flex;
+        justify-content: flex-end;
+        width: 100%;
+        padding-top: 12px;
+        padding-bottom: 8px;
+      }
+      .tta-rules-box {
+        font-size: ${pt(9)};
+        line-height: 1.45;
+        color: #1e293b;
+        background-color: #f8fafc !important;
+        padding: 12px 14px;
+        border-radius: 8px;
+        border: 1px solid #cbd5e1;
+      }
+      .tta-rules-box > div + div {
+        margin-top: 6px;
+      }
+      .tta-text-center { text-align: center; }
+      .tta-text-right { text-align: right; }
+      .tta-text-justify { text-align: justify; }
+      .tta-font-bold { font-weight: 700; }
+      .tta-underline { text-decoration: underline; }
+      @media print {
+        html, body {
+          background: #ffffff !important;
+          color: #000000 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          height: auto !important;
+        }
+        .no-print, .print\\:hidden {
+          display: none !important;
+          visibility: hidden !important;
+        }
+        .bill-wrapper {
+          padding: 0 !important;
+          margin: 0 !important;
+          background: #ffffff !important;
+        }
+        #printable-tta-bill {
+          display: block !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          box-shadow: none !important;
+          border: none !important;
+        }
+        .tta-page {
+          width: ${printW}mm !important;
+          height: ${printH}mm !important;
+          max-height: ${printH}mm !important;
+          min-height: ${printH}mm !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+          overflow: hidden !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        .tta-page-1 {
+          page-break-after: always !important;
+          break-after: page !important;
+        }
+        .tta-page-2 {
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        .tta-th-row th,
+        .tta-colnum-row th,
+        .tta-total-row,
+        .tta-rules-box {
+          display: revert !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      }
+    `;
+  };
+
+  // Fit each Legal page (Page 1 and Page 2) cleanly inside 1 Legal page boundary
+  const fitLegalPreviewPages = () => {
+    const container = document.getElementById("printable-tta-bill");
+    if (!container) return;
+    const pages = container.querySelectorAll(".tta-page");
+    pages.forEach((pageEl) => {
+      const viewport = pageEl.querySelector(".tta-page-viewport") as HTMLElement | null;
+      const inner = pageEl.querySelector(".tta-page-inner") as HTMLElement | null;
+      if (!viewport || !inner) return;
+      inner.style.transform = "";
+      inner.style.transformOrigin = "top left";
+      inner.style.width = "100%";
+
+      const availW = viewport.clientWidth;
+      const availH = Math.max(10, viewport.clientHeight - 2);
+      if (!availW || !availH) return;
+
+      const sw = inner.scrollWidth;
+      const sh = inner.scrollHeight;
+
+      if (sw > availW + 1) {
+        const scale = Math.min(availW / sw, availH / sh);
+        if (scale < 1) {
+          inner.style.transform = `scale(${scale.toFixed(4)})`;
+        }
+      } else if (sh > availH + 1) {
+        const scaleY = availH / sh;
+        inner.style.width = `${(100 / scaleY).toFixed(4)}%`;
+        const newSw = inner.scrollWidth;
+        const newSh = inner.scrollHeight;
+        const finalScale = Math.min(availW / newSw, availH / newSh, scaleY);
+        if (finalScale < 1) {
+          inner.style.transform = `scale(${finalScale.toFixed(4)})`;
+        }
+      }
+    });
+  };
+
+  useEffect(() => {
+    if (activeTab === "preview") {
+      const raf = requestAnimationFrame(() => {
+        fitLegalPreviewPages();
+      });
+      return () => cancelAnimationFrame(raf);
+    }
+  }, [
+    activeTab,
+    printOrientation,
+    fontFamily,
+    fontScale,
+    journeys,
+    name,
+    designation,
+    basicSalary,
+    district,
+    monthName,
+    voucherNo,
+    docDate,
+    savingsAccountNo,
+    advanceDate,
+    advanceAmount,
+    resolvedOfficePadName,
+    resolvedInstitutionName,
+  ]);
+
+  // Comprehensive, bulletproof print function for Travel Bill Form SIF-66 (Legal Paper, 2 Exact Pages)
   const handlePrintBill = (orientationInput?: "portrait" | "landscape" | any) => {
-    const orientation = typeof orientationInput === "string" ? orientationInput : "portrait";
+    const orientation: "portrait" | "landscape" =
+      orientationInput === "landscape" || orientationInput === "portrait"
+        ? orientationInput
+        : printOrientation;
+    setPrintOrientation(orientation);
     setActiveTab("preview");
 
     setTimeout(() => {
@@ -527,140 +1126,140 @@ export function TravelBillTool({
         return;
       }
 
-      const billHtml = billElem.innerHTML;
+      const clone = billElem.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll(".no-print").forEach((el) => el.remove());
+      clone.querySelectorAll(".tta-page-inner").forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.transform = "";
+        htmlEl.style.width = "100%";
+      });
+      const billHtml = clone.innerHTML;
 
-      const printHtml = `<!DOCTYPE html>
+      const printCss = buildTravelBillCss(orientation, true, fontFamily, fontScale);
+
+      const buildStandaloneDoc = (showToolbar: boolean) => `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>ভ্রমণ বিল ফরম এসআইএফ/৬৬ - ${name || "কর্মকর্তা"} (${monthName || "মাস"})</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap');
-    @page {
-      size: ${orientation === "landscape" ? "landscape" : "portrait"} A4;
-      margin: 10mm;
-    }
-    * { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      color: #000000;
-      font-family: 'Hind Siliguri', sans-serif;
-      font-size: 10pt;
-    }
-    .bill-wrapper {
-      width: 100%;
-      background: #ffffff;
-    }
-    table {
-      width: 100% !important;
-      border-collapse: collapse !important;
-      table-layout: fixed;
-    }
-    th, td {
-      border: 1px solid #000000 !important;
-      color: #000000 !important;
-      padding: 2px 3px;
-      word-wrap: break-word;
-      font-size: 9pt;
-    }
-    th {
-      font-weight: bold;
-      text-align: center;
-      background-color: #f8fafc !important;
-    }
-    @media print {
-      body { background: #ffffff !important; }
-    }
+    ${printCss}
   </style>
 </head>
 <body>
-  <div class="print-toolbar no-print">
+  ${
+    showToolbar
+      ? `<div class="print-toolbar no-print">
     <div style="font-weight: bold; font-size: 14px;">
-      ভ্রমণ বিল ফরম এসআইএফ/৬৬ (সংশোধিত) - লিগ্যাল প্রিন্ট ভিউ
+      ভ্রমণ বিল ফরম এসআইএফ/৬৬ (সংশোধিত) - ১ম ও ২য় পাতা (Legal ${orientation === "landscape" ? "14 × 8.5" : "8.5 × 14"} ইঞ্চি)
     </div>
     <div style="display: flex; gap: 10px;">
-      <button class="print-btn" onclick="window.print()">🖨️ লিগ্যাল পেজে প্রিন্ট করুন (Print / Save PDF)</button>
+      <button class="print-btn" onclick="fitLegalPages(); window.print();">🖨️ লিগ্যাল পেজে প্রিন্ট / Save as PDF</button>
       <button class="close-btn" onclick="window.close()">✕ বন্ধ করুন</button>
     </div>
-  </div>
+  </div>`
+      : ""
+  }
   <div class="bill-wrapper">
     ${billHtml}
   </div>
   <script>
-    window.onload = function() {
+    function fitLegalPages() {
+      var pages = document.querySelectorAll('.tta-page');
+      for (var i = 0; i < pages.length; i++) {
+        var page = pages[i];
+        var viewport = page.querySelector('.tta-page-viewport');
+        var inner = page.querySelector('.tta-page-inner');
+        if (!viewport || !inner) continue;
+        inner.style.transform = '';
+        inner.style.transformOrigin = 'top left';
+        inner.style.width = '100%';
+        var availW = viewport.clientWidth;
+        var availH = Math.max(10, viewport.clientHeight - 2);
+        if (!availW || !availH) continue;
+        var sw = inner.scrollWidth;
+        var sh = inner.scrollHeight;
+        if (sw > availW + 1) {
+          var scale = Math.min(availW / sw, availH / sh);
+          if (scale < 1) {
+            inner.style.transform = 'scale(' + scale.toFixed(4) + ')';
+          }
+        } else if (sh > availH + 1) {
+          var scaleY = availH / sh;
+          inner.style.width = (100 / scaleY).toFixed(4) + '%';
+          var newSw = inner.scrollWidth;
+          var newSh = inner.scrollHeight;
+          var finalScale = Math.min(availW / newSw, availH / newSh, scaleY);
+          if (finalScale < 1) {
+            inner.style.transform = 'scale(' + finalScale.toFixed(4) + ')';
+          }
+        }
+      }
+    }
+    window.onbeforeprint = fitLegalPages;
+    var printedOnce = false;
+    function triggerPrintOnce() {
+      if (printedOnce) return;
+      printedOnce = true;
+      fitLegalPages();
       setTimeout(function() {
+        fitLegalPages();
         window.focus();
         window.print();
-      }, 400);
-    };
+      }, 250);
+    }
+    window.addEventListener('load', function() {
+      fitLegalPages();
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() {
+          setTimeout(triggerPrintOnce, 200);
+        });
+      } else {
+        setTimeout(triggerPrintOnce, 450);
+      }
+    });
   </script>
 </body>
 </html>`;
 
-      // Strategy 1: Try dedicated window first (bypasses iframe restrictions)
-      let opened = false;
+      // Print cleanly via hidden Legal-sized iframe (avoids popup blockers & iframe sandbox issues)
       try {
-        const printWin = window.open("", "_blank", "width=1000,height=900,menubar=no,toolbar=no");
-        if (printWin) {
-          printWin.document.open();
-          printWin.document.write(printHtml);
-          printWin.document.close();
-          opened = true;
+        const old = document.getElementById("print-tta-hidden-frame");
+        if (old) old.remove();
+
+        const iframe = document.createElement("iframe");
+        iframe.id = "print-tta-hidden-frame";
+        iframe.style.position = "fixed";
+        iframe.style.right = "0";
+        iframe.style.bottom = "0";
+        iframe.style.width = orientation === "landscape" ? "355.6mm" : "215.9mm";
+        iframe.style.height = orientation === "landscape" ? "215.9mm" : "355.6mm";
+        iframe.style.border = "none";
+        iframe.style.opacity = "0";
+        iframe.style.pointerEvents = "none";
+        iframe.style.zIndex = "-999";
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(buildStandaloneDoc(false));
+          doc.close();
+
+          setTimeout(() => {
+            if (document.body.contains(iframe)) {
+              document.body.removeChild(iframe);
+            }
+          }, 60000);
+          return;
         }
-      } catch (err) {
-        console.warn("window.open blocked:", err);
+      } catch (e) {
+        console.warn("iframe print error:", e);
       }
 
-      // Strategy 2: If popup blocked or inside iframe, use hidden print iframe
-      if (!opened) {
-        try {
-          const old = document.getElementById("print-tta-hidden-frame");
-          if (old) old.remove();
-
-          const iframe = document.createElement("iframe");
-          iframe.id = "print-tta-hidden-frame";
-          iframe.style.position = "fixed";
-          iframe.style.right = "0";
-          iframe.style.bottom = "0";
-          iframe.style.width = "300px";
-          iframe.style.height = "300px";
-          iframe.style.border = "none";
-          iframe.style.opacity = "0.01";
-          iframe.style.pointerEvents = "none";
-          iframe.style.zIndex = "-999";
-          document.body.appendChild(iframe);
-
-          const doc = iframe.contentWindow?.document;
-          if (doc) {
-            doc.open();
-            doc.write(printHtml);
-            doc.close();
-
-            setTimeout(() => {
-              try {
-                iframe.contentWindow?.focus();
-                iframe.contentWindow?.print();
-              } catch (e) {
-                console.warn("iframe print failed, falling back to window.print():", e);
-                window.focus();
-                window.print();
-              }
-              setTimeout(() => {
-                if (document.body.contains(iframe)) document.body.removeChild(iframe);
-              }, 4000);
-            }, 500);
-            return;
-          }
-        } catch (e) {
-          console.warn("iframe print error:", e);
-        }
-
-        // Strategy 3: Standard window.print
-        window.focus();
-        window.print();
-      }
+      fitLegalPreviewPages();
+      window.focus();
+      window.print();
     }, 150);
   };
 
@@ -671,17 +1270,31 @@ export function TravelBillTool({
       const billElem = document.getElementById("printable-tta-bill");
       if (!billElem) return;
 
-      const content = billElem.innerHTML;
+      const clone = billElem.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll(".no-print").forEach((el) => el.remove());
+      clone.querySelectorAll(".tta-page-inner").forEach((el) => {
+        const htmlEl = el as HTMLElement;
+        htmlEl.style.transform = "";
+        htmlEl.style.width = "100%";
+      });
+      clone.querySelectorAll(".tta-dot-line").forEach((el) => {
+        const span = el as HTMLElement;
+        span.textContent = span.classList.contains("tta-dot-amt")
+          ? " ........................... "
+          : " .......................................................... ";
+      });
+      const content = clone.innerHTML;
       const wordDoc = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="UTF-8"/><title>ভ্রমণ বিল ফরম এসআইএফ/৬৬</title>
 <style>
-  @page Section1 { size: 215.9mm 355.6mm; margin: 12mm 15mm; }
-  body { font-family: 'Vrinda', 'SolaimanLipi', 'Noto Serif Bengali', serif; font-size: 10pt; line-height: 1.4; color: #000; }
+  @page Section1 { size: 215.9mm 355.6mm; margin: 10mm 12mm; }
+  body { font-family: ${fontFamily}; font-size: 9.5pt; line-height: 1.35; color: #000; }
   table { border-collapse: collapse; width: 100%; margin: 6pt 0; }
-  th, td { border: 1pt solid #000; padding: 3pt 4pt; }
-  .print-page { page-break-after: always; }
+  th, td { border: 1pt solid #000; padding: 2.5pt 3pt; }
+  .tta-page-1 { page-break-after: always; }
+  .tta-p2-grid { display: flex; gap: 16pt; }
 </style>
 </head>
 <body><div class="Section1">${content}</div></body></html>`;
@@ -712,59 +1325,20 @@ export function TravelBillTool({
 
   return (
     <div className="bg-[#f0f4ff] min-h-screen p-4 sm:p-6 font-sans text-slate-800 animate-fadeIn print:p-0 print:m-0 print:bg-white">
-      {/* Inline styles for dedicated Legal portrait print */}
-      <style>{`
-        @media print {
-          @page {
-            size: legal portrait;
-            margin: 8mm 10mm;
-          }
-          body, html {
-            background: #ffffff !important;
-            color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-          }
-          .no-print, .print\\:hidden, button, header, nav, aside {
-            display: none !important;
-            visibility: hidden !important;
-          }
-          #printable-tta-bill {
-            display: block !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-          .print-page {
-            page-break-after: always !important;
-            break-after: page !important;
-            padding-bottom: 0 !important;
-            border-bottom: none !important;
-          }
-          .print-page:last-child {
-            page-break-after: auto !important;
-            break-after: auto !important;
-          }
-          table {
-            border-collapse: collapse !important;
-            width: 100% !important;
-          }
-          th, td {
-            border: 1px solid #000000 !important;
-            color: #000000 !important;
-          }
-        }
-      `}</style>
+      {/* Inline styles for dedicated Legal preview & direct browser print */}
+      <style>{buildTravelBillCss(printOrientation, false, fontFamily, fontScale)}</style>
 
       <div className="max-w-6xl mx-auto bg-white border border-[#dbe4ff] rounded-2xl p-6 sm:p-8 shadow-sm print:max-w-none print:p-0 print:m-0 print:border-none print:shadow-none">
         {dbSuccessMsg && (
           <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-fadeIn no-print print:hidden">
             <CheckCircle2 size={16} className="text-emerald-600" />
             <span>{dbSuccessMsg}</span>
+          </div>
+        )}
+        {dbErrorMsg && (
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl flex items-center gap-2 text-xs font-bold animate-fadeIn no-print print:hidden">
+            <AlertTriangle size={16} className="text-rose-600" />
+            <span>{dbErrorMsg}</span>
           </div>
         )}
 
@@ -775,7 +1349,7 @@ export function TravelBillTool({
               <span>{submitSuccessMsg}</span>
             </div>
             <button
-              onClick={handlePrintBill}
+              onClick={() => handlePrintBill()}
               className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow transition flex items-center gap-2 self-end sm:self-auto shrink-0"
             >
               <Printer size={16} />
@@ -926,9 +1500,14 @@ export function TravelBillTool({
         <div className={activeTab !== "form" ? "hidden no-print print:hidden" : "no-print print:hidden"}>
           {/* ── PART 1: HEADER / PERSONAL INFO ── */}
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 mb-6">
-          <h3 className="text-sm font-bold text-slate-800 mb-3 flex items-center gap-2">
-            <FileText size={16} className="text-blue-600" />
-            <span>১. ভ্রমণকারীর ব্যক্তিগত ও প্রশাসনিক তথ্য (Header Info)</span>
+          <h3 className="text-sm font-bold text-slate-800 mb-3 flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2">
+              <FileText size={16} className="text-blue-600" />
+              <span>১. ভ্রমণকারীর ব্যক্তিগত ও প্রশাসনিক তথ্য (Header Info)</span>
+            </span>
+            <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-lg">
+              কার্যালয়/শাখা: {resolvedOfficePadName}
+            </span>
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs">
             <div>
@@ -1542,7 +2121,7 @@ export function TravelBillTool({
                 </button>
                 <button
                   type="button"
-                  onClick={handlePrintBill}
+                  onClick={() => handlePrintBill()}
                   className="flex-1 px-4 py-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Printer size={15} className="text-emerald-700" />
@@ -1559,12 +2138,12 @@ export function TravelBillTool({
           className={
             activeTab !== "preview"
               ? "hidden"
-              : "bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl space-y-6 print:bg-white print:text-black print:p-0 print:m-0 print:shadow-none print:space-y-0 print:border-none print:block"
+              : "bg-slate-900 text-white rounded-3xl p-4 sm:p-6 shadow-xl space-y-5 print:bg-white print:text-black print:p-0 print:m-0 print:shadow-none print:space-y-0 print:border-none print:block"
           }
         >
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-800 pb-4 no-print print:hidden">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
                   {isBillSubmitted ? "সাবমিট সম্পন্ন ✓" : "খসড়া বিল"}
                 </span>
@@ -1573,12 +2152,74 @@ export function TravelBillTool({
                 </span>
                 <h3 className="font-extrabold text-lg text-white">ভ্রমণ বিল ফরম এসআইএফ/৬৬ (সংশোধিত) - ১ম ও ২য় পাতা</h3>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">সংযুক্ত ১ম ও ২য় চিত্রের হুবহু ফরম্যাটে লিগ্যাল পেজে (Legal 8.5 × 14 in) প্রিন্ট করার উপযোগী</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                ১ম পাতা: নাম হতে ভ্রমণকারীর/আবেদনকারীর স্বাক্ষর পর্যন্ত • ২য় পাতা: নির্দেশিকা, হিসাব বিবরণী ও অনুমোদন অংশ (লিগ্যাল পেজ)
+              </p>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center bg-slate-800 rounded-xl p-1 border border-slate-700">
+                <button
+                  type="button"
+                  onClick={() => setPrintOrientation("portrait")}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                    printOrientation === "portrait"
+                      ? "bg-emerald-600 text-white shadow"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  Portrait (৮.৫×১৪&quot;)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrintOrientation("landscape")}
+                  className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
+                    printOrientation === "landscape"
+                      ? "bg-teal-600 text-white shadow"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  Landscape (১৪×৮.৫&quot;)
+                </button>
+              </div>
+              <div className="flex items-center gap-1.5 bg-slate-800 rounded-xl px-2.5 py-1 border border-slate-700">
+                <Type size={13} className="text-emerald-400 shrink-0" />
+                <span className="text-[11px] font-bold text-slate-300 shrink-0">ফন্ট:</span>
+                <select
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                  className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-[11px] font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 max-w-[175px]"
+                  title="ভ্রমণ বিলের ফন্ট পরিবর্তন করুন"
+                >
+                  {TTA_FONT_FAMILIES.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="h-4 w-px bg-slate-700 mx-0.5" />
+                <button
+                  type="button"
+                  onClick={() => setFontScale((prev) => Math.max(75, prev - 5))}
+                  className="p-1 rounded-md hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                  title="ফন্ট সাইজ কমান"
+                >
+                  <Minus size={12} />
+                </button>
+                <span className="text-[11px] font-mono font-bold text-emerald-300 min-w-[34px] text-center">
+                  {toBn(fontScale)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setFontScale((prev) => Math.min(130, prev + 5))}
+                  className="p-1 rounded-md hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+                  title="ফন্ট সাইজ বাড়ান"
+                >
+                  <Plus size={12} />
+                </button>
+              </div>
               <button
                 onClick={() => setActiveTab("form")}
-                className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Edit2 size={14} />
                 <span>তথ্য সংশোধন করুন</span>
@@ -1588,320 +2229,512 @@ export function TravelBillTool({
                   loadSavedDocs();
                   setActiveTab("archive");
                 }}
-                className="px-4 py-2.5 rounded-xl border border-indigo-700 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl border border-indigo-700 bg-indigo-950/80 hover:bg-indigo-900 text-indigo-200 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
               >
                 <FolderOpen size={14} />
                 <span>সংরক্ষিত বিলসমূহ ({toBn(savedDocs.length)})</span>
               </button>
+              {(customPages["p1"] || customPages["p2"]) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomPages({});
+                    setIsRichEditMode(false);
+                  }}
+                  className="px-3 py-2.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                  title="স্বয়ংক্রিয় ফরম লেআউটে রিসেট করুন"
+                >
+                  <RotateCcw size={14} />
+                  <span>রিসেট</span>
+                </button>
+              )}
               <button
                 type="button"
-                onClick={() => handlePrintBill("portrait")}
+                onClick={() => {
+                  if (!isRichEditMode) {
+                    setCustomPages((prev) => ({
+                      p1: prev.p1 || page1InnerRef.current?.innerHTML || "",
+                      p2: prev.p2 || page2InnerRef.current?.innerHTML || "",
+                    }));
+                    setIsRichEditMode(true);
+                  } else {
+                    setIsRichEditMode(false);
+                  }
+                }}
+                className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                  isRichEditMode
+                    ? "bg-amber-400 text-slate-950 hover:bg-amber-300"
+                    : "bg-indigo-600 hover:bg-indigo-500 text-white"
+                }`}
+                title="১ম ও ২য় পাতার টেক্সট এবং টেবিল সেল এডিট, মার্চ, ইনসার্ট বা ডিলিট করুন"
+              >
+                {isRichEditMode ? <Eye size={14} /> : <Edit3 size={14} />}
+                <span>
+                  {isRichEditMode ? "প্রিভিউ দেখুন" : "টেক্সট ও টেবিল এডিটর (১ম/২য় পাতা)"}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsRichEditMode(false);
+                  handlePrintBill("portrait");
+                }}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-slate-950 font-bold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 title="পোর্ট্রেট (লম্বালম্বি) লিগ্যাল পেজে প্রিন্ট"
               >
                 <Printer size={15} />
-                <span>পোর্ট্রেট প্রিন্ট</span>
+                <span>পোর্ট্রেট প্রিন্ট / PDF</span>
               </button>
               <button
                 type="button"
-                onClick={() => handlePrintBill("landscape")}
+                onClick={() => {
+                  setIsRichEditMode(false);
+                  handlePrintBill("landscape");
+                }}
                 className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-slate-950 font-bold text-xs shadow-md transition flex items-center gap-1.5 active:scale-95 cursor-pointer"
                 title="ল্যান্ডস্কেপ (আড়াআড়ি) লিগ্যাল পেজে প্রিন্ট"
               >
                 <Printer size={15} />
-                <span>ল্যান্ডস্কেপ প্রিন্ট</span>
+                <span>ল্যান্ডস্কেপ প্রিন্ট / PDF</span>
               </button>
               <button
                 type="button"
-                onClick={handleDownloadWord}
-                className="px-4 py-2.5 rounded-xl border border-sky-600 bg-sky-950/70 hover:bg-sky-900 text-sky-200 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                onClick={() => {
+                  setIsRichEditMode(false);
+                  handleDownloadWord();
+                }}
+                className="px-3.5 py-2.5 rounded-xl border border-sky-600 bg-sky-950/70 hover:bg-sky-900 text-sky-200 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                 title="মাইক্রোসফট ওয়ার্ড (.doc) ফাইল ডাউনলোড করে যেকোনো প্রিন্টারে প্রিন্ট করুন"
               >
                 <FileDown size={15} />
-                <span>Word (.doc) ডাউনলোড</span>
+                <span>Word (.doc)</span>
               </button>
             </div>
           </div>
 
+          {/* Optional Rich-Text & Table Editor Panel for Page 1 / Page 2 */}
+          {isRichEditMode && (
+            <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-lg space-y-3 no-print print:hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRichEditPage("1")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition ${
+                      richEditPage === "1"
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    ১ম পাতা (ভ্রমণ বিবরণী)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRichEditPage("2")}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition ${
+                      richEditPage === "2"
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    ২য় পাতা (হিসাব বিবরণী ও অনুমোদন)
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRichEditMode(false)}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Eye size={13} />
+                  <span>সম্পাদনা শেষে প্রিভিউ দেখুন</span>
+                </button>
+              </div>
+              <RichDocumentEditor
+                key={`tta-rich-${richEditPage}`}
+                value={customPages[richEditPage === "1" ? "p1" : "p2"] || ""}
+                onChange={(html) =>
+                  setCustomPages((prev) => ({
+                    ...prev,
+                    [richEditPage === "1" ? "p1" : "p2"]: html,
+                  }))
+                }
+                fontFamily={fontFamily}
+                minHeight={520}
+              />
+            </div>
+          )}
+
           {/* Quick Print Tip Banner */}
-          <div className="p-3 bg-blue-950/40 border border-blue-800/60 rounded-xl text-blue-200 text-xs flex items-center gap-2 no-print print:hidden">
-            <span>💡 <strong>প্রিন্ট নির্দেশিকা:</strong> প্রিন্ট ডায়ালগে Paper Size "Legal" (৮.৫ × ১৪ ইঞ্চি), Orientation "Portrait" এবং Margins "Default" অথবা "Minimum" নির্বাচন করুন।</span>
+          <div className="p-3 bg-blue-950/40 border border-blue-800/60 rounded-xl text-blue-200 text-xs flex items-center justify-between gap-2 no-print print:hidden">
+            <span>
+              💡 <strong>লিগ্যাল প্রিন্ট লেআউট:</strong> নিচে প্রদর্শিত ১ম পাতা (নাম হতে আবেদনকারীর/ভ্রমণকারীর স্বাক্ষর পর্যন্ত) ও ২য় পাতা (বাকি অংশ) হুবহু একইভাবে ২ পৃষ্ঠার লিগ্যাল (8.5 × 14 ইঞ্চি) পেজে প্রিন্ট ও PDF হবে।
+            </span>
           </div>
 
-          {/* Printable Container matching Image 1 (Page 1) and Image 2 (Page 2) */}
-          <div
-            id="printable-tta-bill"
-            className="bg-white text-slate-900 rounded-2xl p-6 sm:p-10 shadow-2xl space-y-12 font-sans text-[11pt] leading-normal print:p-0 print:m-0 print:shadow-none print:bg-white print:text-black print:space-y-0 print:block print:w-full print:border-none"
-          >
-            
-            {/* ================= PAGE 1 ================= */}
-            <div className="print-page pb-8 border-b-2 border-dashed border-slate-300 print:border-none print:pb-0 print:break-after-page print:block print:w-full">
-              <div className="flex justify-between items-start mb-6 text-xs">
-                <div className="space-y-1">
-                  <div><strong>নাম</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {name}</div>
-                  <div><strong>পদবী</strong> &nbsp;&nbsp;&nbsp;&nbsp;: {designation}</div>
-                  <div><strong>মূল বেতন</strong> : {basicSalary}</div>
-                  <div><strong>জেলা</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {district}</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-bold text-base">বাংলাদেশ কৃষি ব্যাংক</div>
-                  <div className="text-sm font-bold">আঞ্চলিক কার্যালয়, রাঙ্গামাটি।</div>
-                  <div className="font-bold underline mt-1">ভ্রমণ ভাতা বিল (কর্মকর্তা/কর্মচারী)</div>
-                  <div className="text-xs text-slate-500">(অনুচ্ছেদ নং-৪.৪৬)</div>
-                </div>
-                <div className="space-y-1 text-right">
-                  <div className="font-bold text-[10pt]">এসআইএফ/৬৬(সংশোধিত)</div>
-                  <div><strong>মাস</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {monthName}</div>
-                  <div><strong>ভাউচার নং</strong> : {voucherNo ? toBn(voucherNo) : ".........."}</div>
-                  <div><strong>তারিখ</strong> &nbsp;&nbsp;&nbsp;&nbsp;: {toBn(docDate)} ইং</div>
-                </div>
+          {/* Printable Container matching Page 1 and Page 2 on Legal Paper */}
+          <div className="overflow-x-auto pb-2 print:overflow-visible print:p-0">
+            <div
+              id="printable-tta-bill"
+              className="print:p-0 print:m-0 print:bg-white print:text-black print:block print:w-full"
+            >
+              {/* Page 1 Label (screen only) */}
+              <div
+                className={`no-print print:hidden flex items-center justify-between mb-2 px-2 ${
+                  printOrientation === "landscape" ? "max-w-[355.6mm]" : "max-w-[215.9mm]"
+                } mx-auto text-[11px] font-bold text-emerald-300`}
+              >
+                <span>📄 ১ম পাতা (লিগ্যাল পেজ — নাম হতে আবেদনকারীর/ভ্রমণকারীর স্বাক্ষর পর্যন্ত)</span>
+                <span className="text-slate-400 font-mono">{printOrientation === "landscape" ? "14 × 8.5 in" : "8.5 × 14 in"}</span>
               </div>
 
-              {/* Table Columns 01 to 19 (Image 1 Format - unmerged DA columns for Requirement 3) */}
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse border border-black text-[9.5pt]">
-                  <thead>
-                    <tr className="bg-slate-50 text-center font-bold">
-                      <th colSpan={6} className="border border-black p-1.5">ভ্রমণ এবং অবস্থানের বিবরণ</th>
-                      <th rowSpan={2} className="border border-black p-1 text-[8pt] w-[8%]">ভ্রমণের মাধ্যমে (বিমান/রেল/স্টিমার/জাহাজ/লঞ্চ/বাস)</th>
-                      <th colSpan={3} className="border border-black p-1 text-[8pt]">(বিমান/রেল/স্টিমার/জাহাজ/লঞ্চ/বাস ভাড়া)</th>
-                      <th colSpan={3} className="border border-black p-1 text-[8pt]">সড়ক পথে/ট্রলার/অন্যান্য জলযানযোগে ভ্রমণের দূরত্ব</th>
-                      <th colSpan={3} className="border border-black p-1 text-[8pt]">দৈনিক ভাতার সংখ্যা ও টাকার পরিমাণ</th>
-                      <th rowSpan={2} className="border border-black p-1 text-[8pt] w-[7%]">অন্যান্য (বদলীর ক্ষেত্রে গোছানো চার্জ ও মালামালের ভাড়া)</th>
-                      <th rowSpan={2} className="border border-black p-1 text-[8pt] w-[18%]">ভ্রমণের উদ্দেশ্য/আদেশ নং</th>
-                      <th rowSpan={2} className="border border-black p-1 text-[8pt] w-[5%]">মস্তব্য</th>
-                    </tr>
-                    <tr className="bg-slate-50 text-center font-bold text-[8.5pt]">
-                      {/* Outbound */}
-                      <th className="border border-black p-1">স্থান</th>
-                      <th className="border border-black p-1">তারিখ</th>
-                      <th className="border border-black p-1">সময়</th>
-                      {/* Arrival */}
-                      <th className="border border-black p-1">স্থান</th>
-                      <th className="border border-black p-1">তারিখ</th>
-                      <th className="border border-black p-1">সময়</th>
-                      {/* Fare subcols */}
-                      <th className="border border-black p-1">শ্রেণী</th>
-                      <th className="border border-black p-1">টিকেটের হার ও প্রাপ্যতা সংখ্যা</th>
-                      <th className="border border-black p-1">টাকার পরিমাণ</th>
-                      {/* Dist subcols */}
-                      <th className="border border-black p-1">সাধারণ হারে কিঃমিঃ</th>
-                      <th className="border border-black p-1">পাহাড়ী এলাকার হারে কিঃমিঃ</th>
-                      <th className="border border-black p-1">প্রতি কিঃমিঃ টাকার হার</th>
-                      {/* DA subcols */}
-                      <th className="border border-black p-1">সাধারণ এলাকা</th>
-                      <th className="border border-black p-1">ব্যয় বহুল এলাকা</th>
-                      <th className="border border-black p-1">পাহাড়ী এলাকা</th>
-                    </tr>
-                    <tr className="bg-slate-100 text-center font-mono text-[8pt]">
-                      {Array.from({ length: 19 }).map((_, i) => (
-                        <th key={i} className="border border-black p-0.5">{toBn(i + 1 < 10 ? `০${i + 1}` : i + 1)}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {journeys.map((item) => {
-                      const hasReturn = Boolean(item.returnDepPlace);
-                      return (
-                        <React.Fragment key={item.id}>
-                          {/* Row 1: Outbound */}
-                          <tr>
-                            <td className="border border-black p-1 text-center">{item.depPlace}</td>
-                            <td className="border border-black p-1 text-center">{toBn(item.depDate)}</td>
-                            <td className="border border-black p-1 text-center">{item.depTime}</td>
-                            <td className="border border-black p-1 text-center">{item.arrPlace}</td>
-                            <td className="border border-black p-1 text-center">{toBn(item.arrDate)}</td>
-                            <td className="border border-black p-1 text-center">{item.arrTime}</td>
-                            <td className="border border-black p-1 text-center">{item.transportMode}</td>
-                            <td className="border border-black p-1 text-center">{item.fareClass}</td>
-                            <td className="border border-black p-1 text-center">{item.fareRateCount}</td>
-                            <td className="border border-black p-1 text-right">{item.fareAmount ? toBn(item.fareAmount.toFixed(2)) : ""}</td>
-                            <td className="border border-black p-1 text-center">{item.roadDistOrdinary ? toBn(item.roadDistOrdinary) : ""}</td>
-                            <td className="border border-black p-1 text-center">{item.roadDistHilly ? toBn(item.roadDistHilly) : ""}</td>
-                            <td className="border border-black p-1 text-center">{item.roadDistRate ? toBn(item.roadDistRate) : ""}</td>
-                            <td className="border border-black p-1 text-center">{item.daOrdinaryCount ? toBn(item.daOrdinaryCount) : ""}</td>
-                            <td className="border border-black p-1 text-center">{item.daCostlyCount ? toBn(item.daCostlyCount) : ""}</td>
-                            <td className="border border-black p-1 text-center font-semibold text-blue-900">{item.daHillyCount ? toBn(item.daHillyCount) : ""}</td>
-                            <td className="border border-black p-1 text-right">{item.otherCharges ? toBn(item.otherCharges.toFixed(2)) : ""}</td>
-                            <td rowSpan={hasReturn ? 2 : 1} className="border border-black p-1 text-justify align-middle">
-                              {item.purpose}
-                              {item.stayDescription && (
-                                <div className="text-[8.5pt] text-amber-900 mt-0.5 italic">
-                                  [অবস্থান: {item.stayStartDate} - {item.stayEndDate}: {item.stayDescription}]
-                                </div>
-                              )}
-                            </td>
-                            <td rowSpan={hasReturn ? 2 : 1} className="border border-black p-1 text-center align-middle">{item.remarks}</td>
-                          </tr>
-                          {/* Row 2: Return (if present) */}
-                          {hasReturn && (
-                            <tr>
-                              <td className="border border-black p-1 text-center">{item.returnDepPlace}</td>
-                              <td className="border border-black p-1 text-center">{toBn(item.returnDepDate)}</td>
-                              <td className="border border-black p-1 text-center">{item.returnDepTime}</td>
-                              <td className="border border-black p-1 text-center">{item.returnArrPlace}</td>
-                              <td className="border border-black p-1 text-center">{toBn(item.returnArrDate)}</td>
-                              <td className="border border-black p-1 text-center">{item.returnArrTime}</td>
-                              <td className="border border-black p-1 text-center">-</td>
-                              <td className="border border-black p-1 text-center"></td>
-                              <td className="border border-black p-1 text-center"></td>
-                              <td className="border border-black p-1 text-right"></td>
-                              <td className="border border-black p-1 text-center">{item.returnRoadDistOrdinary ? toBn(item.returnRoadDistOrdinary) : ""}</td>
-                              <td className="border border-black p-1 text-center">{item.returnRoadDistHilly ? toBn(item.returnRoadDistHilly) : ""}</td>
-                              <td className="border border-black p-1 text-center">{item.roadDistRate ? toBn(item.roadDistRate) : ""}</td>
-                              <td className="border border-black p-1 text-center">{item.returnDaOrdinaryCount ? toBn(item.returnDaOrdinaryCount) : ""}</td>
-                              <td className="border border-black p-1 text-center">{item.returnDaCostlyCount ? toBn(item.returnDaCostlyCount) : ""}</td>
-                              <td className="border border-black p-1 text-center font-semibold text-blue-900">{item.returnDaHillyCount ? toBn(item.returnDaHillyCount) : ""}</td>
-                              <td className="border border-black p-1 text-right"></td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              {/* ================= PAGE 1 ================= */}
+              <div className="print-page tta-page tta-page-1">
+                <div className="tta-page-viewport">
+                  {customPages.p1 ? (
+                    <div
+                      ref={page1InnerRef}
+                      className="tta-page-inner"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(customPages.p1) }}
+                    />
+                  ) : (
+                  <div ref={page1InnerRef} className="tta-page-inner">
+                    <div className="tta-p1-header">
+                      <div className="tta-p1-header-left">
+                        <div><strong>নাম</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {name}</div>
+                        <div><strong>পদবী</strong> &nbsp;&nbsp;&nbsp;&nbsp;: {designation}</div>
+                        <div><strong>মূল বেতন</strong> : {basicSalary}</div>
+                        <div><strong>জেলা</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {district}</div>
+                      </div>
+                      <div className="tta-p1-header-center">
+                        <div className="tta-bank-title">{resolvedInstitutionName}</div>
+                        <div className="tta-bank-sub">{resolvedOfficePadName}</div>
+                        <div className="tta-form-title">ভ্রমণ ভাতা বিল (কর্মকর্তা/কর্মচারী)</div>
+                        <div className="tta-form-ref">(অনুচ্ছেদ নং-৪.৪৬)</div>
+                      </div>
+                      <div className="tta-p1-header-right">
+                        <div className="tta-form-code">এসআইএফ/৬৬(সংশোধিত)</div>
+                        <div><strong>মাস</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {monthName}</div>
+                        <div><strong>ভাউচার নং</strong> : {voucherNo ? toBn(voucherNo) : ".........."}</div>
+                        <div><strong>তারিখ</strong> &nbsp;&nbsp;&nbsp;&nbsp;: {docDate ? formatDateDMY(docDate) : ".........."} ইং</div>
+                      </div>
+                    </div>
 
-              <div className="mt-6 text-[10pt] space-y-1 text-slate-700">
-                <div>• স্টিমার, জাহাজ ও লঞ্চ ব্যতীত অন্য যে কোন জলযানে ভ্রমণ সড়কপথে ভ্রমণের অন্তর্ভুক্ত ধরিয়া দূরত্ব অনুযায়ী প্রতি কিলোমিটারে প্রযোজ্য ভ্রমণ ভাতা দাবি করিতে হইবে।</div>
-                <div>• বিমানে ভ্রমণের ক্ষেত্রে বিমানের টিকেটের মোট মূল্য হইতে ভ্যাট বা অন্যান্য চার্জ বাদ দিয়া টিকেটের প্রকৃত মূল্যের ভিত্তিতে আনুসাঙ্গিক (ইনসিডেন্টাল) চার্জ দাবি করিতে হইবে।</div>
-              </div>
-
-              <div className="mt-12 flex justify-end">
-                <div className="text-center text-xs">
-                  <div className="font-bold underline">ভ্রমণকারীর স্বাক্ষর</div>
-                  <div>(নামের সীলসহ)</div>
-                </div>
-              </div>
-            </div>
-
-            {/* ================= PAGE 2 (Matching Image 2) ================= */}
-            <div className="print-page pt-6 print:pt-0 print:break-after-auto print:block print:w-full">
-              <div className="flex justify-between items-start mb-6 text-xs">
-                <div></div>
-                <div className="text-center">
-                  <div className="font-bold text-base">বাংলাদেশ কৃষি ব্যাংক</div>
-                  <div className="text-sm font-bold">আঞ্চলিক কার্যালয়, রাঙ্গামাটি।</div>
-                  <div className="font-bold underline mt-1">কর্মকর্তা/কর্মচারীদের ভ্রমণভাতা বিল তৈরী করার নির্দেশিকা</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-[10pt]">এসআইএফ/৬৬(সংশোধিত)</div>
-                  <div>মাস: {monthName} বিল</div>
-                  <div>ভাউচার নং: {voucherNo ? toBn(voucherNo) : ".........."}</div>
-                </div>
-              </div>
-
-              {/* 50% - 50% Equal Split 2-Column Layout */}
-              <div className="grid grid-cols-1 md:grid-cols-2 print:grid-cols-2 gap-6 items-start w-full">
-                
-                {/* Left Column (50%): Table & Everything below it */}
-                <div className="space-y-4 w-full">
-                  <div className="border border-black text-[10pt] w-full">
-                    <table className="w-full border-collapse">
+                    {/* Table Columns 01 to 19 */}
+                    <table className="tta-p1-table">
+                      <colgroup>
+                        <col style={{ width: "5.5%" }} />
+                        <col style={{ width: "5%" }} />
+                        <col style={{ width: "4%" }} />
+                        <col style={{ width: "5.5%" }} />
+                        <col style={{ width: "5%" }} />
+                        <col style={{ width: "4%" }} />
+                        <col style={{ width: "5.5%" }} />
+                        <col style={{ width: "3.5%" }} />
+                        <col style={{ width: "4.5%" }} />
+                        <col style={{ width: "5%" }} />
+                        <col style={{ width: "4.5%" }} />
+                        <col style={{ width: "4.5%" }} />
+                        <col style={{ width: "4%" }} />
+                        <col style={{ width: "4%" }} />
+                        <col style={{ width: "4%" }} />
+                        <col style={{ width: "4%" }} />
+                        <col style={{ width: "4.5%" }} />
+                        <col style={{ width: "18.5%" }} />
+                        <col style={{ width: "4.5%" }} />
+                      </colgroup>
+                      <thead>
+                        <tr className="tta-th-row">
+                          <th colSpan={6}>ভ্রমণ এবং অবস্থানের বিবরণ</th>
+                          <th rowSpan={2}>ভ্রমণের মাধ্যম (বিমান/রেল/স্টিমার/জাহাজ/লঞ্চ/বাস)</th>
+                          <th colSpan={3}>(বিমান/রেল/স্টিমার/জাহাজ/লঞ্চ/বাস ভাড়া)</th>
+                          <th colSpan={3}>সড়ক পথে/ট্রলার/অন্যান্য জলযানযোগে ভ্রমণের দূরত্ব</th>
+                          <th colSpan={3}>দৈনিক ভাতার সংখ্যা ও টাকার পরিমাণ</th>
+                          <th rowSpan={2}>অন্যান্য (বদলীর ক্ষেত্রে গোছানো চার্জ ও মালামালের ভাড়া)</th>
+                          <th rowSpan={2}>ভ্রমণের উদ্দেশ্য/আদেশ নং</th>
+                          <th rowSpan={2}>মন্তব্য</th>
+                        </tr>
+                        <tr className="tta-th-row">
+                          <th>স্থান</th>
+                          <th>তারিখ</th>
+                          <th>সময়</th>
+                          <th>স্থান</th>
+                          <th>তারিখ</th>
+                          <th>সময়</th>
+                          <th>শ্রেণী</th>
+                          <th>টিকেটের হার ও প্রাপ্যতা সংখ্যা</th>
+                          <th>টাকার পরিমাণ</th>
+                          <th>সাধারণ হারে কিঃমিঃ</th>
+                          <th>পাহাড়ী এলাকার হারে কিঃমিঃ</th>
+                          <th>প্রতি কিঃমিঃ টাকার হার</th>
+                          <th>সাধারণ এলাকা</th>
+                          <th>ব্যয় বহুল এলাকা</th>
+                          <th>পাহাড়ী এলাকা</th>
+                        </tr>
+                        <tr className="tta-colnum-row">
+                          {Array.from({ length: 19 }).map((_, i) => (
+                            <th key={i}>{toBn(i + 1 < 10 ? `০${i + 1}` : i + 1)}</th>
+                          ))}
+                        </tr>
+                      </thead>
                       <tbody>
-                        <tr className="border-b border-black">
-                          <td className="border-r border-black p-2 text-center font-bold w-[8%]">০১.</td>
-                          <td className="border-r border-black p-2">
-                            <div>বিমান/রেল/স্টিমার/জাহাজ/লঞ্চ/বাস ভাড়া</div>
-                            <div className="text-slate-500 text-[9pt]">(বাস ভাড়া এসি @ ............)</div>
-                            <div className="text-slate-500 text-[9pt]">(বাস ভাড়া এসির ......... @ ............)</div>
-                          </td>
-                          <td className="p-2 text-right font-bold w-[25%]" style={{ whiteSpace: "nowrap" }}>{toBn(totalFare.toFixed(2))}/-</td>
-                        </tr>
-                        <tr className="border-b border-black">
-                          <td className="border-r border-black p-2 text-center font-bold">০২.</td>
-                          <td className="border-r border-black p-2">
-                            <div>সড়ক পথ/ট্রলার/অন্যান্য জলযানযোগে</div>
-                            <div className="text-slate-500 text-[9pt]">সাধারণ ও পাহাড়ী মোট: {toBn(totalRoadOrdinaryDist + totalRoadHillyDist)} কিঃমিঃ @ {toBn(roadRate.toFixed(2))}</div>
-                          </td>
-                          <td className="p-2 text-right font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalRoadFare.toFixed(2))}/-</td>
-                        </tr>
-                        <tr className="border-b border-black">
-                          <td className="border-r border-black p-2 text-center font-bold">০৩.</td>
-                          <td className="border-r border-black p-2">
-                            <div>দৈনিক ভাতা: প্যাকিং ও ক্রেটিং</div>
-                            <div className="text-slate-500 text-[9pt]">সাধারণ হারে: {toBn(totalDaOrdinary)} টি @ ({toBn(daRateVal)})</div>
-                            <div className="text-slate-500 text-[9pt]">ব্যয়বহুল হারে: {toBn(totalDaCostly)} টি @ ({toBn(daRateVal)})</div>
-                            <div className="text-slate-500 text-[9pt]">পাহাড়ী হারে: {toBn(totalDaHilly)} টি @ ({toBn(daRateVal)})</div>
-                          </td>
-                          <td className="p-2 text-right font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalDaAmount.toFixed(2))}/-</td>
-                        </tr>
-                        <tr className="border-b border-black">
-                          <td className="border-r border-black p-2 text-center font-bold">০৪.</td>
-                          <td className="border-r border-black p-2">অন্যান্য / প্যাকিং ও ক্রেটিং</td>
-                          <td className="p-2 text-right font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalOtherCharges.toFixed(2))}/-</td>
-                        </tr>
-                        <tr className="border-b border-black bg-slate-50 font-bold">
-                          <td colSpan={2} className="border-r border-black p-2 text-right">মোটঃ</td>
-                          <td className="p-2 text-right" style={{ whiteSpace: "nowrap" }}>{toBn(grandTotalGross.toFixed(2))}/-</td>
-                        </tr>
-                        <tr className="border-b border-black">
-                          <td colSpan={2} className="border-r border-black p-2 text-right">
-                            বাদ {advanceDate ? toBn(advanceDate) : ".........."} তারিখে গৃহীত অগ্রিম <br />
-                            <strong>নীট প্রদেয় / আদায়যোগ্য :</strong>
-                          </td>
-                          <td className="p-2 text-right font-bold align-bottom" style={{ whiteSpace: "nowrap" }}>
-                            (-) {toBn(Number(advanceAmount || 0).toFixed(2))}/- <br />
-                            {toBn(netPayable.toFixed(2))}/-
-                          </td>
-                        </tr>
+                        {journeys.map((item) => {
+                          const hasReturn = Boolean(item.returnDepPlace);
+                          return (
+                            <React.Fragment key={item.id}>
+                              <tr>
+                                <td className="tta-text-center">{item.depPlace}</td>
+                                <td className="tta-text-center">{formatDateDMY(item.depDate)}</td>
+                                <td className="tta-text-center">{item.depTime}</td>
+                                <td className="tta-text-center">{item.arrPlace}</td>
+                                <td className="tta-text-center">{formatDateDMY(item.arrDate)}</td>
+                                <td className="tta-text-center">{item.arrTime}</td>
+                                <td className="tta-text-center">{item.transportMode}</td>
+                                <td className="tta-text-center">{item.fareClass}</td>
+                                <td className="tta-text-center">{item.fareRateCount}</td>
+                                <td className="tta-text-right">{item.fareAmount ? toBn(item.fareAmount.toFixed(2)) : ""}</td>
+                                <td className="tta-text-center">{item.roadDistOrdinary ? toBn(item.roadDistOrdinary) : ""}</td>
+                                <td className="tta-text-center">{item.roadDistHilly ? toBn(item.roadDistHilly) : ""}</td>
+                                <td className="tta-text-center">{item.roadDistRate ? toBn(item.roadDistRate) : ""}</td>
+                                <td className="tta-text-center">{item.daOrdinaryCount ? toBn(item.daOrdinaryCount) : ""}</td>
+                                <td className="tta-text-center">{item.daCostlyCount ? toBn(item.daCostlyCount) : ""}</td>
+                                <td className="tta-text-center tta-font-bold" style={{ color: "#1e3a8a" }}>{item.daHillyCount ? toBn(item.daHillyCount) : ""}</td>
+                                <td className="tta-text-right">{item.otherCharges ? toBn(item.otherCharges.toFixed(2)) : ""}</td>
+                                <td rowSpan={hasReturn ? 2 : 1} className="tta-text-justify">
+                                  {item.purpose}
+                                  {item.stayDescription && (
+                                    <div style={{ fontSize: "0.9em", color: "#78350f", marginTop: "2px", fontStyle: "italic" }}>
+                                      [অবস্থান: {formatDateDMY(item.stayStartDate)} - {formatDateDMY(item.stayEndDate)}: {item.stayDescription}]
+                                    </div>
+                                  )}
+                                </td>
+                                <td rowSpan={hasReturn ? 2 : 1} className="tta-text-center">{item.remarks}</td>
+                              </tr>
+                              {hasReturn && (
+                                <tr>
+                                  <td className="tta-text-center">{item.returnDepPlace}</td>
+                                  <td className="tta-text-center">{formatDateDMY(item.returnDepDate)}</td>
+                                  <td className="tta-text-center">{item.returnDepTime}</td>
+                                  <td className="tta-text-center">{item.returnArrPlace}</td>
+                                  <td className="tta-text-center">{formatDateDMY(item.returnArrDate)}</td>
+                                  <td className="tta-text-center">{item.returnArrTime}</td>
+                                  <td className="tta-text-center">-</td>
+                                  <td className="tta-text-center"></td>
+                                  <td className="tta-text-center"></td>
+                                  <td className="tta-text-right"></td>
+                                  <td className="tta-text-center">{item.returnRoadDistOrdinary ? toBn(item.returnRoadDistOrdinary) : ""}</td>
+                                  <td className="tta-text-center">{item.returnRoadDistHilly ? toBn(item.returnRoadDistHilly) : ""}</td>
+                                  <td className="tta-text-center">{item.roadDistRate ? toBn(item.roadDistRate) : ""}</td>
+                                  <td className="tta-text-center">{item.returnDaOrdinaryCount ? toBn(item.returnDaOrdinaryCount) : ""}</td>
+                                  <td className="tta-text-center">{item.returnDaCostlyCount ? toBn(item.returnDaCostlyCount) : ""}</td>
+                                  <td className="tta-text-center tta-font-bold" style={{ color: "#1e3a8a" }}>{item.returnDaHillyCount ? toBn(item.returnDaHillyCount) : ""}</td>
+                                  <td className="tta-text-right"></td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </tbody>
                     </table>
-                  </div>
 
-                  <div className="text-center text-xs font-bold">
-                    (কথায়: {netPayableWords})
-                  </div>
-
-                  <div className="text-[9pt] text-slate-700 space-y-1">
-                    <div>প্রত্যয়ন করিতেছি যে, যেই শ্রেণীর জন্য ভাতা দাবী করা হইয়াছি আমি সেই শ্রেণীতে ভ্রমণ করিয়াছি। বিলের যাবতীয় তথ্য সঠিক আছে।</div>
-                    <div>বিলটি অনুমোদিত হইলে অনুগ্রহপূর্বক প্রদেয় অর্থ নগদ/সঞ্চয়ী হিসাব নং {toBn(savingsAccountNo)} -এর মাধ্যমে প্রদান করার জন্য অনুরোধ করা হইল।</div>
-                  </div>
-
-                  {/* Signatures */}
-                  <div className="mt-8 grid grid-cols-2 gap-4 text-[10px] font-bold text-center">
-                    <div>
-                      <div className="underline">পরীক্ষাকারী কর্মকর্তার স্বাক্ষর</div>
-                      <div className="font-normal text-[9pt]">(নামের সীলসহ)</div>
+                    <div className="tta-p1-notes">
+                      <div>• স্টিমার, জাহাজ ও লঞ্চ ব্যতীত অন্য যে কোন জলযানে ভ্রমণ সড়কপথে ভ্রমণের অন্তর্ভুক্ত ধরিয়া দূরত্ব অনুযায়ী প্রতি কিলোমিটারে প্রযোজ্য ভ্রমণ ভাতা দাবি করিতে হইবে।</div>
+                      <div>• বিমানে ভ্রমণের ক্ষেত্রে বিমানের টিকেটের মোট মূল্য হইতে ভ্যাট বা অন্যান্য চার্জ বাদ দিয়া টিকেটের প্রকৃত মূল্যের ভিত্তিতে আনুসাঙ্গিক (ইনসিডেন্টাল) চার্জ দাবি করিতে হইবে।</div>
                     </div>
-                    <div>
-                      <div className="underline">ভ্রমণকারীর স্বাক্ষর</div>
-                      <div className="font-normal text-[9pt]">(নামের সীলসহ)</div>
-                    </div>
-                  </div>
 
-                  <div className="mt-8 space-y-4 text-[10px]">
-                    <div>মোট টাকা ................................... (কথায়: ....................................................................) মঞ্জুর করা হইল।</div>
-                    <div className="flex justify-end pt-2">
-                      <div className="text-center font-bold">
-                        <div>সুপারিশকারী/নিয়ন্ত্রণকারী কর্মকর্তার স্বাক্ষর</div>
-                        <div className="font-normal text-[9pt]">(নামের সীলসহ)</div>
-                      </div>
-                    </div>
-                    <div>মোট টাকা ................................... (কথায়: ....................................................................) মঞ্জুর করা হইল।</div>
-                    <div>মোট টাকা ................................... (কথায়: ....................................................................) প্রদান/আদায় করা হউক।</div>
-                    <div className="flex justify-end pt-4">
-                      <div className="text-center font-bold">
-                        <div className="underline">মঞ্জুরকারী/অনুমোদনকারী কর্মকর্তার স্বাক্ষর</div>
-                        <div className="font-normal text-[9pt]">(নামের সীলসহ)</div>
+                    <div className="tta-p1-signature">
+                      <div className="tta-p1-sig-box">
+                        <div className="tta-font-bold tta-underline">ভ্রমণকারীর স্বাক্ষর</div>
+                        <div>(নামের সীলসহ)</div>
                       </div>
                     </div>
                   </div>
+                  )}
                 </div>
+              </div>
 
-                {/* Right Column (50%): First Paragraph / Instructions */}
-                <div className="space-y-4 w-full">
-                  <div className="text-[10pt] space-y-2 text-slate-700 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div className="font-bold underline mb-1">নির্দেশিকা ও নিয়মাবলি:</div>
-                    <div>০১. কোন একক ভ্রমণের ক্ষেত্রে মোট বিলে কিলোমিটারের ভগ্নাংশের জন্য ভাতা দাবি করা যাইবে না।</div>
-                    <div>০২. চাকুরী বিধি মোতাবেক আদালতে উপস্থিতির ক্ষেত্রে আদালত কর্তৃপক্ষ কর্তৃক আদালতে উপস্থিতি সংক্রান্ত প্রত্যয়নপত্র সংযুক্ত করিতে হইবে।</div>
-                    <div>০৩. নীট আদায়যোগ্য অংকের বেলায় পরীক্ষাকারী কর্মকর্তা কতৃক (-) চিহ্ন এবং প্রদেয় অংকের ক্ষেত্রে (+) চিহ্ন ব্যবহার করিতে হইবে।</div>
+              {/* Page 2 Label (screen only) */}
+              <div
+                className={`no-print print:hidden flex items-center justify-between mb-2 mt-4 px-2 ${
+                  printOrientation === "landscape" ? "max-w-[355.6mm]" : "max-w-[215.9mm]"
+                } mx-auto text-[11px] font-bold text-cyan-300`}
+              >
+                <span>📄 ২য় পাতা (লিগ্যাল পেজ — নির্দেশিকা, হিসাব বিবরণী ও অনুমোদন অংশ)</span>
+                <span className="text-slate-400 font-mono">{printOrientation === "landscape" ? "14 × 8.5 in" : "8.5 × 14 in"}</span>
+              </div>
+
+              {/* ================= PAGE 2 ================= */}
+              <div className="print-page tta-page tta-page-2">
+                <div className="tta-page-viewport">
+                  {customPages.p2 ? (
+                    <div
+                      ref={page2InnerRef}
+                      className="tta-page-inner"
+                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(customPages.p2) }}
+                    />
+                  ) : (
+                  <div ref={page2InnerRef} className="tta-page-inner">
+                    <div className="tta-p2-header">
+                      <div className="tta-p2-header-left"></div>
+                      <div className="tta-p2-header-center">
+                        <div className="tta-bank-title">{resolvedInstitutionName}</div>
+                        <div className="tta-bank-sub">{resolvedOfficePadName}</div>
+                        <div className="tta-form-title">কর্মকর্তা/কর্মচারীদের ভ্রমণভাতা বিল তৈরী করার নির্দেশিকা</div>
+                      </div>
+                      <div className="tta-p2-header-right">
+                        <div className="tta-form-code">এসআইএফ/৬৬(সংশোধিত)</div>
+                        <div>মাস: {monthName} বিল</div>
+                        <div>ভাউচার নং: {voucherNo ? toBn(voucherNo) : ".........."}</div>
+                      </div>
+                    </div>
+
+                    {/* 50% - 50% Equal Split 2-Column Layout */}
+                    <div className="tta-p2-grid">
+                      {/* Left Column (50%): Table & Everything below it */}
+                      <div className="tta-p2-col">
+                        <table className="tta-summary-table">
+                          <colgroup>
+                            <col style={{ width: "9%" }} />
+                            <col style={{ width: "66%" }} />
+                            <col style={{ width: "25%" }} />
+                          </colgroup>
+                          <tbody>
+                            <tr>
+                              <td className="tta-text-center tta-font-bold">০১.</td>
+                              <td>
+                                <div>বিমান/রেল/স্টিমার/জাহাজ/লঞ্চ/বাস ভাড়া</div>
+                                <div style={{ color: "#475569", fontSize: "0.88em" }}>(বাস ভাড়া এসি @ ............)</div>
+                                <div style={{ color: "#475569", fontSize: "0.88em" }}>(বাস ভাড়া এসির ......... @ ............)</div>
+                              </td>
+                              <td className="tta-text-right tta-font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalFare.toFixed(2))}/-</td>
+                            </tr>
+                            <tr>
+                              <td className="tta-text-center tta-font-bold">০২.</td>
+                              <td>
+                                <div>সড়ক পথ/ট্রলার/অন্যান্য জলযানযোগে</div>
+                                <div style={{ color: "#475569", fontSize: "0.88em" }}>সাধারণ ও পাহাড়ী মোট: {toBn(totalRoadOrdinaryDist + totalRoadHillyDist)} কিঃমিঃ @ {toBn(roadRate.toFixed(2))}</div>
+                              </td>
+                              <td className="tta-text-right tta-font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalRoadFare.toFixed(2))}/-</td>
+                            </tr>
+                            <tr>
+                              <td className="tta-text-center tta-font-bold">০৩.</td>
+                              <td>
+                                <div>দৈনিক ভাতা: প্যাকিং ও ক্রেটিং</div>
+                                <div style={{ color: "#475569", fontSize: "0.88em" }}>সাধারণ হারে: {toBn(totalDaOrdinary)} টি @ ({toBn(daRateVal)})</div>
+                                <div style={{ color: "#475569", fontSize: "0.88em" }}>ব্যয়বহুল হারে: {toBn(totalDaCostly)} টি @ ({toBn(daRateVal)})</div>
+                                <div style={{ color: "#475569", fontSize: "0.88em" }}>পাহাড়ী হারে: {toBn(totalDaHilly)} টি @ ({toBn(daRateVal)})</div>
+                              </td>
+                              <td className="tta-text-right tta-font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalDaAmount.toFixed(2))}/-</td>
+                            </tr>
+                            <tr>
+                              <td className="tta-text-center tta-font-bold">০৪.</td>
+                              <td>অন্যান্য / প্যাকিং ও ক্রেটিং</td>
+                              <td className="tta-text-right tta-font-bold" style={{ whiteSpace: "nowrap" }}>{toBn(totalOtherCharges.toFixed(2))}/-</td>
+                            </tr>
+                            <tr className="tta-total-row">
+                              <td colSpan={2} className="tta-text-right">মোটঃ</td>
+                              <td className="tta-text-right" style={{ whiteSpace: "nowrap" }}>{toBn(grandTotalGross.toFixed(2))}/-</td>
+                            </tr>
+                            <tr>
+                              <td colSpan={2} className="tta-text-right">
+                                বাদ {advanceDate ? formatDateDMY(advanceDate) : ".........."} তারিখে গৃহীত অগ্রিম <br />
+                                <strong>নীট প্রদেয় / আদায়যোগ্য :</strong>
+                              </td>
+                              <td className="tta-text-right tta-font-bold" style={{ verticalAlign: "bottom", whiteSpace: "nowrap" }}>
+                                (-) {toBn(Number(advanceAmount || 0).toFixed(2))}/- <br />
+                                {toBn(netPayable.toFixed(2))}/-
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <div className="tta-words-line">
+                          (কথায়: {netPayableWords})
+                        </div>
+
+                        <div className="tta-cert-lines">
+                          <div>প্রত্যয়ন করিতেছি যে, যেই শ্রেণীর জন্য ভাতা দাবী করা হইয়াছি আমি সেই শ্রেণীতে ভ্রমণ করিয়াছি। বিলের যাবতীয় তথ্য সঠিক আছে।</div>
+                          <div>বিলটি অনুমোদিত হইলে অনুগ্রহপূর্বক প্রদেয় অর্থ নগদ/সঞ্চয়ী হিসাব নং {toBn(savingsAccountNo)} -এর মাধ্যমে প্রদান করার জন্য অনুরোধ করা হইল।</div>
+                        </div>
+
+                        {/* Signatures */}
+                        <div className="tta-sig-pair">
+                          <div>
+                            <div className="tta-underline">পরীক্ষাকারী কর্মকর্তার স্বাক্ষর</div>
+                            <div style={{ fontWeight: 400, fontSize: "0.9em" }}>(নামের সীলসহ)</div>
+                          </div>
+                          <div>
+                            <div className="tta-underline">ভ্রমণকারীর স্বাক্ষর</div>
+                            <div style={{ fontWeight: 400, fontSize: "0.9em" }}>(নামের সীলসহ)</div>
+                          </div>
+                        </div>
+
+                        <div className="tta-sanction-block">
+                          <div className="tta-sanction-item">
+                            <div className="tta-sanction-row">
+                              <span className="tta-sanction-label">মোট টাকা</span>
+                              <span className="tta-dot-line tta-dot-amt" />
+                              <span className="tta-sanction-label">(কথায়:</span>
+                              <span className="tta-dot-line" />
+                            </div>
+                            <div className="tta-sanction-row">
+                              <span className="tta-dot-line" />
+                              <span className="tta-sanction-label">) মঞ্জুর করা হইল।</span>
+                            </div>
+                          </div>
+                          <div className="tta-sig-right-row">
+                            <div className="tta-text-center tta-font-bold">
+                              <div>সুপারিশকারী/নিয়ন্ত্রণকারী কর্মকর্তার স্বাক্ষর</div>
+                              <div style={{ fontWeight: 400, fontSize: "0.9em" }}>(নামের সীলসহ)</div>
+                            </div>
+                          </div>
+                          <div className="tta-sanction-item">
+                            <div className="tta-sanction-row">
+                              <span className="tta-sanction-label">মোট টাকা</span>
+                              <span className="tta-dot-line tta-dot-amt" />
+                              <span className="tta-sanction-label">(কথায়:</span>
+                              <span className="tta-dot-line" />
+                            </div>
+                            <div className="tta-sanction-row">
+                              <span className="tta-dot-line" />
+                              <span className="tta-sanction-label">) মঞ্জুর করা হইল।</span>
+                            </div>
+                          </div>
+                          <div className="tta-sanction-item">
+                            <div className="tta-sanction-row">
+                              <span className="tta-sanction-label">মোট টাকা</span>
+                              <span className="tta-dot-line tta-dot-amt" />
+                              <span className="tta-sanction-label">(কথায়:</span>
+                              <span className="tta-dot-line" />
+                            </div>
+                            <div className="tta-sanction-row">
+                              <span className="tta-dot-line" />
+                              <span className="tta-sanction-label">) প্রদান/আদায় করা হউক।</span>
+                            </div>
+                          </div>
+                          <div className="tta-sig-right-row" style={{ paddingTop: "14px" }}>
+                            <div className="tta-text-center tta-font-bold">
+                              <div className="tta-underline">মঞ্জুরকারী/অনুমোদনকারী কর্মকর্তার স্বাক্ষর</div>
+                              <div style={{ fontWeight: 400, fontSize: "0.9em" }}>(নামের সীলসহ)</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Column (50%): Instructions */}
+                      <div className="tta-p2-col">
+                        <div className="tta-rules-box">
+                          <div className="tta-font-bold tta-underline" style={{ marginBottom: "4px" }}>নির্দেশিকা ও নিয়মাবলি:</div>
+                          <div>০১. কোন একক ভ্রমণের ক্ষেত্রে মোট বিলে কিলোমিটারের ভগ্নাংশের জন্য ভাতা দাবি করা যাইবে না।</div>
+                          <div>০২. চাকুরী বিধি মোতাবেক আদালতে উপস্থিতির ক্ষেত্রে আদালত কর্তৃপক্ষ কর্তৃক আদালতে উপস্থিতি সংক্রান্ত প্রত্যয়নপত্র সংযুক্ত করিতে হইবে।</div>
+                          <div>০৩. নীট আদায়যোগ্য অংকের বেলায় পরীক্ষাকারী কর্মকর্তা কতৃক (-) চিহ্ন এবং প্রদেয় অংকের ক্ষেত্রে (+) চিহ্ন ব্যবহার করিতে হইবে।</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                  )}
                 </div>
-
               </div>
             </div>
-
           </div>
         </div>
 
@@ -2157,6 +2990,42 @@ export function TravelBillTool({
           </div>
         )}
 
+        {/* In-App Confirmation Modal */}
+        {confirmActionModal && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-[70] no-print print:hidden">
+            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center gap-3 text-rose-600">
+                <AlertTriangle size={22} />
+                <h4 className="font-bold text-base text-slate-900">
+                  {confirmActionModal.type === "new_bill"
+                    ? "নতুন ভ্রমণ বিল শুরু করবেন?"
+                    : "সংরক্ষিত বিলটি মুছে ফেলবেন?"}
+                </h4>
+              </div>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {confirmActionModal.type === "new_bill"
+                  ? "নতুন ভ্রমণ বিল শুরু করলে বর্তমান অসংরক্ষিত পরিবর্তনসমূহ মুছে যেতে পারে।"
+                  : "আপনি কি নিশ্চিত এই সংরক্ষিত ভ্রমণ বিলটি স্থায়ীভাবে মুছে ফেলতে চান?"}
+              </p>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setConfirmActionModal(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="button"
+                  onClick={executeConfirmAction}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                >
+                  {confirmActionModal.type === "new_bill" ? "হ্যাঁ, নতুন শুরু করুন" : "হ্যাঁ, মুছে ফেলুন"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

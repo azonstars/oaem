@@ -466,13 +466,25 @@ export function FlowBoardCentralManagement({
   });
 
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const [hubToast, setHubToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    { type: "delete_user"; user: User } | { type: "delete_tool"; tool: FlowBoardTool } | null
+  >(null);
+  const [resetPassTarget, setResetPassTarget] = useState<User | null>(null);
+  const [resetPassValue, setResetPassValue] = useState("password123");
+
+  const showHubToast = (type: "success" | "error", text: string) => {
+    setHubToast({ type, text });
+    setTimeout(() => setHubToast(null), 4000);
+  };
 
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     if (file.size > 3 * 1024 * 1024) {
-      alert(
+      showHubToast(
+        "error",
         language === "bn"
           ? "ছবির সাইজ সর্বোচ্চ ৩ মেগাবাইট হতে পারবে।"
           : "Image size must be less than 3MB."
@@ -622,12 +634,12 @@ export function FlowBoardCentralManagement({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert(language === "bn" ? "অনুগ্রহ করে একটি ছবি (Image) ফাইল নির্বাচন করুন।" : "Please select a valid image file.");
+      showHubToast("error", language === "bn" ? "অনুগ্রহ করে একটি ছবি (Image) ফাইল নির্বাচন করুন।" : "Please select a valid image file.");
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      alert(language === "bn" ? "ফাইলের আকার সর্বোচ্চ ২ মেগাবাইট হতে পারবে।" : "Image size must be less than 2MB.");
+      showHubToast("error", language === "bn" ? "ফাইলের আকার সর্বোচ্চ ২ মেগাবাইট হতে পারবে।" : "Image size must be less than 2MB.");
       return;
     }
 
@@ -732,7 +744,7 @@ export function FlowBoardCentralManagement({
         setPermissionSuccessMsg("");
       }, 1200);
     } catch (err: any) {
-      alert(err.message || "Failed to update tool permissions");
+      showHubToast("error", err.message || "Failed to update tool permissions");
     } finally {
       setIsSavingPermissions(false);
     }
@@ -797,56 +809,71 @@ export function FlowBoardCentralManagement({
   };
 
   // Delete User
-  const handleDeleteUser = async (user: User) => {
+  const handleDeleteUser = (user: User) => {
     if (user.id === currentUser.id) {
-      alert(language === "bn" ? "নিজের আইডি মুছে ফেলা সম্ভব নয়" : "Cannot delete your own user ID");
+      showHubToast("error", language === "bn" ? "নিজের আইডি মুছে ফেলা সম্ভব নয়" : "Cannot delete your own user ID");
       return;
     }
-    const conf = window.confirm(
-      language === "bn"
-        ? `আপনি কি নিশ্চিতভাবে "${user.name}" ব্যবহারকারীকে মুছে ফেলতে চান?`
-        : `Are you sure you want to delete user "${user.name}"?`
-    );
-    if (!conf) return;
+    setConfirmAction({ type: "delete_user", user });
+  };
 
-    try {
-      const res = await apiFetch(`/api/users/${user.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete user");
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    } catch (err: any) {
-      alert(err.message || "Failed to delete user");
+  const executeConfirmAction = async () => {
+    if (!confirmAction) return;
+    const act = confirmAction;
+    setConfirmAction(null);
+
+    if (act.type === "delete_user") {
+      try {
+        const res = await apiFetch(`/api/users/${act.user.id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error("Failed to delete user");
+        setUsers((prev) => prev.filter((u) => u.id !== act.user.id));
+        showHubToast("success", language === "bn" ? `"${act.user.name}" মুছে ফেলা হয়েছে।` : `Deleted "${act.user.name}".`);
+      } catch (err: any) {
+        showHubToast("error", err.message || "Failed to delete user");
+      }
+    } else if (act.type === "delete_tool" && onDeleteTool) {
+      try {
+        await onDeleteTool(act.tool.id);
+        showHubToast("success", language === "bn" ? `টুল "${act.tool.nameBn || act.tool.name}" মুছে ফেলা হয়েছে।` : `Tool "${act.tool.name}" deleted.`);
+      } catch (err: any) {
+        showHubToast("error", err.message || "Failed to delete tool");
+      }
     }
   };
 
   // Reset Password
-  const handleAdminResetPassword = async (targetUser: User) => {
-    const newPass = prompt(
-      language === "bn"
-        ? `"${targetUser.name}" (${targetUser.userId})-এর জন্য নতুন পাসওয়ার্ড লিখুন:`
-        : `Enter new password for "${targetUser.name}" (${targetUser.userId}):`,
-      "password123"
-    );
-    if (!newPass || !newPass.trim()) return;
+  const handleAdminResetPassword = (targetUser: User) => {
+    setResetPassTarget(targetUser);
+    setResetPassValue("password123");
+  };
+
+  const submitAdminResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPassTarget || !resetPassValue.trim()) return;
+    const targetUser = resetPassTarget;
+    const nextPassword = resetPassValue.trim();
 
     try {
       const res = await apiFetch("/api/auth/reset-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetUserId: targetUser.id, newPassword: newPass.trim() }),
+        body: JSON.stringify({ targetUserId: targetUser.id, newPassword: nextPassword }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        alert(
+        setResetPassTarget(null);
+        showHubToast(
+          "success",
           language === "bn"
             ? `"${targetUser.name}"-এর পাসওয়ার্ড সফলভাবে রিসেট করা হয়েছে!`
             : "Password successfully reset by Admin!"
         );
         if (onRefreshData) onRefreshData();
       } else {
-        alert(data.error || "Failed to reset password");
+        showHubToast("error", data.error || "Failed to reset password");
       }
     } catch {
-      alert("Error resetting password");
+      showHubToast("error", "Error resetting password");
     }
   };
 
@@ -875,7 +902,8 @@ export function FlowBoardCentralManagement({
           prev.map((u) => (u.id === user.id ? { ...u, status: user.status } : u))
         );
         const errData = await res.json().catch(() => ({}));
-        alert(
+        showHubToast(
+          "error",
           errData.error ||
             (language === "bn"
               ? "স্ট্যাটাস পরিবর্তন ব্যর্থ হয়েছে।"
@@ -889,7 +917,7 @@ export function FlowBoardCentralManagement({
       setUsers((prev) =>
         prev.map((u) => (u.id === user.id ? { ...u, status: user.status } : u))
       );
-      alert("Failed to toggle status: " + (err.message || err));
+      showHubToast("error", "Failed to toggle status: " + (err.message || err));
     } finally {
       setTogglingUserIds((prev) => {
         const next = new Set(prev);
@@ -940,7 +968,7 @@ export function FlowBoardCentralManagement({
       );
       setTimeout(() => setPolicySuccessMsg(""), 3000);
     } catch (err: any) {
-      alert(err.message || "Failed to save settings");
+      showHubToast("error", err.message || "Failed to save settings");
     } finally {
       setIsSavingPolicy(false);
     }
@@ -972,7 +1000,7 @@ export function FlowBoardCentralManagement({
       setTimeout(() => setRolePermissionsSuccessMsg(""), 3500);
     } catch (err: any) {
       console.error(err);
-      alert(language === "bn" ? "সংরক্ষণ করতে ব্যর্থ হয়েছে" : "Failed to save settings");
+      showHubToast("error", language === "bn" ? "সংরক্ষণ করতে ব্যর্থ হয়েছে" : "Failed to save settings");
     } finally {
       setIsSavingRolePermissions(false);
     }
@@ -1028,7 +1056,7 @@ export function FlowBoardCentralManagement({
       setTimeout(() => setBrandingSuccessMsg(""), 3500);
     } catch (err: any) {
       console.error(err);
-      alert(language === "bn" ? "সংরক্ষণ করতে ব্যর্থ হয়েছে" : "Failed to save branding policy");
+      showHubToast("error", language === "bn" ? "সংরক্ষণ করতে ব্যর্থ হয়েছে" : "Failed to save branding policy");
     } finally {
       setIsSavingBranding(false);
     }
@@ -1118,6 +1146,31 @@ export function FlowBoardCentralManagement({
         isDark ? "bg-slate-950 text-slate-100" : isCustom ? "bg-slate-900 text-purple-100" : "bg-slate-50 text-slate-900"
       }`}
     >
+      {/* In-App Floating Status Toast */}
+      {hubToast && (
+        <div
+          className={`fixed top-5 right-5 z-[95] px-4 py-3 rounded-xl shadow-xl border flex items-center gap-2.5 text-xs font-bold animate-fadeIn ${
+            hubToast.type === "success"
+              ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+              : "bg-rose-50 border-rose-300 text-rose-900"
+          }`}
+        >
+          {hubToast.type === "success" ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <span>{hubToast.text}</span>
+          <button
+            type="button"
+            onClick={() => setHubToast(null)}
+            className="ml-1 opacity-60 hover:opacity-100 cursor-pointer"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Central Management Top Bar */}
       <header className="sticky top-0 z-30 border-b backdrop-blur-md px-4 sm:px-8 py-3.5 flex flex-col md:flex-row md:items-center justify-between gap-4 border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-sm">
         <div className="flex items-center gap-3">
@@ -1962,12 +2015,8 @@ export function FlowBoardCentralManagement({
 
                       {!isFlagship && onDeleteTool && (
                         <button
-                          onClick={async () => {
-                            if (window.confirm(`Delete tool ${tool.name}?`)) {
-                              await onDeleteTool(tool.id);
-                            }
-                          }}
-                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition"
+                          onClick={() => setConfirmAction({ type: "delete_tool", tool })}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-lg transition cursor-pointer"
                           title="Delete Tool"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -3731,6 +3780,92 @@ export function FlowBoardCentralManagement({
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* In-App Delete Confirmation Modal */}
+      {confirmAction && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                {confirmAction.type === "delete_user"
+                  ? language === "bn" ? "ব্যবহারকারী মুছে ফেলবেন?" : "Delete User?"
+                  : language === "bn" ? "টুল মুছে ফেলবেন?" : "Delete Tool?"}
+              </h4>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {confirmAction.type === "delete_user"
+                ? language === "bn"
+                  ? `আপনি কি নিশ্চিতভাবে "${confirmAction.user.name}" ব্যবহারকারীকে মুছে ফেলতে চান?`
+                  : `Are you sure you want to delete user "${confirmAction.user.name}"?`
+                : language === "bn"
+                  ? `আপনি কি নিশ্চিতভাবে "${confirmAction.tool.nameBn || confirmAction.tool.name}" টুলটি মুছে ফেলতে চান?`
+                  : `Delete tool "${confirmAction.tool.name}"?`}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmAction(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "বাতিল" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={executeConfirmAction}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "হ্যাঁ, মুছে ফেলুন" : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Admin Reset Password Modal */}
+      {resetPassTarget && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] flex items-center justify-center p-4">
+          <form
+            onSubmit={submitAdminResetPassword}
+            className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4"
+          >
+            <div className="flex items-center gap-3 text-indigo-600 dark:text-indigo-400">
+              <KeyRound className="w-5 h-5 shrink-0" />
+              <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                {language === "bn" ? "পাসওয়ার্ড রিসেট করুন" : "Reset User Password"}
+              </h4>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300">
+              {language === "bn"
+                ? `"${resetPassTarget.name}" (${resetPassTarget.userId})-এর জন্য নতুন পাসওয়ার্ড দিন:`
+                : `Enter new password for "${resetPassTarget.name}" (${resetPassTarget.userId}):`}
+            </p>
+            <input
+              type="text"
+              required
+              value={resetPassValue}
+              onChange={(e) => setResetPassValue(e.target.value)}
+              className="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              autoFocus
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setResetPassTarget(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "বাতিল" : "Cancel"}
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "পাসওয়ার্ড আপডেট করুন" : "Reset Password"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

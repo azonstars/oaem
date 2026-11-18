@@ -22,6 +22,8 @@ import {
   Search,
   Filter,
   RotateCcw,
+  AlertTriangle,
+  Calculator,
 } from "lucide-react";
 import { NoteSheetPreviewModal } from "./NoteSheetPreviewModal";
 
@@ -55,7 +57,22 @@ export function PostFactoProposalsView({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingProposalId, setDeletingProposalId] = useState<string | null>(
+    null,
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [noteSheets, setNoteSheets] = useState<any[]>([]);
+
+  const showToast = (type: "success" | "error", text: string) => {
+    setToastMsg({ type, text });
+    setTimeout(() => {
+      setToastMsg((prev) => (prev?.text === text ? null : prev));
+    }, 4500);
+  };
 
   const [previewNoteSheet, setPreviewNoteSheet] = useState<any | null>(null);
   const [previewInitialTab, setPreviewInitialTab] = useState<
@@ -79,6 +96,113 @@ export function PostFactoProposalsView({
   const [selectedProposal, setSelectedProposal] =
     useState<PostFactoProposal | null>(null);
   const [isSanctioning, setIsSanctioning] = useState(false);
+  const [syncVatTaxOnSanction, setSyncVatTaxOnSanction] = useState(true);
+
+  const getPostFactoBreakdown = (p: Partial<PostFactoProposal>) => {
+    const vatRate = Number(p.vatRate || 0);
+    const taxRate = Number(p.taxRate || 0);
+    const totalPct = vatRate + taxRate;
+    const unitPrice = Number(p.unitPrice || 0);
+    const totalAmount = Number(p.totalAmount || 0);
+
+    const expectedFromUnit =
+      unitPrice > 0
+        ? Math.round(
+            unitPrice + (unitPrice * vatRate) / 100 + (unitPrice * taxRate) / 100,
+          )
+        : 0;
+    const unitMatchesTotalWithVat =
+      unitPrice > 0 &&
+      totalPct > 0 &&
+      Math.abs(totalAmount - expectedFromUnit) <= 2;
+    const totalEqualsUnitWithoutVat =
+      unitPrice > 0 && totalPct > 0 && Math.abs(totalAmount - unitPrice) <= 2;
+
+    let baseAmount = 0;
+    if (
+      unitPrice > 0 &&
+      (unitMatchesTotalWithVat || totalEqualsUnitWithoutVat || totalAmount === 0)
+    ) {
+      baseAmount = unitPrice;
+    } else if (
+      totalPct > 0 &&
+      totalAmount > 0 &&
+      unitPrice > 0 &&
+      totalAmount < expectedFromUnit - 2
+    ) {
+      baseAmount = unitPrice;
+    } else if (totalAmount > 0) {
+      baseAmount = totalAmount;
+    } else {
+      baseAmount = unitPrice;
+    }
+
+    const vatAmount = Math.round((baseAmount * vatRate) / 100);
+    const taxAmount = Math.round((baseAmount * taxRate) / 100);
+    const expectedWithVatTax = Math.round(baseAmount + vatAmount + taxAmount);
+
+    const validBidderPrices = Array.isArray(p.bidders)
+      ? p.bidders.map((b) => Number(b?.price || 0)).filter((pr) => pr > 0)
+      : [];
+    const minBidderPrice =
+      validBidderPrices.length > 0 ? Math.min(...validBidderPrices) : 0;
+    const biddersAlreadyHaveVat =
+      totalPct > 0 &&
+      expectedWithVatTax > 0 &&
+      minBidderPrice >= expectedWithVatTax - 2;
+
+    const isMissingVatTax =
+      totalPct > 0 &&
+      unitPrice > 0 &&
+      totalAmount > 0 &&
+      (totalEqualsUnitWithoutVat || totalAmount < expectedFromUnit - 2);
+
+    return {
+      vatRate,
+      taxRate,
+      totalPct,
+      unitPrice,
+      baseAmount,
+      vatAmount,
+      taxAmount,
+      expectedWithVatTax,
+      totalAmount,
+      isMissingVatTax,
+      unitMatchesTotalWithVat,
+      totalEqualsUnitWithoutVat,
+      biddersAlreadyHaveVat,
+    };
+  };
+
+  const openEditProposalModal = (p: PostFactoProposal) => {
+    const existingBidders = Array.isArray(p.bidders)
+      ? p.bidders.map((b) => ({ ...b }))
+      : [];
+    while (existingBidders.length < 3) {
+      existingBidders.push({ name: "", address: "", price: 0 });
+    }
+    setFormData({
+      ...p,
+      bidders: existingBidders,
+    });
+    setShowModal(true);
+  };
+
+  const openSanctionModal = (p: PostFactoProposal) => {
+    const bd = getPostFactoBreakdown(p);
+    setSelectedProposal(p);
+    setSyncVatTaxOnSanction(bd.isMissingVatTax);
+    setSanctionData({
+      sanctionDate: new Date().toISOString().split("T")[0],
+      sanctionedAmount: bd.isMissingVatTax ? bd.expectedWithVatTax : p.totalAmount,
+      sanctionType: p.sanctionType || "budget_allocation",
+      letterNo: p.letterNo || "",
+      letterDate: p.letterDate || "",
+      sanctionMemoNo: p.sanctionMemoNo || "",
+      sanctionRemarks: p.sanctionRemarks || "",
+    });
+    setShowSanctionModal(true);
+  };
 
   const [uploadingDocProposalId, setUploadingDocProposalId] = useState<
     string | null
@@ -123,24 +247,47 @@ export function PostFactoProposalsView({
     fetchProposals();
   }, []);
 
-  const handleDelete = async (id: string) => {
-    if (
-      !window.confirm(
-        language === "bn"
-          ? "আপনি কি নিশ্চিত যে এটি মুছে ফেলতে চান?"
-          : "Are you sure you want to delete this proposal?",
-      )
-    )
-      return;
+  const handleDelete = (id: string) => {
+    setDeletingProposalId(id);
+  };
+
+  const confirmDeleteProposal = async () => {
+    if (!deletingProposalId || isDeleting) return;
+    const targetId = deletingProposalId;
     try {
-      const res = await apiFetch(`/api/postfactoproposals/${id}`, {
+      setIsDeleting(true);
+      const res = await apiFetch(`/api/postfactoproposals/${targetId}`, {
         method: "DELETE",
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      fetchProposals();
+      if (!res.ok || data?.error) {
+        throw new Error(
+          data?.error ||
+            (language === "bn"
+              ? "প্রস্তাবটি মুছে ফেলা সম্ভব হয়নি।"
+              : "Failed to delete proposal."),
+        );
+      }
+      setProposals((prev) => prev.filter((p) => p.id !== targetId));
+      setDeletingProposalId(null);
+      showToast(
+        "success",
+        language === "bn"
+          ? "খরচোত্তর প্রস্তাবটি সফলভাবে মুছে ফেলা হয়েছে!"
+          : "Post-facto proposal deleted successfully!",
+      );
+      await fetchProposals();
     } catch (err: any) {
-      alert(err.message);
+      setDeletingProposalId(null);
+      showToast(
+        "error",
+        err?.message ||
+          (language === "bn"
+            ? "মুছে ফেলতে ত্রুটি হয়েছে।"
+            : "Error deleting proposal."),
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -148,26 +295,38 @@ export function PostFactoProposalsView({
     e.preventDefault();
     try {
       setIsSubmitting(true);
-      const url = formData.id
+      const isEdit = Boolean(formData.id);
+      const url = isEdit
         ? `/api/postfactoproposals/${formData.id}`
         : "/api/postfactoproposals";
-      const method = formData.id ? "PUT" : "POST";
+      const method = isEdit ? "PUT" : "POST";
+      const payloadToSave = {
+        ...formData,
+        officeId: formData.officeId || currentUser.officeId,
+        financialYearId: formData.financialYearId || selectedFY,
+        createdBy: (formData as any).createdBy || currentUser.userId,
+      };
       const res = await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-          officeId: currentUser.officeId,
-          financialYearId: selectedFY,
-          createdBy: currentUser.userId,
-        }),
+        body: JSON.stringify(payloadToSave),
       });
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) throw new Error(data.error || "Save failed");
       setShowModal(false);
+      showToast(
+        "success",
+        language === "bn"
+          ? isEdit
+            ? "খরচোত্তর প্রস্তাব ও নথিপত্র সফলভাবে সংশোধন করা হয়েছে!"
+            : "খরচোত্তর প্রস্তাব সফলভাবে সংরক্ষিত হয়েছে!"
+          : isEdit
+            ? "Proposal & documents updated successfully!"
+            : "Proposal saved successfully!",
+      );
       fetchProposals();
     } catch (err: any) {
-      alert(err.message);
+      showToast("error", err.message || "Error saving proposal");
     } finally {
       setIsSubmitting(false);
     }
@@ -178,22 +337,56 @@ export function PostFactoProposalsView({
     if (!selectedProposal) return;
     try {
       setIsSanctioning(true);
+      const bd = getPostFactoBreakdown(selectedProposal);
+      const bodyPayload: any = { ...sanctionData };
+
+      if (syncVatTaxOnSanction && bd.totalPct > 0) {
+        const syncedTotal = Number(
+          sanctionData.sanctionedAmount || bd.expectedWithVatTax,
+        );
+        bodyPayload.totalAmount = syncedTotal;
+        const currentBidders = selectedProposal.bidders || [];
+        const validPrices = currentBidders
+          .map((b) => Number(b.price || 0))
+          .filter((pr) => pr > 0);
+        const minBidder = validPrices.length > 0 ? Math.min(...validPrices) : 0;
+        if (
+          minBidder > 0 &&
+          Math.abs(minBidder - bd.baseAmount) <= 2 &&
+          bd.isMissingVatTax
+        ) {
+          bodyPayload.bidders = currentBidders.map((b) => ({
+            ...b,
+            price:
+              Number(b.price || 0) > 0
+                ? Math.round(Number(b.price) * (1 + bd.totalPct / 100))
+                : 0,
+          }));
+        }
+      }
+
       const res = await apiFetch(
         `/api/postfactoproposals/${selectedProposal.id}/sanction`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(sanctionData),
+          body: JSON.stringify(bodyPayload),
         },
       );
 
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (!res.ok || data.error) throw new Error(data.error || "Sanction failed");
 
       setShowSanctionModal(false);
+      showToast(
+        "success",
+        language === "bn"
+          ? "খরচোত্তর প্রস্তাবটি সফলভাবে মঞ্জুর করা হয়েছে!"
+          : "Proposal sanctioned successfully!",
+      );
       fetchProposals();
     } catch (err: any) {
-      alert(err.message);
+      showToast("error", err.message || "Sanction failed");
     } finally {
       setIsSanctioning(false);
     }
@@ -228,7 +421,7 @@ export function PostFactoProposalsView({
           }
         }
       } catch (err: any) {
-        alert(err.message);
+        showToast("error", err.message || "Upload failed");
       }
     };
     reader.readAsDataURL(file);
@@ -277,14 +470,15 @@ export function PostFactoProposalsView({
             ),
           );
 
-          alert(
+          showToast(
+            "success",
             language === "bn"
               ? "স্বাক্ষরিত মঞ্জুরপত্র (PDF) সফলভাবে আপলোড করা হয়েছে। এখন শাখা এটি দেখতে ও ডাউনলোড করতে পারবে।"
               : "Signed sanction document (PDF) uploaded successfully. Branch can now view and download it.",
           );
         }
       } catch (err: any) {
-        alert(err.message || "Upload failed");
+        showToast("error", err.message || "Upload failed");
       } finally {
         setUploadingDocProposalId(null);
         if (inputEl) inputEl.value = "";
@@ -412,7 +606,13 @@ export function PostFactoProposalsView({
   };
 
   const totalFilteredAmount = filtered.reduce(
-    (sum, p) => sum + Number(p.totalAmount || 0),
+    (sum, p) =>
+      sum +
+      Number(
+        (p.status === "Sanctioned" && p.sanctionedAmount
+          ? p.sanctionedAmount
+          : p.totalAmount) || 0,
+      ),
     0,
   );
 
@@ -479,7 +679,8 @@ export function PostFactoProposalsView({
       setPreviewInitialTab(tab);
       setPreviewNoteSheet({ ...ns, isPostFacto: true });
     } else {
-      alert(
+      showToast(
+        "error",
         language === "bn"
           ? "এই প্রস্তাবের জন্য কোনো নথিপত্র পাওয়া যায়নি। অনুগ্রহ করে রিলোড করে পুনরায় চেষ্টা করুন।"
           : "No generated documents found for this proposal.",
@@ -1051,7 +1252,48 @@ export function PostFactoProposalsView({
                       )}
                     </td>
                     <td className="px-4 py-3 font-medium">
-                      {formatCurrency(p.totalAmount || 0)}
+                      {(() => {
+                        const bd = getPostFactoBreakdown(p);
+                        return (
+                          <div className="space-y-0.5 whitespace-normal min-w-[165px]">
+                            <div className="font-bold text-slate-900 dark:text-white">
+                              {formatCurrency(p.totalAmount || 0)}
+                            </div>
+                            {p.status === "Sanctioned" &&
+                              p.sanctionedAmount &&
+                              Number(p.sanctionedAmount) !==
+                                Number(p.totalAmount) && (
+                                <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400">
+                                  {language === "bn"
+                                    ? `মঞ্জুরকৃত: ${formatCurrency(p.sanctionedAmount)}`
+                                    : `Sanctioned: ${formatCurrency(p.sanctionedAmount)}`}
+                                </div>
+                              )}
+                            {bd.totalPct > 0 && (
+                              <div className="text-[11px] leading-snug space-y-0.5">
+                                <div className="text-slate-500 dark:text-slate-400">
+                                  {language === "bn"
+                                    ? `মূল: ${formatCurrency(bd.baseAmount)} | ভ্যাট ${bd.vatRate}% (${formatCurrency(bd.vatAmount)}) | ট্যাক্স ${bd.taxRate}% (${formatCurrency(bd.taxAmount)})`
+                                    : `Base: ${formatCurrency(bd.baseAmount)} | VAT ${bd.vatRate}% | Tax ${bd.taxRate}%`}
+                                </div>
+                                <div className="font-semibold text-indigo-700 dark:text-indigo-300">
+                                  {language === "bn"
+                                    ? `ভ্যাট-ট্যাক্সসহ প্রকৃত বিল: ${formatCurrency(bd.expectedWithVatTax)}`
+                                    : `Actual w/ VAT+Tax: ${formatCurrency(bd.expectedWithVatTax)}`}
+                                </div>
+                                {bd.isMissingVatTax && (
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-700 text-[10px] font-bold">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    {language === "bn"
+                                      ? "ভ্যাট ও ট্যাক্স যোগ হয়নি"
+                                      : "VAT/Tax missing"}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -1067,99 +1309,102 @@ export function PostFactoProposalsView({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {mode === "propose" && p.status === "Pending" && (
-                        <>
+                      <div className="inline-flex items-center justify-end gap-1">
+                        {(isAdmin ||
+                          (mode === "propose" && p.status === "Pending")) && (
                           <button
-                            onClick={() => {
-                              setFormData(p);
-                              setShowModal(true);
-                            }}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
-                            title={language === "bn" ? "সম্পাদনা করুন" : "Edit"}
+                            type="button"
+                            onClick={() => openEditProposalModal(p)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg inline-flex items-center gap-1 cursor-pointer"
+                            title={
+                              language === "bn"
+                                ? "প্রস্তাব ও হিসাব সম্পাদনা করুন"
+                                : "Edit Proposal & Amounts"
+                            }
                           >
                             <Edit2 className="w-4 h-4" />
+                            {isAdmin && (
+                              <span className="text-xs font-semibold hidden xl:inline">
+                                {language === "bn" ? "এডিট" : "Edit"}
+                              </span>
+                            )}
                           </button>
+                        )}
+                        {mode === "sanction" &&
+                          p.status === "Pending" &&
+                          isAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => openSanctionModal(p)}
+                              className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                              <span className="text-xs font-semibold">
+                                {language === "bn" ? "মঞ্জুর" : "Sanction"}
+                              </span>
+                            </button>
+                          )}
+                        {((mode === "propose" &&
+                          (p.status === "Pending" || p.status === "Rejected")) ||
+                          (mode === "sanction" &&
+                            p.status === "Pending" &&
+                            isAdmin)) && (
                           <button
+                            type="button"
                             onClick={() => handleDelete(p.id)}
-                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg"
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
                             title={language === "bn" ? "মুছে ফেলুন" : "Delete"}
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-                        </>
-                      )}
-                      {mode === "sanction" &&
-                        p.status === "Pending" &&
-                        isAdmin && (
-                          <button
-                            onClick={() => {
-                              setSelectedProposal(p);
-                              setSanctionData({
-                                sanctionDate: new Date()
-                                  .toISOString()
-                                  .split("T")[0],
-                                sanctionedAmount: p.totalAmount,
-                                sanctionType:
-                                  p.sanctionType || "budget_allocation",
-                                letterNo: p.letterNo || "",
-                                letterDate: p.letterDate || "",
-                              });
-                              setShowSanctionModal(true);
-                            }}
-                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg flex items-center gap-1"
-                          >
-                            <CheckCircle className="w-4 h-4" />
-                            <span className="text-xs font-semibold">
-                              {language === "bn" ? "মঞ্জুর" : "Sanction"}
-                            </span>
-                          </button>
                         )}
-                      {isAdmin && p.status === "Sanctioned" && (
-                        <label
-                          className={`p-2 rounded-lg inline-flex items-center cursor-pointer transition-colors ${
-                            p.sanctionDocument
-                              ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
-                              : "text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40"
-                          } ${uploadingDocProposalId === p.id ? "opacity-50 pointer-events-none" : ""}`}
-                          title={
-                            language === "bn"
-                              ? p.sanctionDocument
-                                ? "স্বাক্ষরিত মঞ্জুরপত্র (PDF) পরিবর্তন করুন"
-                                : "স্বাক্ষরিত মঞ্জুরপত্র (PDF) আপলোড করুন"
-                              : p.sanctionDocument
-                                ? "Change signed sanction PDF"
-                                : "Upload signed sanction PDF"
-                          }
-                        >
-                          {uploadingDocProposalId === p.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
-                          ) : (
-                            <Upload className="w-4 h-4" />
-                          )}
-                          <input
-                            type="file"
-                            accept=".pdf,application/pdf,image/*"
-                            className="hidden"
-                            disabled={uploadingDocProposalId === p.id}
-                            onChange={(e) => handleUploadSanctionDoc(p.id, e)}
-                          />
-                        </label>
-                      )}
-                      {p.sanctionDocument && (
-                        <a
-                          href={`${p.sanctionDocument}${p.sanctionDocument.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("govt_app_token") || "")}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg inline-block"
-                          title={
-                            language === "bn"
-                              ? "মঞ্জুরপত্র (PDF) ডাউনলোড / দেখুন"
-                              : "View / Download Sanction PDF"
-                          }
-                        >
-                          <FileDown className="w-4 h-4" />
-                        </a>
-                      )}
+                        {isAdmin && p.status === "Sanctioned" && (
+                          <label
+                            className={`p-2 rounded-lg inline-flex items-center cursor-pointer transition-colors ${
+                              p.sanctionDocument
+                                ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                                : "text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/40"
+                            } ${uploadingDocProposalId === p.id ? "opacity-50 pointer-events-none" : ""}`}
+                            title={
+                              language === "bn"
+                                ? p.sanctionDocument
+                                  ? "স্বাক্ষরিত মঞ্জুরপত্র (PDF) পরিবর্তন করুন"
+                                  : "স্বাক্ষরিত মঞ্জুরপত্র (PDF) আপলোড করুন"
+                                : p.sanctionDocument
+                                  ? "Change signed sanction PDF"
+                                  : "Upload signed sanction PDF"
+                            }
+                          >
+                            {uploadingDocProposalId === p.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
+                            ) : (
+                              <Upload className="w-4 h-4" />
+                            )}
+                            <input
+                              type="file"
+                              accept=".pdf,application/pdf,image/*"
+                              className="hidden"
+                              disabled={uploadingDocProposalId === p.id}
+                              onChange={(e) => handleUploadSanctionDoc(p.id, e)}
+                            />
+                          </label>
+                        )}
+                        {p.sanctionDocument && (
+                          <a
+                            href={`${p.sanctionDocument}${p.sanctionDocument.includes("?") ? "&" : "?"}token=${encodeURIComponent(localStorage.getItem("govt_app_token") || "")}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg inline-block"
+                            title={
+                              language === "bn"
+                                ? "মঞ্জুরপত্র (PDF) ডাউনলোড / দেখুন"
+                                : "View / Download Sanction PDF"
+                            }
+                          >
+                            <FileDown className="w-4 h-4" />
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1298,14 +1543,54 @@ export function PostFactoProposalsView({
                 )}
 
                 {/* Amount Row */}
-                <div className="flex justify-between items-center py-2.5 border-t border-b border-slate-100 dark:border-slate-800/50">
-                  <span className="text-xs text-slate-500">
-                    {language === "bn" ? "মোট মূল্য:" : "Total Amount:"}
-                  </span>
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    {formatCurrency(p.totalAmount || 0)}
-                  </span>
-                </div>
+                {(() => {
+                  const bd = getPostFactoBreakdown(p);
+                  return (
+                    <div className="py-2.5 border-t border-b border-slate-100 dark:border-slate-800/50 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-slate-500">
+                          {language === "bn" ? "মোট মূল্য:" : "Total Amount:"}
+                        </span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {formatCurrency(p.totalAmount || 0)}
+                        </span>
+                      </div>
+                      {p.status === "Sanctioned" &&
+                        p.sanctionedAmount &&
+                        Number(p.sanctionedAmount) !== Number(p.totalAmount) && (
+                          <div className="flex justify-between items-center text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            <span>{language === "bn" ? "মঞ্জুরকৃত:" : "Sanctioned:"}</span>
+                            <span>{formatCurrency(p.sanctionedAmount)}</span>
+                          </div>
+                        )}
+                      {bd.totalPct > 0 && (
+                        <div className="text-[11px] bg-slate-50 dark:bg-slate-800/60 p-2 rounded-lg space-y-0.5">
+                          <div className="text-slate-500 dark:text-slate-400">
+                            {language === "bn"
+                              ? `মূল: ${formatCurrency(bd.baseAmount)} + ভ্যাট ${bd.vatRate}% (${formatCurrency(bd.vatAmount)}) + ট্যাক্স ${bd.taxRate}% (${formatCurrency(bd.taxAmount)})`
+                              : `Base: ${formatCurrency(bd.baseAmount)} + VAT ${bd.vatRate}% + Tax ${bd.taxRate}%`}
+                          </div>
+                          <div className="font-bold text-indigo-700 dark:text-indigo-300 flex justify-between">
+                            <span>
+                              {language === "bn"
+                                ? "ভ্যাট-ট্যাক্সসহ প্রকৃত বিল:"
+                                : "Actual w/ VAT+Tax:"}
+                            </span>
+                            <span>{formatCurrency(bd.expectedWithVatTax)}</span>
+                          </div>
+                          {bd.isMissingVatTax && (
+                            <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] font-bold mt-0.5">
+                              <AlertTriangle className="w-3 h-3" />
+                              {language === "bn"
+                                ? "ভ্যাট ও ট্যাক্স যোগ হয়নি!"
+                                : "VAT/Tax missing!"}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Note sheet and attachments */}
                 {p.noteSheetId && (
@@ -1436,46 +1721,47 @@ export function PostFactoProposalsView({
                 )}
 
                 {/* Actions Row */}
-                <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
-                  {mode === "propose" && p.status === "Pending" && (
-                    <>
+                <div className="flex flex-wrap justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                  {(isAdmin || (mode === "propose" && p.status === "Pending")) && (
+                    <button
+                      type="button"
+                      onClick={() => openEditProposalModal(p)}
+                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/20 dark:text-blue-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      {language === "bn" ? "সম্পাদনা" : "Edit"}
+                    </button>
+                  )}
+                  {mode === "propose" &&
+                    (p.status === "Pending" || p.status === "Rejected") && (
                       <button
-                        onClick={() => {
-                          setFormData(p);
-                          setShowModal(true);
-                        }}
-                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-950/10 dark:text-blue-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        {language === "bn" ? "সম্পাদনা" : "Edit"}
-                      </button>
-                      <button
+                        type="button"
                         onClick={() => handleDelete(p.id)}
-                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/10 dark:text-rose-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition"
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/10 dark:text-rose-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         {language === "bn" ? "মুছুন" : "Delete"}
                       </button>
-                    </>
-                  )}
+                    )}
                   {mode === "sanction" && p.status === "Pending" && isAdmin && (
-                    <button
-                      onClick={() => {
-                        setSelectedProposal(p);
-                        setSanctionData({
-                          sanctionDate: new Date().toISOString().split("T")[0],
-                          sanctionedAmount: p.totalAmount,
-                          sanctionType: p.sanctionType || "budget_allocation",
-                          letterNo: p.letterNo || "",
-                          letterDate: p.letterDate || "",
-                        });
-                        setShowSanctionModal(true);
-                      }}
-                      className="w-full justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm"
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      {language === "bn" ? "মঞ্জুর করুন" : "Sanction"}
-                    </button>
+                    <div className="flex items-center gap-2 w-full">
+                      <button
+                        type="button"
+                        onClick={() => openSanctionModal(p)}
+                        className="flex-1 justify-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition shadow-sm cursor-pointer"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        {language === "bn" ? "মঞ্জুর করুন" : "Sanction"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(p.id)}
+                        className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/10 dark:text-rose-400 rounded-xl text-xs font-semibold flex items-center gap-1 transition cursor-pointer"
+                        title={language === "bn" ? "মুছে ফেলুন" : "Delete"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
                   {isAdmin &&
                     p.status === "Sanctioned" &&
@@ -1540,8 +1826,7 @@ export function PostFactoProposalsView({
             </div>
             <form onSubmit={handleCreateSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {(currentUser.role === "Super Admin" ||
-                  currentUser.role === "Head Office Admin") && (
+                {isAdmin && (
                   <div>
                     <label className="block text-sm font-medium mb-1">
                       {language === "bn" ? "অফিস" : "Office"}
@@ -1621,13 +1906,25 @@ export function PostFactoProposalsView({
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.vatRate || ""}
-                    onChange={(e) =>
+                    value={formData.vatRate ?? ""}
+                    onChange={(e) => {
+                      const newVat = Number(e.target.value) || 0;
+                      const uPrice = Number(formData.unitPrice || 0);
+                      const tRate = Number(formData.taxRate || 0);
+                      const nextTotal =
+                        uPrice > 0
+                          ? Math.round(
+                              uPrice +
+                                (uPrice * newVat) / 100 +
+                                (uPrice * tRate) / 100,
+                            )
+                          : Number(formData.totalAmount || 0);
                       setFormData({
                         ...formData,
-                        vatRate: Number(e.target.value),
-                      })
-                    }
+                        vatRate: newVat,
+                        ...(uPrice > 0 ? { totalAmount: nextTotal } : {}),
+                      });
+                    }}
                     className="w-full p-2.5 rounded-xl border dark:bg-slate-800"
                   />
                 </div>
@@ -1638,36 +1935,59 @@ export function PostFactoProposalsView({
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.taxRate || ""}
-                    onChange={(e) =>
+                    value={formData.taxRate ?? ""}
+                    onChange={(e) => {
+                      const newTax = Number(e.target.value) || 0;
+                      const uPrice = Number(formData.unitPrice || 0);
+                      const vRate = Number(formData.vatRate || 0);
+                      const nextTotal =
+                        uPrice > 0
+                          ? Math.round(
+                              uPrice +
+                                (uPrice * vRate) / 100 +
+                                (uPrice * newTax) / 100,
+                            )
+                          : Number(formData.totalAmount || 0);
                       setFormData({
                         ...formData,
-                        taxRate: Number(e.target.value),
-                      })
-                    }
+                        taxRate: newTax,
+                        ...(uPrice > 0 ? { totalAmount: nextTotal } : {}),
+                      });
+                    }}
                     className="w-full p-2.5 rounded-xl border dark:bg-slate-800"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {language === "bn" ? "একক মূল্য" : "Unit Price"}
+                    {language === "bn"
+                      ? "মূল / একক মূল্য (ভ্যাট ও ট্যাক্স ব্যতীত)"
+                      : "Base / Unit Price (Excl. VAT & Tax)"}
                   </label>
                   <input
                     type="number"
                     required
                     value={formData.unitPrice || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const uPrice = Number(e.target.value) || 0;
+                      const vRate = Number(formData.vatRate || 0);
+                      const tRate = Number(formData.taxRate || 0);
+                      const nextTotal = Math.round(
+                        uPrice + (uPrice * vRate) / 100 + (uPrice * tRate) / 100,
+                      );
                       setFormData({
                         ...formData,
-                        unitPrice: Number(e.target.value),
-                      })
-                    }
+                        unitPrice: uPrice,
+                        totalAmount: nextTotal,
+                      });
+                    }}
                     className="w-full p-2.5 rounded-xl border dark:bg-slate-800"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {language === "bn" ? "মোট মূল্য" : "Total Amount"}
+                    {language === "bn"
+                      ? "সর্বমোট মূল্য (ভ্যাট ও ট্যাক্সসহ)"
+                      : "Total Amount (Incl. VAT & Tax)"}
                   </label>
                   <input
                     type="number"
@@ -1679,8 +1999,45 @@ export function PostFactoProposalsView({
                         totalAmount: Number(e.target.value),
                       })
                     }
-                    className="w-full p-2.5 rounded-xl border dark:bg-slate-800"
+                    className="w-full p-2.5 rounded-xl border dark:bg-slate-800 font-bold"
                   />
+                  {(() => {
+                    const bd = getPostFactoBreakdown(formData);
+                    if (!bd.isMissingVatTax) return null;
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedTotal = bd.expectedWithVatTax;
+                          const nextBidders = bd.biddersAlreadyHaveVat
+                            ? formData.bidders || []
+                            : (formData.bidders || []).map((b) => ({
+                                ...b,
+                                price:
+                                  Number(b.price || 0) > 0
+                                    ? Math.round(
+                                        Number(b.price) *
+                                          (1 + bd.totalPct / 100),
+                                      )
+                                    : 0,
+                              }));
+                          setFormData({
+                            ...formData,
+                            totalAmount: updatedTotal,
+                            ...(formData.status === "Sanctioned"
+                              ? { sanctionedAmount: updatedTotal }
+                              : {}),
+                            bidders: nextBidders,
+                          });
+                        }}
+                        className="mt-1.5 text-[11px] font-bold text-amber-700 hover:text-amber-900 dark:text-amber-300 underline cursor-pointer block"
+                      >
+                        {language === "bn"
+                          ? `ভ্যাট-ট্যাক্সসহ প্রকৃত বিল ${formatCurrency(bd.expectedWithVatTax)} বসান`
+                          : `Set actual bill ${formatCurrency(bd.expectedWithVatTax)} (with VAT+Tax)`}
+                      </button>
+                    );
+                  })()}
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
@@ -1697,6 +2054,212 @@ export function PostFactoProposalsView({
                   />
                 </div>
               </div>
+
+              {/* Live VAT & Tax Calculation Box */}
+              {(() => {
+                const bd = getPostFactoBreakdown(formData);
+                if (bd.baseAmount <= 0 && bd.totalAmount <= 0) return null;
+                return (
+                  <div
+                    className={`p-4 rounded-2xl border text-xs space-y-2 ${
+                      bd.isMissingVatTax
+                        ? "bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700"
+                        : "bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800"
+                    }`}
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                        <Calculator className="w-4 h-4 text-emerald-600" />
+                        <span>
+                          {language === "bn"
+                            ? "ভ্যাট ও ট্যাক্সসহ প্রকৃত বিল হিসাব (Auto Calculation)"
+                            : "Actual Bill Calculation (with VAT & Tax)"}
+                        </span>
+                      </div>
+                      {bd.isMissingVatTax && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updatedTotal = bd.expectedWithVatTax;
+                            const nextBidders = bd.biddersAlreadyHaveVat
+                              ? formData.bidders || []
+                              : (formData.bidders || []).map((b) => ({
+                                  ...b,
+                                  price:
+                                    Number(b.price || 0) > 0
+                                      ? Math.round(
+                                          Number(b.price) *
+                                            (1 + bd.totalPct / 100),
+                                        )
+                                      : 0,
+                                }));
+                            setFormData({
+                              ...formData,
+                              totalAmount: updatedTotal,
+                              ...(formData.status === "Sanctioned"
+                                ? { sanctionedAmount: updatedTotal }
+                                : {}),
+                              bidders: nextBidders,
+                            });
+                          }}
+                          className="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-xs cursor-pointer"
+                        >
+                          {bd.biddersAlreadyHaveVat
+                            ? language === "bn"
+                              ? `সর্বমোট মূল্যে ভ্যাট-ট্যাক্স (${bd.totalPct}%) যোগ করুন`
+                              : `Apply VAT+Tax (${bd.totalPct}%) to Total`
+                            : language === "bn"
+                              ? `মোট মূল্য ও দরদাতাতে ভ্যাট-ট্যাক্স (${bd.totalPct}%) যোগ করুন`
+                              : `Apply VAT+Tax (${bd.totalPct}%) to Total & Bidders`}
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200/70 dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 block">
+                          {language === "bn" ? "মূল মূল্য" : "Base Price"}
+                        </span>
+                        <span className="font-bold text-slate-800 dark:text-slate-200">
+                          {formatCurrency(bd.baseAmount)}
+                        </span>
+                      </div>
+                      <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200/70 dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 block">
+                          {language === "bn"
+                            ? `ভ্যাট (${bd.vatRate}%)`
+                            : `VAT (${bd.vatRate}%)`}
+                        </span>
+                        <span className="font-bold text-blue-700 dark:text-blue-400">
+                          + {formatCurrency(bd.vatAmount)}
+                        </span>
+                      </div>
+                      <div className="bg-white/80 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-200/70 dark:border-slate-700">
+                        <span className="text-[10px] text-slate-500 block">
+                          {language === "bn"
+                            ? `ট্যাক্স (${bd.taxRate}%)`
+                            : `Tax (${bd.taxRate}%)`}
+                        </span>
+                        <span className="font-bold text-indigo-700 dark:text-indigo-400">
+                          + {formatCurrency(bd.taxAmount)}
+                        </span>
+                      </div>
+                      <div className="bg-emerald-100/80 dark:bg-emerald-950/60 p-2 rounded-lg border border-emerald-300 dark:border-emerald-700">
+                        <span className="text-[10px] text-emerald-800 dark:text-emerald-300 block font-semibold">
+                          {language === "bn"
+                            ? "প্রকৃত বিল (ভ্যাট-ট্যাক্সসহ)"
+                            : "Actual Total"}
+                        </span>
+                        <span className="font-black text-emerald-900 dark:text-emerald-200 text-sm">
+                          {formatCurrency(bd.expectedWithVatTax)}
+                        </span>
+                      </div>
+                    </div>
+                    {bd.isMissingVatTax && (
+                      <p className="text-[11px] font-semibold text-amber-800 dark:text-amber-300">
+                        {language === "bn"
+                          ? `⚠️ সতর্কতা: বর্তমানে মোট মূল্য ${formatCurrency(bd.totalAmount)} রয়েছে, যাতে ভ্যাট ও ট্যাক্স যোগ হয়নি। প্রকৃত বিল হবে ${formatCurrency(bd.expectedWithVatTax)}।`
+                          : `⚠️ Current total (${formatCurrency(bd.totalAmount)}) excludes VAT & Tax. Expected total is ${formatCurrency(bd.expectedWithVatTax)}.`}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* Admin-only Editable Sanction Details when editing a Sanctioned proposal */}
+              {isAdmin && formData.id && formData.status === "Sanctioned" && (
+                <div className="border-2 border-emerald-200 dark:border-emerald-800/60 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>
+                        {language === "bn"
+                          ? "মঞ্জুরী সংক্রান্ত তথ্য (মঞ্জুর পরবর্তী সংশোধন)"
+                          : "Sanction Details (Post-Sanction Edit)"}
+                      </span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData({
+                          ...formData,
+                          sanctionedAmount: Number(formData.totalAmount || 0),
+                        })
+                      }
+                      className="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                    >
+                      {language === "bn"
+                        ? "মঞ্জুরকৃত টাকা = মোট মূল্য"
+                        : "Sync Sanctioned = Total"}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1">
+                        {language === "bn" ? "মঞ্জুরীর স্মারক নং" : "Sanction Memo No"}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.sanctionMemoNo || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sanctionMemoNo: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 rounded-xl border dark:bg-slate-800 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">
+                        {language === "bn" ? "মঞ্জুরীর তারিখ" : "Sanction Date"}
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.sanctionDate || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sanctionDate: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 rounded-xl border dark:bg-slate-800 text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">
+                        {language === "bn" ? "মঞ্জুরকৃত পরিমাণ (টাকা)" : "Sanctioned Amount"}
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.sanctionedAmount ?? ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sanctionedAmount: Number(e.target.value),
+                          })
+                        }
+                        className="w-full p-2 rounded-xl border dark:bg-slate-800 text-sm font-bold"
+                      />
+                    </div>
+                    <div className="md:col-span-3">
+                      <label className="block text-xs font-medium mb-1">
+                        {language === "bn" ? "মঞ্জুরীর মন্তব্য" : "Sanction Remarks"}
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.sanctionRemarks || ""}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            sanctionRemarks: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 rounded-xl border dark:bg-slate-800 text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 border p-4 rounded-xl dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/20">
                 <div>
@@ -1793,11 +2356,61 @@ export function PostFactoProposalsView({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2">
-                  {language === "bn"
-                    ? "৩টি দরদাতা প্রতিষ্ঠানের তথ্য"
-                    : "3 Bidder Organizations Info"}
-                </label>
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <label className="block text-sm font-medium">
+                    {language === "bn"
+                      ? "৩টি দরদাতা প্রতিষ্ঠানের তথ্য (দর ভ্যাট ও ট্যাক্সসহ)"
+                      : "3 Bidder Organizations Info (Incl. VAT & Tax)"}
+                  </label>
+                  {(() => {
+                    const bd = getPostFactoBreakdown(formData);
+                    if (bd.totalPct <= 0) return null;
+                    if (bd.biddersAlreadyHaveVat) {
+                      return (
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                          {language === "bn"
+                            ? "✓ দরদাতাদের মূল্যে ভ্যাট-ট্যাক্স যুক্ত আছে"
+                            : "✓ Bidders include VAT & Tax"}
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updatedBidders = (formData.bidders || []).map(
+                            (b) => ({
+                              ...b,
+                              price:
+                                Number(b.price || 0) > 0
+                                  ? Math.round(
+                                      Number(b.price) * (1 + bd.totalPct / 100),
+                                    )
+                                  : 0,
+                            }),
+                          );
+                          setFormData({
+                            ...formData,
+                            bidders: updatedBidders,
+                            ...(bd.isMissingVatTax
+                              ? {
+                                  totalAmount: bd.expectedWithVatTax,
+                                  ...(formData.status === "Sanctioned"
+                                    ? { sanctionedAmount: bd.expectedWithVatTax }
+                                    : {}),
+                                }
+                              : {}),
+                          });
+                        }}
+                        className="text-xs font-bold px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800 cursor-pointer"
+                      >
+                        {language === "bn"
+                          ? `+ দরদাতা ও মোট মূল্যে ${bd.totalPct}% ভ্যাট-ট্যাক্স যোগ করুন`
+                          : `+ Add ${bd.totalPct}% VAT+Tax to Bidders & Total`}
+                      </button>
+                    );
+                  })()}
+                </div>
                 <div className="space-y-4">
                   {[0, 1, 2].map((idx) => (
                     <div
@@ -1893,18 +2506,145 @@ export function PostFactoProposalsView({
 
       {showSanctionModal && selectedProposal && (
         <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-start justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-lg p-6 m-auto">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] w-full max-w-xl p-6 m-auto">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-bold">
-                {language === "bn" ? "মঞ্জুরি প্রদান" : "Provide Sanction"}
+                {language === "bn" ? "মঞ্জুরি প্রদান ও বিল যাচাই" : "Verify Bill & Provide Sanction"}
               </h3>
-              <button
-                onClick={() => setShowSanctionModal(false)}
-                className="p-2 hover:bg-slate-100 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedProposal;
+                      setShowSanctionModal(false);
+                      openEditProposalModal(target);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>{language === "bn" ? "প্রস্তাব এডিট করুন" : "Edit Proposal"}</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowSanctionModal(false)}
+                  className="p-2 hover:bg-slate-100 rounded-lg cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
+
+            {/* Pre-sanction VAT & Tax Breakdown Verification Card */}
+            {(() => {
+              const bd = getPostFactoBreakdown(selectedProposal);
+              const offName =
+                offices.find((o) => o.id === selectedProposal.officeId)?.name ||
+                selectedProposal.officeId;
+              const catName =
+                categories.find((c) => c.id === selectedProposal.categoryId)
+                  ?.name || selectedProposal.categoryId;
+              return (
+                <div
+                  className={`mb-5 p-4 rounded-2xl border text-xs space-y-2.5 ${
+                    bd.isMissingVatTax
+                      ? "bg-amber-50/90 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700"
+                      : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700"
+                  }`}
+                >
+                  <div className="flex flex-wrap justify-between gap-2 border-b border-slate-200/70 dark:border-slate-700 pb-2">
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 block">
+                        {offName} • {catName}
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300">
+                        {selectedProposal.description}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 block">
+                        {language === "bn" ? "মূল মূল্য" : "Base Amount"}
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">
+                        {formatCurrency(bd.baseAmount)}
+                      </span>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 block">
+                        {language === "bn"
+                          ? `ভ্যাট (${bd.vatRate}%)`
+                          : `VAT (${bd.vatRate}%)`}
+                      </span>
+                      <span className="font-bold text-blue-700 dark:text-blue-400">
+                        + {formatCurrency(bd.vatAmount)}
+                      </span>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 p-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <span className="text-[10px] text-slate-500 block">
+                        {language === "bn"
+                          ? `ট্যাক্স (${bd.taxRate}%)`
+                          : `Tax (${bd.taxRate}%)`}
+                      </span>
+                      <span className="font-bold text-indigo-700 dark:text-indigo-400">
+                        + {formatCurrency(bd.taxAmount)}
+                      </span>
+                    </div>
+                    <div className="bg-emerald-100 dark:bg-emerald-950/60 p-2 rounded-lg border border-emerald-300 dark:border-emerald-700">
+                      <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold block">
+                        {language === "bn"
+                          ? "প্রকৃত বিল (ভ্যাট-ট্যাক্সসহ)"
+                          : "Actual w/ VAT+Tax"}
+                      </span>
+                      <span className="font-black text-emerald-900 dark:text-emerald-200 text-sm">
+                        {formatCurrency(bd.expectedWithVatTax)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <span className="text-slate-600 dark:text-slate-300">
+                      {language === "bn"
+                        ? `শাখা কর্তৃক ইনপুটকৃত মোট মূল্য: ${formatCurrency(bd.totalAmount)}`
+                        : `Branch entered total: ${formatCurrency(bd.totalAmount)}`}
+                    </span>
+                    {bd.isMissingVatTax && (
+                      <span className="font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        {language === "bn"
+                          ? "ভ্যাট ও ট্যাক্স মূল্যের সাথে যোগ হয়নি!"
+                          : "VAT & Tax were not added to total!"}
+                      </span>
+                    )}
+                  </div>
+                  {bd.isMissingVatTax && (
+                    <label className="flex items-start gap-2 pt-1.5 border-t border-amber-300/60 dark:border-amber-700/60 cursor-pointer text-[11px] font-semibold text-amber-900 dark:text-amber-200">
+                      <input
+                        type="checkbox"
+                        checked={syncVatTaxOnSanction}
+                        onChange={(e) => {
+                          const checked = e.target.checked;
+                          setSyncVatTaxOnSanction(checked);
+                          setSanctionData({
+                            ...sanctionData,
+                            sanctionedAmount: checked
+                              ? bd.expectedWithVatTax
+                              : selectedProposal.totalAmount,
+                          });
+                        }}
+                        className="mt-0.5 rounded"
+                      />
+                      <span>
+                        {language === "bn"
+                          ? `মঞ্জুর করার সময় প্রস্তাবের মোট মূল্য (${formatCurrency(bd.expectedWithVatTax)}) ও দরদাতাদের দরের সাথে ভ্যাট-ট্যাক্স স্বয়ংক্রিয়ভাবে যোগ করে আপডেট করুন`
+                          : `Automatically update proposal total (${formatCurrency(bd.expectedWithVatTax)}) and bidder prices with VAT & Tax on sanction`}
+                      </span>
+                    </label>
+                  )}
+                </div>
+              );
+            })()}
+
             <form onSubmit={handleSanctionSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">
@@ -2117,6 +2857,67 @@ export function PostFactoProposalsView({
           currentUser={currentUser}
           initialTab={previewInitialTab}
         />
+      )}
+      {/* Delete Confirmation Modal */}
+      {deletingProposalId && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex overflow-y-auto p-4 sm:p-6">
+          <div className="m-auto rounded-2xl max-w-sm w-full p-6 shadow-2xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+            <h3 className="text-base font-bold mb-2 flex items-center gap-2 text-rose-600 dark:text-rose-400">
+              <Trash2 className="w-4 h-4" />
+              <span>{language === "bn" ? "নিশ্চিত করুন" : "Confirm Delete"}</span>
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+              {language === "bn"
+                ? "আপনি কি নিশ্চিত যে এই খরচোত্তর প্রস্তাব ও এর সংযুক্ত নথিপত্র মুছে ফেলতে চান? এটি আর ফেরত পাওয়া যাবে না।"
+                : "Are you sure you want to delete this post-facto proposal and its linked documents? This action cannot be undone."}
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setDeletingProposalId(null)}
+                className="px-4 py-2 rounded-xl font-medium text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                {language === "bn" ? "বাতিল" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={confirmDeleteProposal}
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white rounded-xl font-semibold shadow text-sm flex items-center gap-1.5 cursor-pointer"
+              >
+                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>
+                  {isDeleting
+                    ? language === "bn"
+                      ? "মুছে ফেলা হচ্ছে..."
+                      : "Deleting..."
+                    : language === "bn"
+                      ? "মুছে ফেলুন"
+                      : "Delete"}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMsg && (
+        <div
+          className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-2xl z-50 flex items-center gap-3 border ${
+            toastMsg.type === "error"
+              ? "bg-rose-950 border-rose-700 text-rose-100"
+              : "bg-slate-900 border-slate-700 text-white"
+          }`}
+        >
+          {toastMsg.type === "error" ? (
+            <X className="w-5 h-5 text-rose-400 shrink-0" />
+          ) : (
+            <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+          )}
+          <p className="text-sm font-medium">{toastMsg.text}</p>
+        </div>
       )}
     </div>
   );

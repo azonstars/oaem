@@ -4,6 +4,7 @@ import { getForms, deleteForm, duplicateForm, updateForm } from '../../services/
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
 import { ROLES } from '../../constants/roles'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 
 export default function FormListPage() {
@@ -12,6 +13,7 @@ export default function FormListPage() {
   const [forms, setForms] = useState([])
   const [loading, setLoading] = useState(false)
   const [togglingDeadline, setTogglingDeadline] = useState(null)
+  const [pendingAction, setPendingAction] = useState(null)
 
   useEffect(() => { loadForms() }, [])
 
@@ -27,25 +29,34 @@ export default function FormListPage() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure?')) return
-    try {
-      await deleteForm(id)
-      toast.success('Form deleted!')
-      loadForms()
-    } catch (error) {
-      toast.error(error.message)
-    }
+  const handleDelete = (id) => {
+    setPendingAction({ type: 'delete', id })
   }
 
-  const handleDuplicate = async (form) => {
-    if (!confirm(`"${form.title}" ফর্মটি duplicate করবেন?\nনতুন ফর্মটি Inactive অবস্থায় তৈরি হবে।`)) return
-    try {
-      await duplicateForm(form.id, profile.id)
-      toast.success(`"${form.title} (Copy)" তৈরি হয়েছে!`)
-      loadForms()
-    } catch (error) {
-      toast.error(error.message)
+  const handleDuplicate = (form) => {
+    setPendingAction({ type: 'duplicate', form })
+  }
+
+  const confirmPendingAction = async () => {
+    const act = pendingAction
+    setPendingAction(null)
+    if (!act) return
+    if (act.type === 'delete') {
+      try {
+        await deleteForm(act.id)
+        toast.success('Form deleted!')
+        loadForms()
+      } catch (error) {
+        toast.error(error.message)
+      }
+    } else if (act.type === 'duplicate') {
+      try {
+        await duplicateForm(act.form.id, profile.id)
+        toast.success(`"${act.form.title} (Copy)" তৈরি হয়েছে!`)
+        loadForms()
+      } catch (error) {
+        toast.error(error.message)
+      }
     }
   }
 
@@ -187,6 +198,19 @@ export default function FormListPage() {
           </table>
         )}
       </div>
+      <InAppConfirmModal
+        isOpen={Boolean(pendingAction)}
+        title={pendingAction?.type === 'delete' ? 'Delete Form' : 'Duplicate Form'}
+        message={
+          pendingAction?.type === 'delete'
+            ? 'Are you sure you want to delete this form?'
+            : `"${pendingAction?.form?.title}" ফর্মটি duplicate করবেন? নতুন ফর্মটি Inactive অবস্থায় তৈরি হবে।`
+        }
+        confirmText={pendingAction?.type === 'delete' ? 'Delete' : 'Duplicate'}
+        danger={pendingAction?.type === 'delete'}
+        onConfirm={confirmPendingAction}
+        onCancel={() => setPendingAction(null)}
+      />
     </div>
   )
 }

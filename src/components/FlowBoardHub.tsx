@@ -39,6 +39,7 @@ import {
   Calculator,
   Lock,
   ShieldCheck,
+  AlertTriangle,
 } from "lucide-react";
 
 interface FlowBoardHubProps {
@@ -104,6 +105,8 @@ export function FlowBoardHub({
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [deletingTool, setDeletingTool] = useState<FlowBoardTool | null>(null);
+  const [toolError, setToolError] = useState<string | null>(null);
 
   // Form state for creating a new tool
   const [toolForm, setToolForm] = useState<Partial<FlowBoardTool>>({
@@ -148,6 +151,7 @@ export function FlowBoardHub({
     e.preventDefault();
     if (!toolForm.name?.trim()) return;
     setSubmitting(true);
+    setToolError(null);
     try {
       const success = await onAddTool(toolForm);
       if (success) {
@@ -168,7 +172,11 @@ export function FlowBoardHub({
           routeOrTab: "dashboard",
           tags: ["Project", "Module"],
         });
+      } else {
+        setToolError(language === "bn" ? "টুল সংরক্ষণ করা যায়নি।" : "Could not save tool.");
       }
+    } catch (err: any) {
+      setToolError(err?.message || (language === "bn" ? "সার্ভারে টুল সংরক্ষণ ব্যর্থ হয়েছে।" : "Failed to save tool to server."));
     } finally {
       setSubmitting(false);
     }
@@ -465,11 +473,9 @@ export function FlowBoardHub({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`Delete tool "${tool.name}"?`)) {
-                          onDeleteTool(tool.id);
-                        }
+                        setDeletingTool(tool);
                       }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition opacity-0 group-hover:opacity-100"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition opacity-0 group-hover:opacity-100 cursor-pointer"
                       title="Remove Tool"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -739,10 +745,19 @@ export function FlowBoardHub({
                 </div>
               </div>
 
+              {toolError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs font-medium">
+                  {toolError}
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setToolError(null);
+                    setShowAddModal(false);
+                  }}
                   className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition font-medium"
                 >
                   Cancel
@@ -756,6 +771,60 @@ export function FlowBoardHub({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* In-App Delete Tool Confirmation Modal */}
+      {deletingTool && onDeleteTool && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[90] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+              <h4 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                {language === "bn" ? "টুল মুছে ফেলবেন?" : "Delete Tool?"}
+              </h4>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              {language === "bn"
+                ? `আপনি কি নিশ্চিতভাবে "${deletingTool.nameBn || deletingTool.name}" টুলটি মুছে ফেলতে চান?`
+                : `Are you sure you want to delete tool "${deletingTool.name}"?`}
+            </p>
+              {toolError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-[11px] font-medium">
+                  {toolError}
+                </div>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setToolError(null);
+                  setDeletingTool(null);
+                }}
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "বাতিল" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const t = deletingTool;
+                  setToolError(null);
+                  try {
+                    const ok = await onDeleteTool(t.id);
+                    if (ok) {
+                      setDeletingTool(null);
+                    }
+                  } catch (err: any) {
+                    setToolError(err?.message || (language === "bn" ? "টুল মুছে ফেলা ব্যর্থ হয়েছে।" : "Failed to delete tool."));
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "হ্যাঁ, মুছে ফেলুন" : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}

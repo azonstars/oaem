@@ -1,5 +1,5 @@
 import { apiFetch } from "./api";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, lazy, useEffect, useState } from "react";
 import {
   SystemSettings,
   FinancialYear,
@@ -18,29 +18,29 @@ import {
 } from "./types";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
-import { Dashboard } from "./components/Dashboard";
-import { SettingsView } from "./components/SettingsView";
-import { AllocationsView } from "./components/AllocationsView";
-import { ExpensesView } from "./components/ExpensesView";
-import { PostFactoProposalsView } from "./components/PostFactoProposalsView";
-import { ReportsView } from "./components/ReportsView";
-import { NoteSheetsView } from "./components/NoteSheetsView";
-import { NoteTemplatesView } from "./components/NoteTemplatesView";
-import { AuditLogsView } from "./components/AuditLogsView";
-import { MiscellaneousView } from "./components/MiscellaneousView";
-
-import { AboutModal } from "./components/AboutModal";
 import { LoginView } from "./components/LoginView";
-import { ChangePasswordModal } from "./components/ChangePasswordModal";
-import { ProposeUserModal } from "./components/ProposeUserModal";
 import { AppFooter } from "./components/AppFooter";
 import { FlowBoardHub } from "./components/FlowBoardHub";
-import { FlowBoardCentralManagement } from "./components/FlowBoardCentralManagement";
-import { IndependentToolRunner } from "./components/IndependentToolRunner";
 import { safeStorage } from "./utils/storage";
 import { DEFAULT_FLOW_TOOLS } from "./config/flowTools";
 import { useTheme } from "./context/ThemeContext";
 import { useLanguage } from "./i18n";
+
+const Dashboard = lazy(() => import("./components/Dashboard").then((m) => ({ default: m.Dashboard })));
+const SettingsView = lazy(() => import("./components/SettingsView").then((m) => ({ default: m.SettingsView })));
+const AllocationsView = lazy(() => import("./components/AllocationsView").then((m) => ({ default: m.AllocationsView })));
+const ExpensesView = lazy(() => import("./components/ExpensesView").then((m) => ({ default: m.ExpensesView })));
+const PostFactoProposalsView = lazy(() => import("./components/PostFactoProposalsView").then((m) => ({ default: m.PostFactoProposalsView })));
+const ReportsView = lazy(() => import("./components/ReportsView").then((m) => ({ default: m.ReportsView })));
+const NoteSheetsView = lazy(() => import("./components/NoteSheetsView").then((m) => ({ default: m.NoteSheetsView })));
+const NoteTemplatesView = lazy(() => import("./components/NoteTemplatesView").then((m) => ({ default: m.NoteTemplatesView })));
+const AuditLogsView = lazy(() => import("./components/AuditLogsView").then((m) => ({ default: m.AuditLogsView })));
+const MiscellaneousView = lazy(() => import("./components/MiscellaneousView").then((m) => ({ default: m.MiscellaneousView })));
+const FlowBoardCentralManagement = lazy(() => import("./components/FlowBoardCentralManagement").then((m) => ({ default: m.FlowBoardCentralManagement })));
+const IndependentToolRunner = lazy(() => import("./components/IndependentToolRunner").then((m) => ({ default: m.IndependentToolRunner })));
+const AboutModal = lazy(() => import("./components/AboutModal").then((m) => ({ default: m.AboutModal })));
+const ChangePasswordModal = lazy(() => import("./components/ChangePasswordModal").then((m) => ({ default: m.ChangePasswordModal })));
+const ProposeUserModal = lazy(() => import("./components/ProposeUserModal").then((m) => ({ default: m.ProposeUserModal })));
 
 export default function App() {
   const { theme, isCustom } = useTheme();
@@ -253,9 +253,12 @@ export default function App() {
     const res = await apiFetch("/api/allocations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...allocation, userId: currentUser.id }),
+      body: JSON.stringify({ ...allocation, userId: currentUser?.id }),
     });
     const newAlc = await res.json();
+    if (!res.ok) {
+      throw new Error(newAlc?.error || "Failed to add allocation");
+    }
     setAllocations((prev) => [...prev, newAlc]);
     refreshLogs();
     return newAlc;
@@ -356,7 +359,11 @@ export default function App() {
   };
 
   const handleDeleteExpense = async (id: string) => {
-    await apiFetch(`/api/expenses/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/expenses/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to delete expense");
+    }
     setExpenses((prev) => prev.filter((e) => e.id !== id));
     refreshLogs();
     fetchAllData();
@@ -366,15 +373,22 @@ export default function App() {
     const res = await apiFetch("/api/notesheets", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...noteSheet, userId: currentUser.id }),
+      body: JSON.stringify({ ...noteSheet, userId: currentUser?.id }),
     });
     const newNs = await res.json();
+    if (!res.ok) {
+      throw new Error(newNs?.error || "Failed to create note sheet");
+    }
     setNoteSheets((prev) => [...prev, newNs]);
     refreshLogs();
   };
 
   const handleDeleteNoteSheet = async (id: string) => {
-    await apiFetch(`/api/notesheets/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/notesheets/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to delete note sheet");
+    }
     setNoteSheets((prev) => prev.filter((n) => n.id !== id));
     refreshLogs();
   };
@@ -383,9 +397,12 @@ export default function App() {
     const res = await apiFetch("/api/notetemplates", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...template, userId: currentUser.id }),
+      body: JSON.stringify({ ...template, userId: currentUser?.id }),
     });
     const newTpl = await res.json();
+    if (!res.ok) {
+      throw new Error(newTpl?.error || "Failed to add template");
+    }
     setNoteTemplates((prev) => [...prev, newTpl]);
     refreshLogs();
   };
@@ -397,15 +414,22 @@ export default function App() {
     const res = await apiFetch(`/api/notetemplates/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...template, userId: currentUser.id }),
+      body: JSON.stringify({ ...template, userId: currentUser?.id }),
     });
     const updated = await res.json();
+    if (!res.ok) {
+      throw new Error(updated?.error || "Failed to update template");
+    }
     setNoteTemplates((prev) => prev.map((t) => (t.id === id ? updated : t)));
     refreshLogs();
   };
 
   const handleDeleteTemplate = async (id: string) => {
-    await apiFetch(`/api/notetemplates/${id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/notetemplates/${id}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to delete template");
+    }
     setNoteTemplates((prev) => prev.filter((t) => t.id !== id));
     refreshLogs();
   };
@@ -448,18 +472,19 @@ export default function App() {
         refreshLogs();
         return true;
       }
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData?.error || `Server error (${res.status})`);
     } catch (err) {
-      console.error("Failed to persist tool to API, falling back to state:", err);
+      console.error("Failed to persist tool to API:", err);
+      throw err;
     }
-    setFlowTools((prev) => [...prev, toolRecord]);
-    return true;
   };
 
   const handleDeleteTool = async (toolId: string): Promise<boolean> => {
-    try {
-      await apiFetch(`/api/flowtools/${toolId}`, { method: "DELETE" });
-    } catch (err) {
-      console.error("Error deleting tool from API:", err);
+    const res = await apiFetch(`/api/flowtools/${toolId}`, { method: "DELETE" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.error || "Failed to remove tool from server");
     }
     setFlowTools((prev) => prev.filter((t) => t.id !== toolId));
     if (activeToolId === toolId) {
@@ -504,7 +529,10 @@ export default function App() {
   const refreshLogs = () => {
     apiFetch("/api/auditlogs")
       .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
-      .then((data) => setAuditLogs(data));
+      .then((data) => {
+        if (Array.isArray(data)) setAuditLogs(data);
+      })
+      .catch(() => {});
   };
 
   if (loading) {
@@ -616,6 +644,18 @@ export default function App() {
                 : "max-w-[1600px] 2xl:max-w-[1800px] mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8"
             } print:p-0 print:m-0 print:max-w-none print:w-full print:block`}
           >
+            <Suspense
+              fallback={
+                <div className="flex-1 min-h-[50vh] flex items-center justify-center p-8">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-xs font-semibold text-slate-500">
+                      {language === "bn" ? "মডিউল লোড হচ্ছে..." : "Loading module..."}
+                    </span>
+                  </div>
+                </div>
+              }
+            >
             {/* View Mode 1: FlowBoard Main Hub Launcher */}
             {activeToolId === null && (
               <FlowBoardHub
@@ -645,13 +685,16 @@ export default function App() {
                 onRefreshData={() => {
                   apiFetch("/api/settings")
                     .then((r) => r.ok && r.json())
-                    .then((d) => d && d[0] && setSystemSettings(d[0]));
+                    .then((d) => d && d[0] && setSystemSettings(d[0]))
+                    .catch(() => {});
                   apiFetch("/api/users")
                     .then((r) => r.ok && r.json())
-                    .then((d) => d && setUsers(d));
+                    .then((d) => d && setUsers(d))
+                    .catch(() => {});
                   apiFetch("/api/auditlogs")
                     .then((r) => r.ok && r.json())
-                    .then((d) => d && setAuditLogs(d));
+                    .then((d) => d && setAuditLogs(d))
+                    .catch(() => {});
                 }}
                 onAddTool={handleAddTool}
                 onDeleteTool={handleDeleteTool}
@@ -662,6 +705,7 @@ export default function App() {
             {/* View Mode 3: Independent Custom Tool Runner */}
             {activeToolId !== null && activeToolId !== "central-management" && isCustomToolActive && activeTool && (
               <IndependentToolRunner
+                key={activeTool.id}
                 tool={activeTool}
                 currentUser={currentUser}
                 systemSettings={systemSettings}
@@ -841,36 +885,39 @@ export default function App() {
                   )}
               </>
             )}
+            </Suspense>
           </div>
           <AppFooter onOpenAbout={() => setIsAboutOpen(true)} />
         </main>
       </div>
 
-      {isAboutOpen && (
-        <AboutModal
-          isOpen={isAboutOpen}
-          onClose={() => setIsAboutOpen(false)}
-          systemSettings={systemSettings}
-        />
-      )}
+      <Suspense fallback={null}>
+        {isAboutOpen && (
+          <AboutModal
+            isOpen={isAboutOpen}
+            onClose={() => setIsAboutOpen(false)}
+            systemSettings={systemSettings}
+          />
+        )}
 
-      {isProposeUserOpen && (
-        <ProposeUserModal
-          isOpen={isProposeUserOpen}
-          onClose={() => setIsProposeUserOpen(false)}
-          officeName={offices.find((o) => o.id === currentUser?.officeId)?.name}
-          onSuccess={fetchAllData}
-        />
-      )}
+        {isProposeUserOpen && (
+          <ProposeUserModal
+            isOpen={isProposeUserOpen}
+            onClose={() => setIsProposeUserOpen(false)}
+            officeName={offices.find((o) => o.id === currentUser?.officeId)?.name}
+            onSuccess={fetchAllData}
+          />
+        )}
 
-      {currentUser && (
-        <ChangePasswordModal
-          isOpen={isChangePasswordOpen || currentUser.mustChangePassword}
-          onClose={() => setIsChangePasswordOpen(false)}
-          currentUser={currentUser}
-          onUpdateUser={setCurrentUser}
-        />
-      )}
+        {currentUser && (
+          <ChangePasswordModal
+            isOpen={isChangePasswordOpen || currentUser.mustChangePassword}
+            onClose={() => setIsChangePasswordOpen(false)}
+            currentUser={currentUser}
+            onUpdateUser={setCurrentUser}
+          />
+        )}
+      </Suspense>
     </div>
   );
 }

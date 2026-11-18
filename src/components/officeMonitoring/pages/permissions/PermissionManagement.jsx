@@ -4,6 +4,7 @@ import { getBranches } from '../../services/branchService'
 import { getForms } from '../../services/formService'
 import { getUsersByRole } from '../../services/userService'
 import { useAuth } from '../../context/AuthContext'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 
 export default function PermissionManagement() {
@@ -15,6 +16,7 @@ export default function PermissionManagement() {
   const [employees, setEmployees] = useState([])
   const [loading, setLoading] = useState(false)
   const [modalOpen, setModalOpen] = useState(false)
+  const [pendingRevokeId, setPendingRevokeId] = useState(null)
   const [formData, setFormData] = useState({
     branch_code: '',
     form_id: '',
@@ -74,8 +76,14 @@ export default function PermissionManagement() {
     }
   }
 
-  const handleRevoke = async (id) => {
-    if (!confirm('Revoke this permission?')) return
+  const handleRevoke = (id) => {
+    setPendingRevokeId(id)
+  }
+
+  const confirmRevoke = async () => {
+    const id = pendingRevokeId
+    setPendingRevokeId(null)
+    if (!id) return
     try {
       await revokePermission(id)
       toast.success('Permission revoked!')
@@ -241,6 +249,15 @@ export default function PermissionManagement() {
           </div>
         </div>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(pendingRevokeId)}
+        title="Revoke Permission"
+        message="Revoke this permission? The user will lose temporary access immediately."
+        confirmText="Revoke"
+        danger={true}
+        onConfirm={confirmRevoke}
+        onCancel={() => setPendingRevokeId(null)}
+      />
     </div>
   )
 }

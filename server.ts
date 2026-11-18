@@ -548,6 +548,7 @@ const checkWriteAccess = (
       "Categories",
       "Users",
       "Allocations",
+      "FlowTools",
     ].includes(sheet)
   ) {
     if (!isStaff) {
@@ -555,6 +556,17 @@ const checkWriteAccess = (
         .status(403)
         .json({ error: `Forbidden: Insufficient privileges for ${sheet}` });
     }
+  }
+  if (
+    ["StockProProducts", "StockProBranches", "StockProVoucherPads"].includes(
+      sheet,
+    ) &&
+    req.method === "DELETE" &&
+    !isStaff
+  ) {
+    return res
+      .status(403)
+      .json({ error: `Forbidden: Only admins can delete from ${sheet}` });
   }
   next();
 };
@@ -638,7 +650,12 @@ sheetsList.forEach((sheet) => {
           "Moderator",
         ].includes(user.role);
         if (
-          ["Expenses", "NoteSheets", "PostFactoProposals"].includes(sheet) &&
+          [
+            "Expenses",
+            "NoteSheets",
+            "PostFactoProposals",
+            "ToolDocuments",
+          ].includes(sheet) &&
           !isStaff
         ) {
           if (req.body.officeId && req.body.officeId !== user.officeId) {
@@ -701,7 +718,7 @@ sheetsList.forEach((sheet) => {
         const result = await withSheetLock(lockedSheets, async () => {
           const data = getSheetData(sheet);
           const rawItem = {
-            id: `${sheet.toLowerCase().slice(0, 3)}-${Date.now()}`,
+            id: `${sheet.toLowerCase().slice(0, 3)}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
             ...validatedBody,
           };
 
@@ -815,6 +832,42 @@ sheetsList.forEach((sheet) => {
             }
           }
 
+          if (sheet === "ToolDocuments") {
+            if (!isStaff) {
+              newItem.officeId = user.officeId;
+            } else if (!newItem.officeId) {
+              newItem.officeId = user.officeId || "off-ho";
+            }
+            if (!newItem.createdBy) {
+              newItem.createdBy = user.userId;
+            }
+            if (typeof newItem.customHtml === "string") {
+              newItem.customHtml = sanitizeHtmlServer(newItem.customHtml);
+            }
+            if (newItem.customPages && typeof newItem.customPages === "object") {
+              const sanitizedPages: Record<string, string> = {};
+              for (const [k, v] of Object.entries(newItem.customPages)) {
+                sanitizedPages[k] = typeof v === "string" ? sanitizeHtmlServer(v) : "";
+              }
+              newItem.customPages = sanitizedPages;
+            }
+            if (newItem.payload && typeof newItem.payload === "object") {
+              if (newItem.payload.customPages && typeof newItem.payload.customPages === "object") {
+                const sanitizedPayloadPages: Record<string, string> = {};
+                for (const [k, v] of Object.entries(newItem.payload.customPages)) {
+                  sanitizedPayloadPages[k] = typeof v === "string" ? sanitizeHtmlServer(v) : "";
+                }
+                newItem.payload = { ...newItem.payload, customPages: sanitizedPayloadPages };
+              }
+              if (typeof newItem.payload.textTemplate === "string" && /<[a-z][\s\S]*>/i.test(newItem.payload.textTemplate)) {
+                newItem.payload = {
+                  ...newItem.payload,
+                  textTemplate: sanitizeHtmlServer(newItem.payload.textTemplate),
+                };
+              }
+            }
+          }
+
           if (sheet === "Users") {
             if (newItem.role === "Super Admin" && user.role !== "Super Admin") {
               const err: any = new Error(
@@ -853,6 +906,16 @@ sheetsList.forEach((sheet) => {
             if (syncedNs) {
               newItem.noteSheetId = syncedNs.id;
             }
+          }
+
+          const existingDupIdx = data.findIndex((it: any) => it.id === newItem.id);
+          if (existingDupIdx !== -1) {
+            if (["ToolDocuments", "StockProProducts", "StockProBranches", "StockProInvoices", "StockProVoucherPads"].includes(sheet)) {
+              return data[existingDupIdx];
+            }
+            const err: any = new Error("Record with this ID already exists.");
+            err.statusCode = 409;
+            throw err;
           }
 
           data.push(newItem);
@@ -954,7 +1017,12 @@ sheetsList.forEach((sheet) => {
             "Moderator",
           ].includes(user.role);
           if (
-            ["Expenses", "NoteSheets", "PostFactoProposals"].includes(sheet) &&
+            [
+              "Expenses",
+              "NoteSheets",
+              "PostFactoProposals",
+              "ToolDocuments",
+            ].includes(sheet) &&
             !isStaff
           ) {
             const existingItem = data[index];
@@ -968,6 +1036,21 @@ sheetsList.forEach((sheet) => {
               );
               err.statusCode = 403;
               throw err;
+            }
+            if (sheet === "PostFactoProposals") {
+              if (existingItem.status === "Sanctioned") {
+                const err: any = new Error(
+                  "অনুমোদিত খরচোত্তর প্রস্তাব শুধুমাত্র এডমিন সম্পাদনা করতে পারবেন। / Only admins can edit sanctioned proposals.",
+                );
+                err.statusCode = 403;
+                throw err;
+              }
+              delete validatedBody.status;
+              delete validatedBody.sanctionedAmount;
+              delete validatedBody.sanctionMemoNo;
+              delete validatedBody.sanctionDate;
+              delete validatedBody.sanctionedBy;
+              delete validatedBody.sanctionedAt;
             }
           }
 
@@ -1167,6 +1250,45 @@ sheetsList.forEach((sheet) => {
             }
           }
 
+          if (sheet === "ToolDocuments") {
+            if (typeof updatePayload.customHtml === "string") {
+              updatePayload.customHtml = sanitizeHtmlServer(updatePayload.customHtml);
+            }
+            if (
+              updatePayload.customPages &&
+              typeof updatePayload.customPages === "object"
+            ) {
+              const sanitizedPages: Record<string, string> = {};
+              for (const [k, v] of Object.entries(updatePayload.customPages)) {
+                sanitizedPages[k] =
+                  typeof v === "string" ? sanitizeHtmlServer(v) : "";
+              }
+              updatePayload.customPages = sanitizedPages;
+            }
+            if (updatePayload.payload && typeof updatePayload.payload === "object") {
+              if (updatePayload.payload.customPages && typeof updatePayload.payload.customPages === "object") {
+                const sanitizedPayloadPages: Record<string, string> = {};
+                for (const [k, v] of Object.entries(updatePayload.payload.customPages)) {
+                  sanitizedPayloadPages[k] =
+                    typeof v === "string" ? sanitizeHtmlServer(v) : "";
+                }
+                updatePayload.payload = {
+                  ...updatePayload.payload,
+                  customPages: sanitizedPayloadPages,
+                };
+              }
+              if (
+                typeof updatePayload.payload.textTemplate === "string" &&
+                /<[a-z][\s\S]*>/i.test(updatePayload.payload.textTemplate)
+              ) {
+                updatePayload.payload = {
+                  ...updatePayload.payload,
+                  textTemplate: sanitizeHtmlServer(updatePayload.payload.textTemplate),
+                };
+              }
+            }
+          }
+
           if (sheet === "Users") {
             if (updatePayload.password) {
               const newSalt = crypto.randomBytes(16).toString("hex");
@@ -1287,7 +1409,15 @@ sheetsList.forEach((sheet) => {
             "HeadOfficeAdmin",
             "Moderator",
           ].includes(user.role);
-          if (["Expenses", "NoteSheets"].includes(sheet) && !isStaff) {
+          if (
+            [
+              "Expenses",
+              "NoteSheets",
+              "PostFactoProposals",
+              "ToolDocuments",
+            ].includes(sheet) &&
+            !isStaff
+          ) {
             if (item && item.officeId !== user.officeId) {
               const err: any = new Error(
                 "Forbidden: Cannot delete records for other offices",
@@ -1303,6 +1433,7 @@ sheetsList.forEach((sheet) => {
               "Expenses",
               "NoteSheets",
               "OpeningBalances",
+              "PostFactoProposals",
             ].includes(sheet)
           ) {
             if (
@@ -1358,7 +1489,7 @@ sheetsList.forEach((sheet) => {
             }
           }
 
-          if (sheet === "Expenses") {
+          if (sheet === "Expenses" || sheet === "PostFactoProposals") {
             const itemToDelete = data.find((i: any) => i.id === id);
             const noteSheets = getSheetData("NoteSheets");
             const remainingNoteSheets = noteSheets.filter(
@@ -1415,6 +1546,8 @@ app.post(
         sanctionDocument,
         letterNo,
         letterDate,
+        totalAmount,
+        bidders,
       } = req.body;
       const user = (req as any).user;
 
@@ -1446,6 +1579,16 @@ app.post(
             proposals[idx].sanctionDate = sanctionDate;
           if (letterNo !== undefined) proposals[idx].letterNo = letterNo;
           if (letterDate !== undefined) proposals[idx].letterDate = letterDate;
+          if (totalAmount !== undefined && Number(totalAmount) > 0) {
+            proposals[idx].totalAmount = Number(totalAmount);
+          }
+          if (Array.isArray(bidders)) {
+            proposals[idx].bidders = bidders.map((b: any) => ({
+              name: String(b?.name || ""),
+              address: String(b?.address || ""),
+              price: Number(b?.price || 0),
+            }));
+          }
           if (sanctionedAmount !== undefined) {
             proposals[idx].sanctionedAmount = Number(sanctionedAmount);
           }
@@ -1882,6 +2025,14 @@ app.get("/api/upload/:filename", requireAuth, (req, res) => {
         (p: any) => p.sanctionDocument && p.sanctionDocument.includes(filename),
       );
 
+      const toolDocs = getSheetData("ToolDocuments");
+      const matchedToolDoc = toolDocs.find(
+        (td: any) =>
+          (typeof td.payload?.imageUrl === "string" &&
+            td.payload.imageUrl.includes(filename)) ||
+          (typeof td.imageUrl === "string" && td.imageUrl.includes(filename)),
+      );
+
       if (matchedExpense && matchedExpense.officeId !== user.officeId) {
         return res.status(403).json({
           error:
@@ -1894,6 +2045,16 @@ app.get("/api/upload/:filename", requireAuth, (req, res) => {
             "আপনার এই অফিসের সংযুক্তি দেখার অনুমতি নেই। / You do not have permission to view attachments for this office.",
         });
       }
+      if (
+        matchedToolDoc &&
+        matchedToolDoc.officeId &&
+        matchedToolDoc.officeId !== user.officeId
+      ) {
+        return res.status(403).json({
+          error:
+            "আপনার এই অফিসের সংযুক্তি দেখার অনুমতি নেই। / You do not have permission to view attachments for this office.",
+        });
+      }
     }
 
     const ext = path.extname(filename).toLowerCase();
@@ -1901,6 +2062,8 @@ app.get("/api/upload/:filename", requireAuth, (req, res) => {
     if (ext === ".pdf") contentType = "application/pdf";
     else if (ext === ".png") contentType = "image/png";
     else if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+    else if (ext === ".webp") contentType = "image/webp";
+    else if (ext === ".gif") contentType = "image/gif";
     else if (ext === ".docx")
       contentType =
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document";

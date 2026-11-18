@@ -17,6 +17,8 @@ import {
   Download,
   Edit3,
   Eye,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { apiFetch } from "../api";
 import { useTheme } from "../context/ThemeContext";
@@ -24,6 +26,9 @@ import {
   GlobalDocumentWatermark,
   getCleanInstitutionName,
 } from "../utils/documentBranding";
+import { RichDocumentEditor } from "./RichDocumentEditor";
+import { sanitizeHtml } from "../utils/sanitize";
+import { downloadWordHtmlDocument } from "../utils/documentPrint";
 
 interface MiscellaneousViewProps {
   currentUser: User | null;
@@ -86,9 +91,17 @@ export function MiscellaneousView({
   >({});
   const [wordTextContent, setWordTextContent] = useState("");
   const [isEditingWordText, setIsEditingWordText] = useState(false);
+  const [statusToast, setStatusToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [deletingTemplateId, setDeletingTemplateId] = useState<string | null>(null);
+
+  const showStatusToast = (type: "success" | "error", text: string) => {
+    setStatusToast({ type, text });
+    setTimeout(() => setStatusToast(null), 4000);
+  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const wordPreviewRef = useRef<HTMLDivElement>(null);
   const dragStartPos = useRef({ x: 0, y: 0 });
   const fieldStartPos = useRef({ x: 0, y: 0 });
 
@@ -237,71 +250,101 @@ export function MiscellaneousView({
     );
   };
 
-  useEffect(() => {
-    const saved = localStorage.getItem("misc_form_templates");
-    if (saved) {
-      try {
-        setTemplates(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load templates", e);
-      }
-    } else {
+  const saveTemplatesCache = (newTemplates: FormTemplate[]) => {
+    setTemplates(newTemplates);
+    try {
+      localStorage.setItem("misc_form_templates", JSON.stringify(newTemplates));
+    } catch (e) {
+      console.warn("Local template cache warning:", e);
+    }
+  };
 
-      const initial: FormTemplate[] = [
-        {
-          id: "seed-leave-app",
-          title:
-            language === "bn"
-              ? "নৈমিত্তিক ছুটির আবেদন ফর্ম (ইমেজ)"
-              : "Casual Leave Application (Image)",
-          imageUrl:
-            "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
-          fileName: "casual_leave.png",
-          fileType: "image",
-          uploadedAt: new Date().toLocaleDateString("bn-BD"),
-          fields: [
-            {
-              id: "f1",
-              text:
-                language === "bn"
-                  ? "বরাবর, শাখা ব্যবস্থাপক"
-                  : "To, Branch Manager",
-              x: 15,
-              y: 15,
-              fontSize: 16,
-            },
-            {
-              id: "f2",
-              text:
-                language === "bn"
-                  ? "বাঘাইছড়ি শাখা, রাঙ্গামাটি"
-                  : "Baghaichari Branch",
-              x: 15,
-              y: 18,
-              fontSize: 16,
-            },
-            {
-              id: "f3",
-              text:
-                language === "bn"
-                  ? "৩ দিন (১৫/১০/২০২৬ থেকে ১৭/১০/২০২৬)"
-                  : "3 Days",
-              x: 30,
-              y: 45,
-              fontSize: 16,
-            },
-          ],
-        },
-        {
-          id: "seed-vehicle-req",
-          title:
-            language === "bn"
-              ? "যানবাহন রিকুইজিশন ফরম (ওয়ার্ড টেমপ্লেট)"
-              : "Vehicle Requisition Form (Word Template)",
-          fileName: "vehicle_requisition.docx",
-          fileType: "word",
-          uploadedAt: new Date().toLocaleDateString("bn-BD"),
-          textTemplate: `ফ্লোবোর্ড এন্টারপ্রাইজ ওয়ার্কস্পেস
+  const upsertTemplateToDb = async (tpl: FormTemplate): Promise<boolean> => {
+    const body = {
+      id: tpl.id,
+      toolId: "miscellaneous",
+      toolType: "misc_form_template",
+      title: tpl.title,
+      docDate: new Date().toISOString().slice(0, 10),
+      officeId: currentUser?.officeId || "off-ho",
+      createdBy: currentUser?.userId || "",
+      payload: tpl,
+    };
+    const putRes = await apiFetch(`/api/tooldocuments/${tpl.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (putRes.ok) return true;
+    if (putRes.status === 404) {
+      const postRes = await apiFetch("/api/tooldocuments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      return postRes.ok;
+    }
+    return false;
+  };
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    const getSeedTemplates = (): FormTemplate[] => [
+      {
+        id: "seed-leave-app",
+        title:
+          language === "bn"
+            ? "নৈমিত্তিক ছুটির আবেদন ফর্ম (ইমেজ)"
+            : "Casual Leave Application (Image)",
+        imageUrl:
+          "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80",
+        fileName: "casual_leave.png",
+        fileType: "image",
+        uploadedAt: new Date().toLocaleDateString("bn-BD"),
+        fields: [
+          {
+            id: "f1",
+            text:
+              language === "bn"
+                ? "বরাবর, শাখা ব্যবস্থাপক"
+                : "To, Branch Manager",
+            x: 15,
+            y: 15,
+            fontSize: 16,
+          },
+          {
+            id: "f2",
+            text:
+              language === "bn"
+                ? "বাঘাইছড়ি শাখা, রাঙ্গামাটি"
+                : "Baghaichari Branch",
+            x: 15,
+            y: 18,
+            fontSize: 16,
+          },
+          {
+            id: "f3",
+            text:
+              language === "bn"
+                ? "৩ দিন (১৫/১০/২০২৬ থেকে ১৭/১০/২০২৬)"
+                : "3 Days",
+            x: 30,
+            y: 45,
+            fontSize: 16,
+          },
+        ],
+      },
+      {
+        id: "seed-vehicle-req",
+        title:
+          language === "bn"
+            ? "যানবাহন রিকুইজিশন ফরম (ওয়ার্ড টেমপ্লেট)"
+            : "Vehicle Requisition Form (Word Template)",
+        fileName: "vehicle_requisition.docx",
+        fileType: "word",
+        uploadedAt: new Date().toLocaleDateString("bn-BD"),
+        textTemplate: `ফ্লোবোর্ড এন্টারপ্রাইজ ওয়ার্কস্পেস
 বাঘাইছড়ি শাখা কার্যালয়, রাঙ্গামাটি।
 
 স্মারক নম্বর: [স্মারক নম্বর]
@@ -325,17 +368,87 @@ export function MiscellaneousView({
 
 আবেদনকারীর স্বাক্ষর: ____________________
 পদবী: [পদবী]`,
-        },
-      ];
-      setTemplates(initial);
-      localStorage.setItem("misc_form_templates", JSON.stringify(initial));
-    }
-  }, [language]);
+      },
+    ];
 
-  const saveTemplates = (newTemplates: FormTemplate[]) => {
-    setTemplates(newTemplates);
-    localStorage.setItem("misc_form_templates", JSON.stringify(newTemplates));
-  };
+    const loadAndMigrateTemplates = async () => {
+      let localList: FormTemplate[] = [];
+      try {
+        const saved = localStorage.getItem("misc_form_templates");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) localList = parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse local templates", e);
+      }
+
+      if (localList.length > 0 && !isCancelled) {
+        setTemplates(localList);
+      }
+
+      try {
+        const res = await apiFetch("/api/tooldocuments");
+        if (res.ok) {
+          const allDocs = await res.json();
+          const dbDocs = Array.isArray(allDocs)
+            ? allDocs.filter((d: any) => d.toolType === "misc_form_template")
+            : [];
+          const dbTemplates: FormTemplate[] = dbDocs
+            .map((d: any) => {
+              const p = typeof d.payload === "string" ? JSON.parse(d.payload) : d.payload;
+              if (!p) return null;
+              return { ...p, id: d.id || p.id, title: p.title || d.title } as FormTemplate;
+            })
+            .filter(Boolean) as FormTemplate[];
+
+          const dbIds = new Set(dbTemplates.map((t) => t.id));
+          // Zero data loss: migrate any existing localStorage templates not yet present in SQLite
+          const toMigrate =
+            localList.length > 0
+              ? localList.filter((t) => t?.id && !dbIds.has(t.id))
+              : dbTemplates.length === 0
+                ? getSeedTemplates()
+                : [];
+
+          const migratedTemplates: FormTemplate[] = [];
+          for (const tpl of toMigrate) {
+            try {
+              const ok = await upsertTemplateToDb(tpl);
+              if (ok) migratedTemplates.push(tpl);
+            } catch (migErr) {
+              console.warn("Template migration warning:", migErr);
+            }
+          }
+
+          // Combine DB + migrated + any un-migrated local templates so nothing is ever lost
+          const mergedMap = new Map<string, FormTemplate>();
+          for (const t of dbTemplates) mergedMap.set(t.id, t);
+          for (const t of migratedTemplates) mergedMap.set(t.id, t);
+          for (const t of localList) {
+            if (t?.id && !mergedMap.has(t.id)) mergedMap.set(t.id, t);
+          }
+
+          const finalList = Array.from(mergedMap.values());
+          if (!isCancelled) {
+            saveTemplatesCache(finalList.length > 0 ? finalList : getSeedTemplates());
+          }
+          return;
+        }
+      } catch (err) {
+        console.warn("Could not sync misc templates with SQLite, keeping local cache:", err);
+      }
+
+      if (!isCancelled && localList.length === 0) {
+        saveTemplatesCache(getSeedTemplates());
+      }
+    };
+
+    loadAndMigrateTemplates();
+    return () => {
+      isCancelled = true;
+    };
+  }, [language]);
 
   const extractVariables = (text: string): string[] => {
     const matchesBracket = text.match(/\[([^\]]+)\]/g) || [];
@@ -389,7 +502,8 @@ export function MiscellaneousView({
     const isDoc = /\.(docx|doc|txt)$/i.test(file.name);
 
     if (!isImage && !isDoc) {
-      alert(
+      showStatusToast(
+        "error",
         language === "bn"
           ? "অনুমোদিত ফাইল ফরম্যাট: png, jpg, jpeg, webp, gif, docx, doc, txt"
           : "Supported formats: png, jpg, jpeg, webp, gif, docx, doc, txt",
@@ -472,19 +586,31 @@ export function MiscellaneousView({
           fields: [],
         };
 
+        const ok = await upsertTemplateToDb(newTemplate);
         const updated = [newTemplate, ...templates];
-        saveTemplates(updated);
+        saveTemplatesCache(updated);
         setUploadTitle("");
         if (fileInputRef.current) fileInputRef.current.value = "";
 
-        alert(
-          language === "bn"
-            ? "ফর্ম টেমপ্লেটটি সফলভাবে যুক্ত হয়েছে!"
-            : "Form template added successfully!",
-        );
+        if (ok) {
+          showStatusToast(
+            "success",
+            language === "bn"
+              ? "ফর্ম টেমপ্লেটটি ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!"
+              : "Form template saved to database successfully!",
+          );
+        } else {
+          showStatusToast(
+            "error",
+            language === "bn"
+              ? "টেমপ্লেটটি লোকাল ক্যাশে যুক্ত হয়েছে, তবে সার্ভার ডাটাবেজে সিঙ্ক হতে পারেনি।"
+              : "Template added locally, but server database sync failed.",
+          );
+        }
       } catch (error: any) {
         console.error("Error uploading template", error);
-        alert(
+        showStatusToast(
+          "error",
           language === "bn"
             ? `আপলোড করতে সমস্যা হয়েছে: ${error.message || error}`
             : `Upload failed: ${error.message || error}`,
@@ -498,15 +624,47 @@ export function MiscellaneousView({
 
   const handleDeleteTemplate = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (
-      confirm(
+    setDeletingTemplateId(id);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    if (!deletingTemplateId) return;
+    const targetId = deletingTemplateId;
+    setDeletingTemplateId(null);
+    try {
+      const res = await apiFetch(`/api/tooldocuments/${targetId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok && res.status !== 404) {
+        const errData = await res.json().catch(() => ({}));
+        showStatusToast(
+          "error",
+          errData.error ||
+            (language === "bn"
+              ? "ডাটাবেজ থেকে টেমপ্লেটটি মুছে ফেলা যায়নি।"
+              : "Could not delete template from database."),
+        );
+        return;
+      }
+      const updated = templates.filter((t) => t.id !== targetId);
+      saveTemplatesCache(updated);
+      if (selectedTemplate?.id === targetId) {
+        setSelectedTemplate(null);
+      }
+      showStatusToast(
+        "success",
         language === "bn"
-          ? "আপনি কি নিশ্চিতভাবে এই ফর্ম টেমপ্লেটটি ডিলিট করতে চান?"
-          : "Are you sure you want to delete this template?",
-      )
-    ) {
-      const updated = templates.filter((t) => t.id !== id);
-      saveTemplates(updated);
+          ? "টেমপ্লেটটি সফলভাবে মুছে ফেলা হয়েছে।"
+          : "Template deleted successfully.",
+      );
+    } catch (err) {
+      console.error("Delete template failed:", err);
+      showStatusToast(
+        "error",
+        language === "bn"
+          ? "সার্ভারের সাথে সংযোগ বিচ্ছিন্ন থাকায় মুছে ফেলা যায়নি।"
+          : "Server connection error while deleting template.",
+      );
     }
   };
 
@@ -626,30 +784,54 @@ export function MiscellaneousView({
     setActiveFieldId(newField.id);
   };
 
-  const handleSaveWorkspace = () => {
+  const escapeHtmlText = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+  const handleSaveWorkspace = async () => {
     if (!selectedTemplate) return;
-    const updated = templates.map((t) => {
-      if (t.id === selectedTemplate.id) {
-        return {
-          ...t,
-          fields: t.fileType === "image" ? overlayFields : undefined,
-          textTemplate: t.fileType === "word" ? wordTextContent : undefined,
-        };
-      }
-      return t;
-    });
-    saveTemplates(updated);
-    alert(
-      language === "bn"
-        ? "টেমপ্লেটের ডাটা সফলভাবে সংরক্ষণ করা হয়েছে।"
-        : "Fields saved successfully.",
+    const updatedTemplate: FormTemplate = {
+      ...selectedTemplate,
+      fields: selectedTemplate.fileType === "image" ? overlayFields : undefined,
+      textTemplate: selectedTemplate.fileType === "word" ? wordTextContent : undefined,
+    };
+    const updated = templates.map((t) =>
+      t.id === selectedTemplate.id ? updatedTemplate : t,
     );
+    saveTemplatesCache(updated);
+    setSelectedTemplate(updatedTemplate);
+    try {
+      const ok = await upsertTemplateToDb(updatedTemplate);
+      if (ok) {
+        showStatusToast(
+          "success",
+          language === "bn"
+            ? "টেমপ্লেটের ডাটা ডাটাবেজে সফলভাবে সংরক্ষণ করা হয়েছে।"
+            : "Template fields saved to database successfully.",
+        );
+      } else {
+        showStatusToast(
+          "error",
+          language === "bn"
+            ? "লোকাল ক্যাশে সংরক্ষিত হয়েছে, তবে সার্ভার ডাটাবেজে সংরক্ষণ ব্যর্থ হয়েছে।"
+            : "Saved locally, but failed to sync to database.",
+        );
+      }
+    } catch (err) {
+      console.error("Template DB save failed:", err);
+      showStatusToast(
+        "error",
+        language === "bn"
+          ? "সার্ভার ডাটাবেজে সংরক্ষণে ত্রুটি হয়েছে।"
+          : "Error saving template to database.",
+      );
+    }
   };
 
   const renderWordPreview = () => {
     let result = wordTextContent;
     Object.keys(wordTemplateValues).forEach((variable) => {
-      const val = wordTemplateValues[variable] || `______`;
+      const rawVal = wordTemplateValues[variable] || `______`;
+      const val = escapeHtmlText(rawVal);
       const escapedVar = variable.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 
       const regexBracket = new RegExp(`\\[${escapedVar}\\]`, "g");
@@ -665,13 +847,14 @@ export function MiscellaneousView({
     if (!/<[a-z][\s\S]*>/i.test(result)) {
       result = result.replace(/\r?\n/g, "<br />");
     }
-    return result;
+    return sanitizeHtml(result);
   };
 
   const renderWordPrintPreview = () => {
     let result = wordTextContent;
     Object.keys(wordTemplateValues).forEach((variable) => {
-      const val = wordTemplateValues[variable] || `______`;
+      const rawVal = wordTemplateValues[variable] || `______`;
+      const val = escapeHtmlText(rawVal);
       const escapedVar = variable.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
 
       const regexBracket = new RegExp(`\\[${escapedVar}\\]`, "g");
@@ -687,22 +870,85 @@ export function MiscellaneousView({
     if (!/<[a-z][\s\S]*>/i.test(result)) {
       result = result.replace(/\r?\n/g, "<br />");
     }
-    return result;
+    return sanitizeHtml(result);
   };
 
   const handleDownloadWordFile = (tpl: FormTemplate) => {
-
-    const element = document.createElement("a");
-    const file = new Blob([tpl.textTemplate || ""], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = tpl.fileName;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    downloadWordHtmlDocument({
+      title: tpl.title || "Word Template",
+      fileName: tpl.fileName.replace(/\.[^/.]+$/, "") + ".doc",
+      htmlContent: tpl.textTemplate || "",
+    });
   };
 
   const handlePrint = () => {
-    window.print();
+    const targetEl =
+      selectedTemplate?.fileType === "word"
+        ? document.querySelector(".print-word-container")
+        : document.querySelector(".print-workspace-container");
+
+    if (!targetEl) {
+      window.print();
+      return;
+    }
+
+    const existing = document.getElementById("misc-print-iframe");
+    if (existing) existing.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "misc-print-iframe";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    doc.open();
+    doc.write(`<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <title>${selectedTemplate?.title || "Miscellaneous Document"}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4 portrait; margin: ${selectedTemplate?.fileType === "image" ? "0" : "12mm"}; }
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    html, body { margin: 0; padding: 0; background: #fff; color: #000; font-family: 'Hind Siliguri', 'Nikosh', 'Kalpurush', serif; }
+    .print-workspace-container { position: relative; width: 100%; background: #fff; }
+    .print-form-wrapper { position: relative; width: 100%; }
+    .print-bg-image { width: 100%; display: block; }
+    .print-overlay-text { position: absolute; font-weight: bold; color: #000; white-space: nowrap; }
+    .print-word-container { position: relative; width: 100%; padding: 10px 14px; background: #fff; color: #000; line-height: 1.75; font-size: 14.5px; }
+    .print-word-text table { border-collapse: collapse !important; width: 100% !important; margin: 8px 0 !important; }
+    .print-word-text th, .print-word-text td { border: 1px solid #334155 !important; padding: 4px 6px !important; vertical-align: top !important; }
+    .watermark-container { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; z-index: 0; opacity: 0.06; }
+  </style>
+</head>
+<body>
+  <div class="${selectedTemplate?.fileType === "word" ? "print-word-container" : "print-workspace-container"}">
+    ${targetEl.innerHTML}
+  </div>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.focus(); window.print(); }, 300);
+    });
+  </script>
+</body>
+</html>`);
+    doc.close();
+
+    setTimeout(() => {
+      if (document.body.contains(iframe)) iframe.remove();
+    }, 60000);
   };
 
   return (
@@ -773,11 +1019,45 @@ export function MiscellaneousView({
             font-size: 16px !important;
             display: block !important;
           }
-           .print-word-text {
-             /* HTML structure spacing renders natively */
-           }
-        }
+          /* Word Preview & Print Table Styling */
+          .word-doc-rendered table,
+          .print-word-text table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 8px 0 !important;
+          }
+          .word-doc-rendered th,
+          .word-doc-rendered td,
+          .print-word-text th,
+          .print-word-text td {
+            border: 1px solid #334155 !important;
+            padding: 4px 6px !important;
+            vertical-align: top !important;
+          }
+          @media print {
+            .print-word-text {
+              /* HTML structure spacing renders natively */
+            }
+          }
       `}</style>
+
+      {/* In-App Floating Status Toast */}
+      {statusToast && (
+        <div
+          className={`fixed top-5 right-5 z-[90] px-4 py-3 rounded-xl shadow-xl border flex items-center gap-2.5 text-xs font-bold animate-fadeIn no-print ${
+            statusToast.type === "success"
+              ? "bg-emerald-50 border-emerald-300 text-emerald-900"
+              : "bg-rose-50 border-rose-300 text-rose-900"
+          }`}
+        >
+          {statusToast.type === "success" ? (
+            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+          ) : (
+            <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+          )}
+          <span>{statusToast.text}</span>
+        </div>
+      )}
 
       {/* Header Info Banner */}
       <div
@@ -1272,9 +1552,9 @@ export function MiscellaneousView({
             ) : (
               /* ================= WORD DOCUMENT TEMPLATE EDITOR ================= */
               <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-[400px]">
-                {/* Left Side: Auto-Generated Form Inputs / Template Editor Toggle */}
+                {/* Left Side: Auto-Generated Form Inputs / Rich Text & Table Template Editor */}
                 <div
-                  className={`w-full md:w-5/12 p-5 border-r overflow-y-auto flex flex-col gap-4 ${
+                  className={`w-full ${isEditingWordText ? "md:w-7/12" : "md:w-5/12"} p-5 border-r overflow-y-auto flex flex-col gap-4 transition-all ${
                     isCustom
                       ? "bg-[#181233]"
                       : isDark
@@ -1287,15 +1567,15 @@ export function MiscellaneousView({
                     <span className="text-xs font-bold text-slate-400">
                       {isEditingWordText
                         ? language === "bn"
-                          ? "টেমপ্লেট এডিটর মোড"
-                          : "Template Edit Mode"
+                          ? "টেক্সট ও টেবিল এডিটর মোড"
+                          : "Rich Text & Table Edit Mode"
                         : language === "bn"
                           ? "ফর্ম পূরণ মোড"
                           : "Form Fill Mode"}
                     </span>
                     <button
                       onClick={() => setIsEditingWordText(!isEditingWordText)}
-                      className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 ${
+                      className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                         isEditingWordText
                           ? "bg-amber-500 text-slate-950"
                           : "bg-blue-500 text-white hover:bg-blue-600"
@@ -1311,38 +1591,31 @@ export function MiscellaneousView({
                           ? "পূরণ ফর্মে ফিরুন"
                           : "Back to Fill Form"
                         : language === "bn"
-                          ? "টেমপ্লেট টেক্সট সম্পাদনা"
-                          : "Edit Template Text"}
+                          ? "টেমপ্লেট টেক্সট ও টেবিল এডিট"
+                          : "Edit Template & Tables"}
                     </button>
                   </div>
 
                   {isEditingWordText ? (
-                    /* Editor Input Area where they paste raw word content and define [variables] */
+                    /* Rich HTML & Table Editor supporting [variables], insert/merge/split/delete table cells */
                     <div className="space-y-3 flex-1 flex flex-col">
                       <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-400 block">
                           📝{" "}
                           {language === "bn"
-                            ? "ওয়ার্ড টেক্সট টেমপ্লেটটি পেস্ট করুন:"
-                            : "Paste Word Text Content:"}
+                            ? "ওয়ার্ড টেমপ্লেট (টেক্সট ও টেবিল) সম্পাদনা করুন:"
+                            : "Edit Word Template Content & Tables:"}
                         </label>
                         <p className="text-[10px] text-slate-400 leading-normal">
                           {language === "bn"
-                            ? "পরামর্শ: ওয়ার্ড ফাইলে যেখানে যেখানে পরিবর্তন করতে চান সেখানে থার্ড ব্র্যাকেটে ভ্যারিয়েবল লিখুন। যেমন: [স্মারক নম্বর], [তারিখ], [নাম], [শাখা] ইত্যাদি।"
-                            : "Tip: Use third brackets for editable fields like [Subject], [Date], [Name] to generate form inputs automatically."}
+                            ? "পরামর্শ: পরিবর্তনশীল স্থানের জন্য থার্ড ব্র্যাকেটে ভ্যারিয়েবল লিখুন (যেমন: [স্মারক নম্বর], [তারিখ], [নাম])। টেবিল বসাতে Table আইকন ব্যবহার করুন এবং সেলে মাউস সিলেক্ট করে Merge/Split/Delete করুন।"
+                            : "Tip: Use [Variable] brackets for fillable fields. Use the Table toolbar icon to insert tables and select cells to merge, split, or delete rows/columns."}
                         </p>
                       </div>
-                      <textarea
+                      <RichDocumentEditor
                         value={wordTextContent}
-                        onChange={(e) => setWordTextContent(e.target.value)}
-                        className={`w-full flex-1 min-h-[250px] p-3 text-xs font-mono rounded-xl border focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                          isCustom
-                            ? "bg-[#251d45] border-[#4b3b7a] text-purple-100"
-                            : isDark
-                              ? "bg-slate-800 border-slate-700 text-slate-200"
-                              : "bg-white border-slate-200 text-slate-800"
-                        }`}
-                        placeholder="Paste document content..."
+                        onChange={(html) => setWordTextContent(html)}
+                        minHeight={420}
                       />
                     </div>
                   ) : (
@@ -1414,7 +1687,8 @@ export function MiscellaneousView({
 
                       {/* Form content with dynamic highlighted variables */}
                       <div
-                        className="text-slate-800 font-sans"
+                        ref={wordPreviewRef}
+                        className="text-slate-800 font-sans word-doc-rendered"
                         style={{ lineHeight: "1.8", fontSize: "15px" }}
                         dangerouslySetInnerHTML={{ __html: renderWordPreview() }}
                       />
@@ -1434,6 +1708,22 @@ export function MiscellaneousView({
               </span>
 
               <div className="flex gap-2">
+                {selectedTemplate.fileType === "word" && (
+                  <button
+                    onClick={() => {
+                      downloadWordHtmlDocument({
+                        title: selectedTemplate.title || "Word Document",
+                        fileName: `${selectedTemplate.title || "document"}_${new Date().toISOString().slice(0, 10)}.doc`,
+                        htmlContent: renderWordPrintPreview(),
+                      });
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow cursor-pointer"
+                  >
+                    <Download className="w-4 h-4" />
+                    {language === "bn" ? "Word (.doc)" : "Word (.doc)"}
+                  </button>
+                )}
+
                 <button
                   onClick={handleSaveWorkspace}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 border ${
@@ -1508,6 +1798,41 @@ export function MiscellaneousView({
               className="print-word-text font-sans mt-6"
               dangerouslySetInnerHTML={{ __html: renderWordPrintPreview() }}
             />
+          </div>
+        </div>
+      )}
+
+      {/* In-App Delete Template Confirmation Modal */}
+      {deletingTemplateId && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-[95] flex items-center justify-center p-4 no-print">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <AlertTriangle size={22} />
+              <h4 className="font-bold text-base text-slate-900">
+                {language === "bn" ? "টেমপ্লেট ডিলিট করবেন?" : "Delete Template?"}
+              </h4>
+            </div>
+            <p className="text-xs text-slate-600">
+              {language === "bn"
+                ? "আপনি কি নিশ্চিতভাবে এই ফর্ম টেমপ্লেটটি স্থায়ীভাবে মুছে ফেলতে চান?"
+                : "Are you sure you want to delete this template?"}
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeletingTemplateId(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "বাতিল" : "Cancel"}
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteTemplate}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+              >
+                {language === "bn" ? "হ্যাঁ, মুছে ফেলুন" : "Delete"}
+              </button>
+            </div>
           </div>
         </div>
       )}

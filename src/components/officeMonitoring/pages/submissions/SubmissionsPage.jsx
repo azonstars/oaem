@@ -7,6 +7,7 @@ import { getBranches } from '../../services/branchService'
 import { notifyBranchOnCheckerAction } from '../../services/notificationService'
 import { logActivity, AUDIT_ACTIONS } from '../../services/auditService'
 import { ROLES } from '../../constants/roles'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 
 const STATUS_COLORS = {
@@ -33,6 +34,7 @@ export default function SubmissionsPage() {
   const [showRejectModal, setShowRejectModal] = useState(false)
   const [rejectReason, setRejectReason] = useState('')
   const [rejectTarget, setRejectTarget] = useState(null)
+  const [confirmApproveSub, setConfirmApproveSub] = useState(null)
   const [processing, setProcessing] = useState(false)
   const [filters, setFilters] = useState({
     status: 'submitted',
@@ -93,8 +95,14 @@ export default function SubmissionsPage() {
     loadSubmissions(filters)
   }
 
-  const handleApprove = async (sub) => {
-    if (!window.confirm(`"${sub.forms?.title}" — Branch: ${sub.branch_code}\nএটি Approve করবেন?`)) return
+  const handleApprove = (sub) => {
+    setConfirmApproveSub(sub)
+  }
+
+  const executeApprove = async () => {
+    const sub = confirmApproveSub
+    if (!sub) return
+    setConfirmApproveSub(null)
     setProcessing(true)
     try {
       await approveSubmission(sub.id, profile.id)
@@ -434,6 +442,14 @@ export default function SubmissionsPage() {
           </div>
         </div>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(confirmApproveSub)}
+        title="সাবমিশন অনুমোদন করবেন?"
+        message={`"${confirmApproveSub?.forms?.title || ''}" — Branch: ${confirmApproveSub?.branch_code || ''}\nএটি Approve করবেন?`}
+        confirmLabel="হ্যাঁ, Approve করুন"
+        onConfirm={executeApprove}
+        onCancel={() => setConfirmApproveSub(null)}
+      />
     </div>
   )
 }

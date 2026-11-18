@@ -248,6 +248,12 @@ export function NoteSheetPreviewModal({
   const [isSaving, setIsSaving] = useState(false);
   const [contentSaveSuccess, setContentSaveSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [templateStatusMsg, setTemplateStatusMsg] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
+  const [templateTitleInput, setTemplateTitleInput] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
 
   const [legalPartition, setLegalPartition] = useState<
@@ -750,15 +756,16 @@ export function NoteSheetPreviewModal({
     }
   };
 
-  const handleSaveAsNoteTemplate = async () => {
+  const handleSaveAsNoteTemplate = () => {
+    setTemplateTitleInput(`${currentNoteSheet.title} (কাস্টম টেমপ্লেট)`);
+    setShowSaveTemplateModal(true);
+  };
+
+  const confirmSaveAsNoteTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
-      const templateTitle = window.prompt(
-        language === "bn"
-          ? "ভবিষ্যতে ব্যবহারের জন্য এই নোটশীটের টেমপ্লেট শিরোনাম লিখুন:"
-          : "Enter template title to save for future use:",
-        `${currentNoteSheet.title} (কাস্টম টেমপ্লেট)`,
-      );
-      if (!templateTitle || !templateTitle.trim()) return;
+      const templateTitle = templateTitleInput.trim();
+      if (!templateTitle) return;
 
       let body =
         activeDocTab === "notesheet"
@@ -788,23 +795,35 @@ export function NoteSheetPreviewModal({
             effectiveCategoryId !== "default"
               ? effectiveCategoryId
               : categories?.[0]?.id || "all",
-          title: templateTitle.trim(),
+          title: templateTitle,
           bodyTemplate: body,
         }),
       });
 
+      setShowSaveTemplateModal(false);
       if (res.ok) {
-        alert(
-          language === "bn"
-            ? "নোট টেমপ্লেট হিসেবে সফলভাবে সংরক্ষিত হয়েছে! এখন নোট টেমপ্লেট তালিকা থেকে যেকোনো সময় এটি ব্যবহার করতে পারবেন।"
-            : "Successfully saved as a Note Template!",
-        );
+        setTemplateStatusMsg({
+          type: "success",
+          text:
+            language === "bn"
+              ? "নোট টেমপ্লেট হিসেবে সফলভাবে সংরক্ষিত হয়েছে!"
+              : "Successfully saved as a Note Template!",
+        });
       } else {
         const err = await res.json().catch(() => ({}));
-        alert(err.error || "টেমপ্লেট সংরক্ষণ করতে সমস্যা হয়েছে।");
+        setTemplateStatusMsg({
+          type: "error",
+          text: err.error || "টেমপ্লেট সংরক্ষণ করতে সমস্যা হয়েছে।",
+        });
       }
+      setTimeout(() => setTemplateStatusMsg(null), 4000);
     } catch (err: any) {
-      alert(err.message || "Failed to save template");
+      setShowSaveTemplateModal(false);
+      setTemplateStatusMsg({
+        type: "error",
+        text: err.message || "Failed to save template",
+      });
+      setTimeout(() => setTemplateStatusMsg(null), 4000);
     }
   };
 
@@ -966,6 +985,26 @@ export function NoteSheetPreviewModal({
       showCharsCounter: false,
       showWordsCounter: false,
       showXPathInStatusbar: false,
+      table: {
+        selectionCellStyle:
+          "border: 2px solid #2563eb !important; background-color: #eff6ff !important;",
+      },
+      popup: {
+        cells: [
+          "addcolumn",
+          "addrow",
+          "|",
+          "merge",
+          "splitv",
+          "splith",
+          "|",
+          "delete",
+          "|",
+          "align",
+          "valign",
+          "brush",
+        ],
+      },
       buttons: [
         "source",
         "|",
@@ -1446,402 +1485,11 @@ export function NoteSheetPreviewModal({
     const { formattedContent, govtHeaderHtml, signaturesHtml, watermarkHtml } =
       getFullDocumentHtml(false);
 
-    try {
-      const printWin = window.open("", "_blank", "width=900,height=950");
-      if (printWin) {
-        printWin.document.open();
-        printWin.document.write(`
-          <!DOCTYPE html>
-          <html>
-            <head>
-              <meta charset="utf-8"/>
-              <title>${noteSheet.title || "Note_Sheet"}</title>
-              <style>
-                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap');
-                
-                @page {
-                  size: ${pageWidthMm}mm ${pageHeightMm}mm ${settings.orientation};
-                  margin: 0;
-                }
-
-                @media print {
-                  .no-print { display: none !important; }
-                  html, body {
-                    width: ${pageWidthMm}mm !important;
-                    height: ${pageHeightMm}mm !important;
-                    max-height: ${pageHeightMm}mm !important;
-                    margin: 0 !important;
-                    padding: 0 !important;
-                    background: #ffffff !important;
-                    overflow: hidden !important;
-                    -webkit-print-color-adjust: exact !important;
-                    print-color-adjust: exact !important;
-                    page-break-after: avoid !important;
-                    break-after: avoid !important;
-                  }
-                  .page-wrapper {
-                    margin: 0 !important;
-                    box-shadow: none !important;
-                    width: ${pageWidthMm}mm !important;
-                    height: ${pageHeightMm}mm !important;
-                    max-height: ${pageHeightMm}mm !important;
-                    min-height: ${pageHeightMm}mm !important;
-                    overflow: hidden !important;
-                    box-sizing: border-box !important;
-                    page-break-after: avoid !important;
-                    page-break-inside: avoid !important;
-                    page-break-before: avoid !important;
-                    break-after: avoid !important;
-                    break-before: avoid !important;
-                    break-inside: avoid !important;
-                  }
-                  .content-container, .sheet-body {
-                    page-break-inside: avoid !important;
-                    break-inside: avoid !important;
-                  }
-                  table, tr, td, th, div, p, .signatures-section, .form1-approval-chain, .audit-approval-section {
-                    page-break-inside: avoid !important;
-                    break-inside: avoid !important;
-                  }
-                }
-
-                * { box-sizing: border-box; }
-                body {
-                  margin: 0;
-                  padding: 0;
-                  font-family: ${settings.fontFamily} !important;
-                  color: #000000;
-                  background: #f8fafc;
-                  -webkit-font-smoothing: antialiased;
-                }
-                body, table, th, td, div, p, span, tr, .forwarding-table, .forwarding-table th, .forwarding-table td {
-                  font-family: ${settings.fontFamily} !important;
-                }
-
-                .print-toolbar {
-                  background: #0f172a;
-                  color: #ffffff;
-                  padding: 12px 24px;
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                  position: sticky;
-                  top: 0;
-                  z-index: 9999;
-                }
-
-                .print-btn {
-                  background: #059669;
-                  color: #ffffff;
-                  border: none;
-                  padding: 8px 18px;
-                  font-size: 13px;
-                  font-weight: bold;
-                  border-radius: 8px;
-                  cursor: pointer;
-                  display: inline-flex;
-                  align-items: center;
-                  gap: 6px;
-                }
-                .print-btn:hover { background: #10b981; }
-
-                .page-wrapper {
-                  width: ${pageWidthMm}mm;
-                  min-height: ${pageHeightMm}mm;
-                  height: auto;
-                  margin: 20px auto;
-                  background: #ffffff;
-                  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-                  padding-top: ${positionStyles.paddingTop};
-                  padding-bottom: ${positionStyles.paddingBottom};
-                  padding-left: ${positionStyles.paddingLeft};
-                  padding-right: ${positionStyles.paddingRight};
-                  display: flex;
-                  flex-direction: column;
-                  box-sizing: border-box;
-                }
-
-                .spacer-top { flex: ${positionStyles.spacerTopFlex}; min-height: 0; }
-                .spacer-bottom { flex: ${positionStyles.spacerBottomFlex}; min-height: 0; }
-
-                .content-container {
-                  width: 100%;
-                  font-size: ${settings.fontSizePt}pt;
-                  line-height: ${settings.lineSpacing};
-                  letter-spacing: ${settings.letterSpacing || 0}px;
-                  font-weight: ${settings.isBold ? "700" : "400"};
-                  font-style: ${settings.isItalic ? "italic" : "normal"};
-                  text-decoration: ${settings.isUnderline ? "underline" : "none"};
-                }
-
-                .header-section {
-                  text-align: center;
-                  border-bottom: 1.5pt solid #000000;
-                  padding-bottom: 8pt;
-                  margin-bottom: ${settings.paragraphSpacing || 10}pt;
-                }
-
-                .header-main {
-                  font-size: ${Math.max(12, settings.fontSizePt + 3)}pt;
-                  font-weight: 700;
-                  margin: 0;
-                  letter-spacing: 0.5px;
-                  text-transform: uppercase;
-                }
-
-                .header-sub {
-                  font-size: ${Math.max(10, settings.fontSizePt)}pt;
-                  font-weight: 600;
-                  margin: 4pt 0 0 0;
-                  color: #1e293b;
-                }
-
-                .header-meta {
-                  font-size: ${Math.max(7, settings.fontSizePt - 3.5)}pt;
-                  font-family: monospace;
-                  color: #475569;
-                  margin-top: 5pt;
-                }
-
-                .sheet-body {
-                  text-align: ${settings.textAlign};
-                  ${settings.textAlign === "justify" ? "text-justify: inter-word;" : ""}
-                  word-break: normal;
-                  margin-top: ${settings.paragraphSpacing || 10}pt;
-                  margin-bottom: ${(settings.paragraphSpacing || 10) * 1.5}pt;
-                  white-space: normal;
-                  text-indent: ${settings.firstLineIndent || 0}mm;
-                }
-
-                table {
-                  width: 100% !important;
-                  border-collapse: collapse !important;
-                  margin: 6pt 0 !important;
-                  box-sizing: border-box !important;
-                }
-                table.budget-provision-table,
-                .budget-provision-table {
-                  border: none !important;
-                  font-size: ${Math.min(settings.fontSizePt, 10.5)}pt !important;
-                  margin: 4pt 0 !important;
-                }
-                table.budget-provision-table td,
-                .budget-provision-table td {
-                  border: none !important;
-                  font-size: ${Math.min(settings.fontSizePt, 10.5)}pt !important;
-                  padding: 1.5pt 4pt !important;
-                  line-height: 1.25 !important;
-                }
-                table:not(.budget-provision-table),
-                table[border="1"],
-                table[border="1.5"],
-                .quotation-table,
-                .quotation-bidders-table,
-                .forwarding-table {
-                  border-collapse: collapse !important;
-                  border: 1pt solid #000000 !important;
-                }
-                table:not(.budget-provision-table) th,
-                table:not(.budget-provision-table) td,
-                table[border="1"] th,
-                table[border="1"] td,
-                table[border="1.5"] th,
-                table[border="1.5"] td,
-                .quotation-table th,
-                .quotation-table td,
-                .quotation-bidders-table th,
-                .quotation-bidders-table td,
-                .forwarding-table th,
-                .forwarding-table td {
-                  border: 1pt solid #000000 !important;
-                }
-                table.quotation-bidders-table,
-                .quotation-bidders-table {
-                  table-layout: fixed !important;
-                  width: 100% !important;
-                  max-width: 100% !important;
-                  font-size: ${Math.max(7.5, settings.fontSizePt - 3.5)}pt !important;
-                }
-                table.quotation-bidders-table th,
-                .quotation-bidders-table th {
-                  border: 1pt solid #000000 !important;
-                  padding: 2.5pt 1.5pt !important;
-                  background-color: #f1f5f9 !important;
-                  font-weight: bold !important;
-                  text-align: center !important;
-                  vertical-align: middle !important;
-                  font-size: ${Math.max(7.5, settings.fontSizePt - 3.5)}pt !important;
-                  -webkit-print-color-adjust: exact !important;
-                  word-break: break-word !important;
-                  overflow-wrap: break-word !important;
-                }
-                table.quotation-bidders-table td,
-                .quotation-bidders-table td {
-                  border: 1pt solid #000000 !important;
-                  padding: 2.5pt 1.5pt !important;
-                  vertical-align: middle !important;
-                  font-size: ${Math.max(7.5, settings.fontSizePt - 3.5)}pt !important;
-                  word-break: break-word !important;
-                  overflow-wrap: break-word !important;
-                }
-                table.forwarding-table,
-                .forwarding-table {
-                  table-layout: auto !important;
-                  width: 100% !important;
-                  font-size: ${settings.fontSizePt}pt !important;
-                }
-                table.forwarding-table th,
-                .forwarding-table th,
-                table.forwarding-table td,
-                .forwarding-table td {
-                  border: 1pt solid #000000 !important;
-                  padding: 3.5pt 4pt !important;
-                  font-size: inherit !important;
-                }
-                .watermark-container {
-                  position: absolute !important;
-                  top: 50% !important;
-                  left: 50% !important;
-                  transform: translate(-50%, -50%) !important;
-                  pointer-events: none !important;
-                  z-index: 0 !important;
-                  user-select: none !important;
-                  -webkit-print-color-adjust: exact !important;
-                  print-color-adjust: exact !important;
-                }
-
-                .signatures-section {
-                  margin-top: ${Math.max(15, (settings.paragraphSpacing || 10) * 2.5)}pt;
-                  padding-top: 15pt;
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: flex-end;
-                }
-
-                .sig-col {
-                  text-align: center;
-                  width: 160pt;
-                }
-
-                .sig-line {
-                  border-top: 1pt solid #000000;
-                  margin-bottom: 5pt;
-                }
-
-                .sig-title {
-                  font-size: ${settings.fontSizePt}pt;
-                  font-weight: 700;
-                  color: #000000;
-                }
-
-                .sig-sub {
-                  font-size: ${Math.max(7, settings.fontSizePt - 4)}pt;
-                  color: #475569;
-                  margin-top: 2pt;
-                }
-
-                .form1-approval-chain,
-                .audit-approval-section {
-                  margin-top: 6pt !important;
-                  gap: 4pt !important;
-                  line-height: 1.25 !important;
-                }
-                .form1-approval-chain > div,
-                .audit-approval-section > div {
-                  margin-bottom: 4pt !important;
-                  line-height: 1.25 !important;
-                }
-              </style>
-            </head>
-            <body>
-              <div class="print-toolbar no-print">
-                <span style="font-size:13px; font-weight:600;">${currentNoteSheet.title || "Note Sheet"}</span>
-                <div style="display:flex; gap:10px;">
-                  <button onclick="window.print()" class="print-btn">🖨️ ${language === "bn" ? "প্রিন্ট করুন / Save as PDF" : "Print / Save PDF"}</button>
-                  <button onclick="window.close()" style="background:#334155; color:#fff; border:none; padding:8px 14px; font-size:13px; border-radius:8px; cursor:pointer;">${language === "bn" ? "বন্ধ করুন" : "Close"}</button>
-                </div>
-              </div>
-              ${
-                activeDocTab === "notesheet" &&
-                settings.pageSize === "Legal" &&
-                isRegularExpenseUnder1500 &&
-                legalPartition !== "full"
-                  ? `
-                <div class="legal-3part-container" style="width: ${pageWidthMm}mm; height: ${pageHeightMm}mm; max-height: ${pageHeightMm}mm; overflow: hidden; box-sizing: border-box; position: relative; margin: 0; padding: 0;">
-                  <!-- Slot 1 (Top 1/3) -->
-                  <div style="height: 118.66mm; max-height: 118.66mm; box-sizing: border-box; padding: 6mm ${settings.margins.right}mm 4mm ${settings.margins.left}mm; overflow: hidden; position: relative; ${legalPartition === "part1" || legalPartition === "all3" ? "" : "visibility: hidden;"}">
-                    <div class="sheet-body" style="font-size: ${Math.min(settings.fontSizePt, 11)}pt; line-height: 1.4; margin: 0;">
-                      ${formattedContent}
-                    </div>
-                  </div>
-
-                  <!-- Cut line 1 -->
-                  <div style="border-bottom: 1px dashed #cbd5e1; height: 0; width: 100%; box-sizing: border-box;"></div>
-
-                  <!-- Slot 2 (Middle 1/3) -->
-                  <div style="height: 118.66mm; max-height: 118.66mm; box-sizing: border-box; padding: 6mm ${settings.margins.right}mm 4mm ${settings.margins.left}mm; overflow: hidden; position: relative; ${legalPartition === "part2" || legalPartition === "all3" ? "" : "visibility: hidden;"}">
-                    <div class="sheet-body" style="font-size: ${Math.min(settings.fontSizePt, 11)}pt; line-height: 1.4; margin: 0;">
-                      ${formattedContent}
-                    </div>
-                  </div>
-
-                  <!-- Cut line 2 -->
-                  <div style="border-bottom: 1px dashed #cbd5e1; height: 0; width: 100%; box-sizing: border-box;"></div>
-
-                  <!-- Slot 3 (Bottom 1/3) -->
-                  <div style="height: 118.66mm; max-height: 118.66mm; box-sizing: border-box; padding: 6mm ${settings.margins.right}mm 4mm ${settings.margins.left}mm; overflow: hidden; position: relative; ${legalPartition === "part3" || legalPartition === "all3" ? "" : "visibility: hidden;"}">
-                    <div class="sheet-body" style="font-size: ${Math.min(settings.fontSizePt, 11)}pt; line-height: 1.4; margin: 0;">
-                      ${formattedContent}
-                    </div>
-                  </div>
-                </div>
-              `
-                  : `
-                <div class="page-wrapper" style="position: relative;">
-                  ${watermarkHtml}
-                  ${positionStyles.spacerTopFlex > 0 ? `<div class="spacer-top"></div>` : ""}
-                  <div class="content-container" style="position: relative; z-index: 1;">
-                    ${govtHeaderHtml}
-                    <div class="sheet-body">
-                      ${formattedContent}
-                    </div>
-                    ${signaturesHtml}
-                  </div>
-                  ${positionStyles.spacerBottomFlex > 0 ? `<div class="spacer-bottom"></div>` : ""}
-                </div>
-              `
-              }
-              <script>
-                window.addEventListener('load', function() {
-                  try {
-                    var pageWrapper = document.querySelector('.page-wrapper');
-                    var content = document.querySelector('.content-container');
-                    if (pageWrapper && content) {
-                      var availableHeight = pageWrapper.clientHeight;
-                      var scrollHeight = content.scrollHeight;
-                      if (scrollHeight > availableHeight && availableHeight > 0) {
-                        var ratio = Math.max(0.68, Math.min(1, (availableHeight - 2) / (scrollHeight + 2)));
-                        content.style.transform = 'scale(' + ratio + ')';
-                        content.style.transformOrigin = 'top center';
-                        content.style.width = (100 / ratio) + '%';
-                      }
-                    }
-                  } catch(e) {}
-                  setTimeout(function() { window.print(); }, 400);
-                });
-              </script>
-            </body>
-          </html>
-        `);
-        printWin.document.close();
-        return;
-      }
-    } catch (_e) {
-      console.warn("Popup blocked, falling back to iframe print", _e);
-    }
+    const existingFrame = document.getElementById("notesheet-print-iframe");
+    if (existingFrame) existingFrame.remove();
 
     const iframe = document.createElement("iframe");
+    iframe.id = "notesheet-print-iframe";
     iframe.style.position = "fixed";
     iframe.style.right = "0";
     iframe.style.bottom = "0";
@@ -1852,7 +1500,10 @@ export function NoteSheetPreviewModal({
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow?.document;
-    if (!doc) return;
+    if (!doc) {
+      window.print();
+      return;
+    }
 
     doc.open();
     doc.write(`
@@ -2099,6 +1750,24 @@ export function NoteSheetPreviewModal({
             </div>
           `
           }
+          <script>
+            window.addEventListener('load', function() {
+              try {
+                var pageWrapper = document.querySelector('.page-wrapper');
+                var content = document.querySelector('.content-container');
+                if (pageWrapper && content) {
+                  var availableHeight = pageWrapper.clientHeight;
+                  var scrollHeight = content.scrollHeight;
+                  if (scrollHeight > availableHeight && availableHeight > 0) {
+                    var ratio = Math.max(0.68, Math.min(1, (availableHeight - 2) / (scrollHeight + 2)));
+                    content.style.transform = 'scale(' + ratio + ')';
+                    content.style.transformOrigin = 'top center';
+                    content.style.width = (100 / ratio) + '%';
+                  }
+                }
+              } catch(_e) {}
+            });
+          </script>
         </body>
       </html>
     `);
@@ -3551,6 +3220,69 @@ export function NoteSheetPreviewModal({
                 </span>
               </div>
             </div>
+
+            {templateStatusMsg && (
+              <div
+                className={`mx-4 mt-3 px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-between gap-2 ${
+                  templateStatusMsg.type === "success"
+                    ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                    : "bg-rose-500/15 border-rose-500/30 text-rose-300"
+                }`}
+              >
+                <span>{templateStatusMsg.text}</span>
+                <button
+                  type="button"
+                  onClick={() => setTemplateStatusMsg(null)}
+                  className="opacity-70 hover:opacity-100 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {showSaveTemplateModal && (
+              <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs z-[90] flex items-center justify-center p-4">
+                <form
+                  onSubmit={confirmSaveAsNoteTemplate}
+                  className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-5 space-y-4 shadow-2xl"
+                >
+                  <h4 className="text-sm font-bold text-white">
+                    {language === "bn"
+                      ? "নোট টেমপ্লেট হিসেবে সংরক্ষণ করুন"
+                      : "Save as Note Template"}
+                  </h4>
+                  <div>
+                    <label className="block text-xs text-slate-300 mb-1.5">
+                      {language === "bn"
+                        ? "টেমপ্লেট শিরোনাম লিখুন:"
+                        : "Enter template title:"}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={templateTitleInput}
+                      onChange={(e) => setTemplateTitleInput(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowSaveTemplateModal(false)}
+                      className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold hover:bg-slate-700 cursor-pointer"
+                    >
+                      {language === "bn" ? "বাতিল" : "Cancel"}
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer"
+                    >
+                      {language === "bn" ? "সংরক্ষণ করুন" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {isEditing ? (
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 max-w-4xl mx-auto w-full space-y-5 flex flex-col">

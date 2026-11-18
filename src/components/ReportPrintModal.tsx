@@ -150,14 +150,8 @@ export function ReportPrintModal({
     return { base, vat, tax, net, gross };
   }, [displayData, tableType]);
 
-  // Printable HTML builder for Native Iframe / Window Printing
+  // Printable HTML builder for popup-free Native Iframe Printing
   const handlePrint = () => {
-    const printWin = window.open("", "_blank", "width=1200,height=900");
-    if (!printWin) {
-      alert("পপ-আপ উইন্ডো ব্লক করা রয়েছে। অনুগ্রহ করে ব্রাউজারের পপ-আপ অনুমোদন করুন।");
-      return;
-    }
-
     const reportContentHtml = document.getElementById("report-modal-printable-content")?.innerHTML || "";
 
     const fullHtml = `
@@ -316,17 +310,44 @@ export function ReportPrintModal({
           <script>
             window.addEventListener('load', function() {
               setTimeout(function() {
+                window.focus();
                 window.print();
-              }, 400);
+              }, 350);
             });
           </script>
         </body>
       </html>
     `;
 
-    printWin.document.open();
-    printWin.document.write(fullHtml);
-    printWin.document.close();
+    const existing = document.getElementById("report-modal-print-iframe");
+    if (existing) existing.remove();
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "report-modal-print-iframe";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      window.print();
+      return;
+    }
+
+    doc.open();
+    doc.write(fullHtml);
+    doc.close();
+
+    setTimeout(() => {
+      if (document.body.contains(iframe)) {
+        iframe.remove();
+      }
+    }, 60000);
   };
 
   if (!isOpen) return null;

@@ -9,6 +9,7 @@ import {
   subscribeToMessages,
 } from '../../services/chatService'
 import { supabase } from '../../services/supabase'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏']
@@ -97,6 +98,8 @@ export default function ChatPage() {
   const [showNewBroadcast, setShowNewBroadcast] = useState(false)
   const [showStarred, setShowStarred] = useState(false)
   const [msgMenu, setMsgMenu] = useState(null)
+  const [previewImageUrl, setPreviewImageUrl] = useState(null)
+  const [pendingDeleteMsgId, setPendingDeleteMsgId] = useState(null)
 
   const messagesEndRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -303,11 +306,17 @@ export default function ChatPage() {
     setReactionTarget(null)
   }
 
-  const handleDelete = async (msgId) => {
-    if (!confirm('Message মুছে ফেলবেন?')) return
+  const handleDelete = (msgId) => {
+    setPendingDeleteMsgId(msgId)
+    setMsgMenu(null)
+  }
+
+  const confirmDeleteMessage = async () => {
+    const msgId = pendingDeleteMsgId
+    setPendingDeleteMsgId(null)
+    if (!msgId) return
     try { await deleteMessage(msgId); setMessages(prev => prev.map(m => m.id === msgId ? { ...m, is_deleted: true, content: null } : m)) }
     catch (err) { toast.error(err.message) }
-    setMsgMenu(null)
   }
 
   const handleStar = async (msg) => {
@@ -446,7 +455,7 @@ export default function ChatPage() {
               )}
               {msg.forwarded_from && <p className={`text-xs mb-1 italic ${isMine ? 'text-primary-200' : 'text-gray-400'}`}>↗ Forwarded</p>}
               {msg.is_deleted ? <span className="text-sm">🚫 Message মুছে ফেলা হয়েছে</span>
-                : msg.message_type === 'image' ? <img src={msg.file_url} alt="img" className="max-w-xs rounded-lg cursor-pointer" onClick={() => window.open(msg.file_url, '_blank')} />
+                : msg.message_type === 'image' ? <img src={msg.file_url} alt="img" className="max-w-xs rounded-lg cursor-pointer" onClick={() => setPreviewImageUrl(msg.file_url)} />
                 : msg.message_type === 'voice' ? <div className="flex items-center gap-2"><span>🎤</span><audio controls src={msg.file_url} className="h-8 max-w-[200px]" /></div>
                 : msg.message_type === 'file' ? (
                   <a href={msg.file_url} target="_blank" rel="noreferrer" className={`flex items-center gap-2 hover:opacity-80 ${isMine ? 'text-white' : 'text-primary-600'}`}>
@@ -720,8 +729,41 @@ export default function ChatPage() {
         </div>
       )}
 
+      {previewImageUrl && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-xs z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewImageUrl(null)}
+        >
+          <div className="relative max-w-4xl max-h-[90vh]" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setPreviewImageUrl(null)}
+              className="absolute -top-3 -right-3 w-8 h-8 rounded-full bg-white text-gray-900 shadow-lg font-bold flex items-center justify-center hover:bg-gray-100 cursor-pointer"
+            >
+              ✕
+            </button>
+            <img
+              src={previewImageUrl}
+              alt="Preview"
+              className="max-w-full max-h-[85vh] rounded-xl shadow-2xl object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       {reactionTarget && <div className="fixed inset-0 z-10" onClick={() => setReactionTarget(null)} />}
       {msgMenu && <div className="fixed inset-0 z-10" onClick={() => setMsgMenu(null)} />}
+
+      <InAppConfirmModal
+        isOpen={Boolean(pendingDeleteMsgId)}
+        title="বার্তা মুছুন"
+        message="Message মুছে ফেলবেন?"
+        confirmText="মুছে ফেলুন"
+        cancelText="বাতিল"
+        danger={true}
+        onConfirm={confirmDeleteMessage}
+        onCancel={() => setPendingDeleteMsgId(null)}
+      />
     </div>
   )
 }

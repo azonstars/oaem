@@ -3,6 +3,7 @@ import EmptyState from '../../components/ui/EmptyState'
 import { createForm, updateForm, getFormById, getForms } from '../../services/formService'
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 
 // Preview Component — form টা exactly কেমন দেখাবে
@@ -136,6 +137,7 @@ export default function FormBuilderPage() {
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false)
   const [reportMode, setReportMode] = useState('cumulative')
   const [templateName, setTemplateName] = useState('')
+  const [pendingTemplate, setPendingTemplate] = useState(null)
 
   useEffect(() => {
     if (editId) loadForm()
@@ -170,8 +172,7 @@ export default function FormBuilderPage() {
     } catch (error) { toast.error(error.message) }
   }
 
-  const handleLoadTemplate = (template) => {
-    if (fields.length > 0 && !window.confirm('বর্তমান fields মুছে template load করবেন?')) return
+  const applyTemplateLoad = (template) => {
     setFields(template.fields?.map(f => ({
       ...f, id: Date.now().toString() + Math.random(),
       children: (f.children || []).map(c => ({ ...c, id: Date.now().toString() + Math.random() }))
@@ -179,6 +180,14 @@ export default function FormBuilderPage() {
     if (!formTitle) setFormTitle(template.title.replace(' (Template)', ''))
     toast.success(`"${template.title}" template load হয়েছে!`)
     setShowTemplateModal(false)
+  }
+
+  const handleLoadTemplate = (template) => {
+    if (fields.length > 0) {
+      setPendingTemplate(template)
+      return
+    }
+    applyTemplateLoad(template)
   }
 
   // Default columns helper
@@ -681,6 +690,19 @@ export default function FormBuilderPage() {
           </div>
         </div>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(pendingTemplate)}
+        title="টেমপ্লেট লোড করবেন?"
+        message="বর্তমান fields মুছে template load করবেন?"
+        confirmLabel="হ্যাঁ, লোড করুন"
+        danger
+        onConfirm={() => {
+          const tpl = pendingTemplate
+          setPendingTemplate(null)
+          if (tpl) applyTemplateLoad(tpl)
+        }}
+        onCancel={() => setPendingTemplate(null)}
+      />
     </div>
   )
 }

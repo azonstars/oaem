@@ -20,6 +20,8 @@ import {
   Database,
   RefreshCw,
   ArrowLeft,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 
 interface StockProToolProps {
@@ -386,18 +388,27 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
 
   const [dbSyncStatus, setDbSyncStatus] = useState<"synced" | "syncing" | "offline">("synced");
   const [isDbLoading, setIsDbLoading] = useState<boolean>(false);
+  const [dbFeedback, setDbFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Load from Central SQLite Database
+  const showDbFeedback = (type: "success" | "error", text: string) => {
+    setDbFeedback({ type, text });
+    setTimeout(() => setDbFeedback(null), 4500);
+  };
+
+  // Load from Central SQLite Database (with zero-data-loss initial backfill if DB tables are empty)
   const fetchDbData = useCallback(async () => {
     setIsDbLoading(true);
     setDbSyncStatus("syncing");
     try {
-      const [pRes, bRes, iRes, padRes] = await Promise.all([
+      const [pRes, bRes, iRes, padRes, txRes] = await Promise.all([
         apiFetch("/api/stockproproducts"),
         apiFetch("/api/stockprobranches"),
         apiFetch("/api/stockproinvoices"),
         apiFetch("/api/stockprovoucherpads"),
+        apiFetch("/api/tooldocuments"),
       ]);
+
+      let hasError = false;
 
       if (pRes.ok) {
         const pData = await pRes.json();
@@ -405,21 +416,69 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
           setProducts(
             pData.map((item: any, idx: number) => ({
               dbId: item.id ? String(item.id) : undefined,
-              id: typeof item.id === "string" ? parseInt(item.id.replace(/\D/g, "") || String(idx + 1), 10) : (item.id || idx + 1),
+              id: typeof item.id === "number" ? item.id : Number(item.numericId) || (typeof item.id === "string" ? parseInt(item.id.replace(/\D/g, "").slice(-9) || String(idx + 1), 10) : idx + 1),
               name: item.name || "Product",
               sku: item.sku || `SKU-${idx + 1}`,
               category: item.category || "Stationery",
-              purchasePrice: Number(item.costPrice || item.purchasePrice || 80),
-              sellingPrice: Number(item.sellingPrice || 110),
-              stockQuantity: Number(item.stockQuantity || 0),
+              isSecurity: item.isSecurity ?? (item.padType !== "regular" || String(item.category || "").toLowerCase().includes("security")),
+              unit: item.unit || (item.padType === "regular" ? "টি" : "প্যাড"),
+              purchasePrice: Number(item.costPrice ?? item.purchasePrice ?? 0),
+              sellingPrice: Number(item.sellingPrice ?? 0),
+              stockQuantity: Number(item.stockQuantity ?? 0),
               isSerialized: item.padType !== "regular",
               padType: item.padType || "regular",
-              fromPad: item.fromPad ? Number(item.fromPad) : undefined,
-              toPad: item.toPad ? Number(item.toPad) : undefined,
-              pagesPerPad: Number(item.perPadPages || 100),
+              fromPad: item.fromPad ?? undefined,
+              toPad: item.toPad ?? undefined,
+              startSerial: item.startSerial ?? undefined,
+              endSerial: item.endSerial ?? undefined,
+              pagesPerPad: Number(item.perPadPages || item.pagesPerPad || 100),
             })),
           );
+        } else if (Array.isArray(pData) && pData.length === 0) {
+          // Zero data loss: seed SQLite from existing localStorage/initial products if DB is empty
+          const currentLocalProds: StockProduct[] = (() => {
+            try {
+              const s = localStorage.getItem(`${STORAGE_PREFIX}products`);
+              return s ? JSON.parse(s) : [];
+            } catch {
+              return [];
+            }
+          })();
+          const seeded: StockProduct[] = [];
+          for (const lp of currentLocalProds) {
+            const dbId = lp.dbId || `prod-${lp.id}`;
+            try {
+              const r = await apiFetch("/api/stockproproducts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: dbId,
+                  numericId: lp.id,
+                  name: lp.name,
+                  sku: lp.sku,
+                  category: lp.category,
+                  isSecurity: lp.isSecurity,
+                  unit: lp.unit,
+                  padType: lp.padType,
+                  costPrice: lp.purchasePrice,
+                  sellingPrice: lp.sellingPrice,
+                  stockQuantity: lp.stockQuantity,
+                  fromPad: lp.fromPad ? Number(String(lp.fromPad).replace(/\D/g, "")) || null : null,
+                  toPad: lp.toPad ? Number(String(lp.toPad).replace(/\D/g, "")) || null : null,
+                  perPadPages: lp.pagesPerPad || 100,
+                }),
+              });
+              if (r.ok) {
+                seeded.push({ ...lp, dbId });
+              }
+            } catch {
+              // ignore individual backfill error
+            }
+          }
+          if (seeded.length > 0) setProducts(seeded);
         }
+      } else {
+        hasError = true;
       }
 
       if (bRes.ok) {
@@ -428,31 +487,143 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
           setBranches(
             bData.map((b: any, idx: number) => ({
               dbId: b.id ? String(b.id) : undefined,
-              id: typeof b.id === "string" ? parseInt(b.id.replace(/\D/g, "") || String(idx + 1), 10) : (b.id || idx + 1),
+              id: typeof b.id === "number" ? b.id : Number(b.numericId) || (typeof b.id === "string" ? parseInt(b.id.replace(/\D/g, "").slice(-9) || String(idx + 1), 10) : idx + 1),
               name: b.name || "Branch",
               phone: b.phone || "",
               address: b.address || "",
-              branch: b.code || b.name.replace(" শাখা", ""),
+              branch: b.code || b.branch || (b.name || "").replace(" শাখা", ""),
+              district: b.district || "রাঙ্গামাটি",
             })),
           );
+        } else if (Array.isArray(bData) && bData.length === 0) {
+          const currentLocalBranches: StockBranch[] = (() => {
+            try {
+              const s = localStorage.getItem(`${STORAGE_PREFIX}branches`);
+              return s ? JSON.parse(s) : [];
+            } catch {
+              return [];
+            }
+          })();
+          const seededBr: StockBranch[] = [];
+          for (const lb of currentLocalBranches) {
+            const dbId = lb.dbId || `br-${lb.id}`;
+            try {
+              const r = await apiFetch("/api/stockprobranches", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: dbId,
+                  numericId: lb.id,
+                  name: lb.name,
+                  phone: lb.phone,
+                  address: lb.address,
+                  code: lb.branch,
+                  district: lb.district || "রাঙ্গামাটি",
+                }),
+              });
+              if (r.ok) seededBr.push({ ...lb, dbId });
+            } catch {
+              // ignore
+            }
+          }
+          if (seededBr.length > 0) setBranches(seededBr);
         }
+      } else {
+        hasError = true;
       }
 
       if (iRes.ok) {
         const iData = await iRes.json();
         if (Array.isArray(iData) && iData.length > 0) {
-          setInvoices(
-            iData.map((inv: any, idx: number) => ({
-              id: typeof inv.id === "string" ? parseInt(inv.id.replace(/\D/g, "") || String(idx + 1001), 10) : (inv.id || idx + 1001),
+          const loadedInvoices: StockInvoice[] = iData.map((inv: any, idx: number) => {
+            const numId = typeof inv.id === "number" ? inv.id : Number(inv.numericId) || (typeof inv.id === "string" ? parseInt(inv.id.replace(/\D/g, "").slice(-9) || String(idx + 1001), 10) : idx + 1001);
+            return {
+              id: numId,
               date: inv.date || new Date().toISOString(),
               agentId: typeof inv.agentId === "string" ? parseInt(inv.agentId.replace(/\D/g, "") || "1", 10) : (inv.agentId || 1),
+              branchName: inv.branchName,
+              branchAddress: inv.branchAddress,
+              branchDistrict: inv.branchDistrict,
               totalAmount: Number(inv.totalAmount || 0),
               linkedPadNo: inv.linkedPadNo || "-",
               linkedPageNo: inv.linkedPageNo || 1,
               despatchNo: inv.despatchNo || "আঃকাঃ/প্রশা-" + (inv.id || idx + 1001),
+              memoNo: inv.memoNo,
+              subject: inv.subject,
+              reference: inv.reference,
+              suppliedBy: inv.suppliedBy,
+              bearerName: inv.bearerName,
+              authorizedOfficer: inv.authorizedOfficer,
+              specialNotes: inv.specialNotes,
+              items: Array.isArray(inv.items) ? inv.items : [],
+            };
+          });
+          setInvoices(loadedInvoices);
+
+          const extractedItems: StockInvoiceItem[] = loadedInvoices.flatMap((inv) =>
+            (inv.items || []).map((it: any, idx: number) => ({
+              ...it,
+              id: it.id || Number(`${inv.id}${idx + 1}`),
+              invoiceId: inv.id,
             })),
           );
+          if (extractedItems.length > 0) {
+            setInvoiceItems(extractedItems);
+          }
+        } else if (Array.isArray(iData) && iData.length === 0) {
+          const localInvs: StockInvoice[] = (() => {
+            try {
+              const s = localStorage.getItem(`${STORAGE_PREFIX}invoices`);
+              return s ? JSON.parse(s) : [];
+            } catch {
+              return [];
+            }
+          })();
+          const localInvItems: StockInvoiceItem[] = (() => {
+            try {
+              const s = localStorage.getItem(`${STORAGE_PREFIX}invoice_items`);
+              return s ? JSON.parse(s) : [];
+            } catch {
+              return [];
+            }
+          })();
+          for (const linv of localInvs) {
+            const attachedItems = linv.items && linv.items.length > 0
+              ? linv.items
+              : localInvItems.filter((it) => it.invoiceId === linv.id);
+            try {
+              await apiFetch("/api/stockproinvoices", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: `inv-${linv.id}`,
+                  numericId: linv.id,
+                  date: linv.date,
+                  agentId: String(linv.agentId),
+                  branchName: linv.branchName,
+                  branchAddress: linv.branchAddress,
+                  branchDistrict: linv.branchDistrict,
+                  totalAmount: linv.totalAmount,
+                  linkedPadNo: linv.linkedPadNo || "-",
+                  despatchNo: linv.despatchNo,
+                  memoNo: linv.memoNo,
+                  subject: linv.subject,
+                  reference: linv.reference,
+                  suppliedBy: linv.suppliedBy,
+                  bearerName: linv.bearerName,
+                  authorizedOfficer: linv.authorizedOfficer,
+                  specialNotes: linv.specialNotes,
+                  createdBy: currentUser.userId,
+                  items: attachedItems,
+                }),
+              });
+            } catch {
+              // ignore
+            }
+          }
         }
+      } else {
+        hasError = true;
       }
 
       if (padRes.ok) {
@@ -460,27 +631,102 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
         if (Array.isArray(padData) && padData.length > 0) {
           setVoucherPads(
             padData.map((pad: any, idx: number) => ({
-              id: idx + 1,
-              productId: 1,
-              agentId: 1,
-              padNumber: pad.padNo || `P-${100 + idx}`,
-              pageStart: 1,
-              pageEnd: Number(pad.totalPages || 100),
+              id: typeof pad.id === "number" ? pad.id : Number(pad.numericId) || idx + 1,
+              productId: Number(pad.productId || 1),
+              agentId: Number(pad.agentId || 1),
+              padNumber: pad.padNumber || pad.padNo || `P-${100 + idx}`,
+              pageStart: Number(pad.pageStart || 1),
+              pageEnd: Number(pad.pageEnd || pad.totalPages || 100),
               currentPage: Number(pad.currentPage || 1),
-              issueDate: new Date().toISOString(),
-              status: "Active",
+              issueDate: pad.issueDate || new Date().toISOString(),
+              status: pad.status || "Active",
             })),
           );
+        } else if (Array.isArray(padData) && padData.length === 0) {
+          const localPads: VoucherPad[] = (() => {
+            try {
+              const s = localStorage.getItem(`${STORAGE_PREFIX}pads`);
+              return s ? JSON.parse(s) : [];
+            } catch {
+              return [];
+            }
+          })();
+          for (const lp of localPads) {
+            try {
+              await apiFetch("/api/stockprovoucherpads", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  id: `pad-${lp.id}`,
+                  numericId: lp.id,
+                  padNo: lp.padNumber,
+                  padNumber: lp.padNumber,
+                  productId: lp.productId,
+                  agentId: lp.agentId,
+                  pageStart: lp.pageStart || 1,
+                  pageEnd: lp.pageEnd || 100,
+                  totalPages: lp.pageEnd || 100,
+                  currentPage: lp.currentPage || 1,
+                  issueDate: lp.issueDate,
+                  status: lp.status || "Active",
+                }),
+              });
+            } catch {
+              // ignore
+            }
+          }
+        }
+      } else {
+        hasError = true;
+      }
+
+      if (txRes.ok) {
+        const allDocs = await txRes.json();
+        if (Array.isArray(allDocs)) {
+          const txDoc = allDocs.find((d: any) => d.toolType === "stockpro_transactions");
+          if (txDoc?.payload && Array.isArray(txDoc.payload.transactions)) {
+            setTransactions(txDoc.payload.transactions);
+          }
         }
       }
-      setDbSyncStatus("synced");
+
+      setDbSyncStatus(hasError ? "offline" : "synced");
     } catch (e) {
       console.warn("Could not sync directly with SQLite, fallback to local cache:", e);
       setDbSyncStatus("offline");
     } finally {
       setIsDbLoading(false);
     }
-  }, []);
+  }, [currentUser.userId]);
+
+  const syncTransactionsToDb = async (nextTransactions: StockTransaction[]) => {
+    try {
+      const txPayload = {
+        id: "stockpro-tx-log",
+        toolId: "stockpro",
+        toolType: "stockpro_transactions",
+        title: "StockPro Transaction History",
+        docDate: new Date().toISOString().slice(0, 10),
+        officeId: currentUser?.officeId || "off-ho",
+        createdBy: currentUser?.userId || "",
+        payload: { transactions: nextTransactions },
+      };
+      const putRes = await apiFetch("/api/tooldocuments/stockpro-tx-log", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(txPayload),
+      });
+      if (putRes.status === 404) {
+        await apiFetch("/api/tooldocuments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(txPayload),
+        });
+      }
+    } catch (e) {
+      console.warn("Transaction history DB sync warning:", e);
+    }
+  };
 
   useEffect(() => {
     fetchDbData();
@@ -587,149 +833,222 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
 
   const handleSaveNewProduct = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newProdName.trim()) {
+      showDbFeedback("error", "পণ্যের নাম আবশ্যক।");
+      return;
+    }
     const newId = (products.length > 0 ? Math.max(...products.map((p) => p.id)) : 0) + 1;
+    const generatedDbId = `prod-${newId}-${Date.now()}`;
     const newP: StockProduct = {
       id: newId,
-      name: newProdName,
-      sku: newProdSku || `SKU-${newId.toString().padStart(3, "0")}`,
+      dbId: generatedDbId,
+      name: newProdName.trim(),
+      sku: newProdSku.trim() || `SKU-${newId.toString().padStart(3, "0")}`,
       category: newProdCategory,
       padType: newProdType,
       isSerialized: newProdType !== "regular",
-      purchasePrice: newProdPurchasePrice,
-      sellingPrice: newProdSellingPrice,
-      stockQuantity: newProdQty,
+      purchasePrice: Math.max(0, Number(newProdPurchasePrice) || 0),
+      sellingPrice: Math.max(0, Number(newProdSellingPrice) || 0),
+      stockQuantity: Math.max(0, Number(newProdQty) || 0),
       fromPad: newProdType !== "regular" ? 101 : undefined,
-      toPad: newProdType !== "regular" ? 100 + newProdQty : undefined,
+      toPad: newProdType !== "regular" ? 100 + Math.max(0, Number(newProdQty) || 0) : undefined,
     };
-    setProducts([...products, newP]);
-    setTransactions([
-      ...transactions,
-      {
-        id: transactions.length + 1,
-        productId: newId,
-        type: "IN",
-        quantity: newProdQty,
-        date: new Date().toISOString(),
-        note: "Initial Product Entry",
-      },
-    ]);
 
-    // Async save to SQLite
+    setDbSyncStatus("syncing");
     try {
-      await apiFetch("/api/stockproproducts", {
+      const res = await apiFetch("/api/stockproproducts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: `prod-${newId}-${Date.now()}`,
-          name: newProdName,
-          sku: newProdSku || `SKU-${newId.toString().padStart(3, "0")}`,
-          category: newProdCategory,
-          padType: newProdType,
-          costPrice: newProdPurchasePrice,
-          sellingPrice: newProdSellingPrice,
-          stockQuantity: newProdQty,
-          fromPad: newProdType !== "regular" ? 101 : null,
+          id: generatedDbId,
+          numericId: newId,
+          name: newP.name,
+          sku: newP.sku,
+          category: newP.category,
+          padType: newP.padType,
+          costPrice: newP.purchasePrice,
+          sellingPrice: newP.sellingPrice,
+          stockQuantity: newP.stockQuantity,
+          fromPad: newP.fromPad ?? null,
+          toPad: newP.toPad ?? null,
           perPadPages: 100,
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setDbSyncStatus("offline");
+        showDbFeedback("error", err.error || "ডাটাবেজে পণ্য সংরক্ষণ ব্যর্থ হয়েছে।");
+        return;
+      }
+      const created = await res.json();
+      const savedProd: StockProduct = { ...newP, dbId: created?.id || generatedDbId };
+      const nextTx: StockTransaction[] = [
+        ...transactions,
+        {
+          id: transactions.length + 1,
+          productId: newId,
+          type: "IN",
+          quantity: savedProd.stockQuantity,
+          date: new Date().toISOString(),
+          note: "Initial Product Entry",
+        },
+      ];
+      setProducts((prev) => [...prev, savedProd]);
+      setTransactions(nextTx);
+      await syncTransactionsToDb(nextTx);
       setDbSyncStatus("synced");
+      showDbFeedback("success", "নতুন পণ্য ডাটাবেজে সফলভাবে সংরক্ষিত হয়েছে!");
+      setShowAddProductModal(false);
+      setNewProdName("");
+      setNewProdSku("");
     } catch (err) {
       console.warn("SQLite product save failed:", err);
+      setDbSyncStatus("offline");
+      showDbFeedback("error", "সার্ভারের সাথে সংযোগে ত্রুটি হয়েছে।");
     }
-
-    setShowAddProductModal(false);
-    setNewProdName("");
-    setNewProdSku("");
   };
 
   const handleConfirmStockIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProductForStockIn) return;
     const pid = selectedProductForStockIn.id;
-    const qty = selectedProductForStockIn.padType !== "regular" ? stockInToPad - stockInFromPad + 1 : stockInQty;
+    const qty =
+      selectedProductForStockIn.padType !== "regular"
+        ? stockInToPad - stockInFromPad + 1
+        : stockInQty;
 
-    const newStockQty = selectedProductForStockIn.stockQuantity + qty;
-    setProducts(
-      products.map((p) =>
-        p.id === pid
-          ? {
-              ...p,
-              stockQuantity: newStockQty,
-              toPad: p.padType !== "regular" ? stockInToPad : p.toPad,
-            }
-          : p,
-      ),
-    );
-    setTransactions([
-      ...transactions,
-      {
-        id: transactions.length + 1,
-        productId: pid,
-        type: "IN",
-        quantity: qty,
-        date: new Date().toISOString(),
-        fromPad: selectedProductForStockIn.padType !== "regular" ? stockInFromPad : undefined,
-        toPad: selectedProductForStockIn.padType !== "regular" ? stockInToPad : undefined,
-        note: stockInNote,
-      },
-    ]);
-
-    // Update SQLite Product
-    try {
-      const targetId = selectedProductForStockIn.dbId || `prod-${pid}`;
-      await apiFetch(`/api/stockproproducts/${targetId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: selectedProductForStockIn.name,
-          stockQuantity: newStockQty,
-          toPad: selectedProductForStockIn.padType !== "regular" ? stockInToPad : undefined,
-        }),
-      });
-      setDbSyncStatus("synced");
-    } catch (err) {
-      console.warn("Stock in update error:", err);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      showDbFeedback("error", "সঠিক স্টক পরিমাণ বা প্যাড নম্বর রেঞ্জ প্রদান করুন।");
+      return;
     }
 
-    setShowStockInModal(false);
-    setSelectedProductForStockIn(null);
+    const newStockQty = selectedProductForStockIn.stockQuantity + qty;
+    const targetId = selectedProductForStockIn.dbId || `prod-${pid}`;
+
+    setDbSyncStatus("syncing");
+    try {
+      const payload = {
+        id: targetId,
+        numericId: pid,
+        name: selectedProductForStockIn.name,
+        sku: selectedProductForStockIn.sku,
+        category: selectedProductForStockIn.category,
+        padType: selectedProductForStockIn.padType,
+        costPrice: selectedProductForStockIn.purchasePrice,
+        sellingPrice: selectedProductForStockIn.sellingPrice,
+        stockQuantity: newStockQty,
+        fromPad: selectedProductForStockIn.padType !== "regular" ? stockInFromPad : null,
+        toPad: selectedProductForStockIn.padType !== "regular" ? stockInToPad : null,
+        perPadPages: selectedProductForStockIn.pagesPerPad || 100,
+      };
+      let res = await apiFetch(`/api/stockproproducts/${targetId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.status === 404) {
+        res = await apiFetch("/api/stockproproducts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setDbSyncStatus("offline");
+        showDbFeedback("error", err.error || "স্টক ইন আপডেট ডাটাবেজে সংরক্ষিত হয়নি।");
+        return;
+      }
+
+      const nextTx: StockTransaction[] = [
+        ...transactions,
+        {
+          id: transactions.length + 1,
+          productId: pid,
+          type: "IN",
+          quantity: qty,
+          date: new Date().toISOString(),
+          fromPad: selectedProductForStockIn.padType !== "regular" ? stockInFromPad : undefined,
+          toPad: selectedProductForStockIn.padType !== "regular" ? stockInToPad : undefined,
+          note: stockInNote,
+        },
+      ];
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === pid
+            ? {
+                ...p,
+                dbId: targetId,
+                stockQuantity: newStockQty,
+                toPad: p.padType !== "regular" ? stockInToPad : p.toPad,
+              }
+            : p,
+        ),
+      );
+      setTransactions(nextTx);
+      await syncTransactionsToDb(nextTx);
+      setDbSyncStatus("synced");
+      showDbFeedback("success", "স্টক ইন সফলভাবে ডাটাবেজে আপডেট হয়েছে!");
+      setShowStockInModal(false);
+      setSelectedProductForStockIn(null);
+    } catch (err) {
+      console.warn("Stock in update error:", err);
+      setDbSyncStatus("offline");
+      showDbFeedback("error", "স্টক আপডেট করতে সার্ভার ত্রুটি হয়েছে।");
+    }
   };
 
   const handleSaveBranch = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newBranchName.trim()) {
+      showDbFeedback("error", "শাখার নাম আবশ্যক।");
+      return;
+    }
     const newId = (branches.length > 0 ? Math.max(...branches.map((b) => b.id)) : 0) + 1;
-    const newBr = {
+    const generatedDbId = `br-${newId}-${Date.now()}`;
+    const newBr: StockBranch = {
       id: newId,
-      name: newBranchName,
-      phone: newBranchPhone,
-      address: newBranchAddress,
-      branch: newBranchArea,
+      dbId: generatedDbId,
+      name: newBranchName.trim(),
+      phone: newBranchPhone.trim(),
+      address: newBranchAddress.trim(),
+      branch: newBranchArea.trim(),
     };
-    setBranches([...branches, newBr]);
 
-    // Save to SQLite
+    setDbSyncStatus("syncing");
     try {
-      await apiFetch("/api/stockprobranches", {
+      const res = await apiFetch("/api/stockprobranches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: `br-${newId}-${Date.now()}`,
-          name: newBranchName,
-          phone: newBranchPhone,
-          address: newBranchAddress,
-          code: newBranchArea,
+          id: generatedDbId,
+          numericId: newId,
+          name: newBr.name,
+          phone: newBr.phone,
+          address: newBr.address,
+          code: newBr.branch,
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setDbSyncStatus("offline");
+        showDbFeedback("error", err.error || "শাখা সংরক্ষণে ব্যর্থ হয়েছে।");
+        return;
+      }
+      const created = await res.json();
+      setBranches((prev) => [...prev, { ...newBr, dbId: created?.id || generatedDbId }]);
       setDbSyncStatus("synced");
+      showDbFeedback("success", "নতুন শাখা ডাটাবেজে সংরক্ষিত হয়েছে!");
+      setShowAddBranchModal(false);
+      setNewBranchName("");
+      setNewBranchPhone("");
+      setNewBranchAddress("");
+      setNewBranchArea("");
     } catch (err) {
       console.warn("SQLite branch save error:", err);
+      setDbSyncStatus("offline");
+      showDbFeedback("error", "শাখা সংরক্ষণে সার্ভার ত্রুটি হয়েছে।");
     }
-
-    setShowAddBranchModal(false);
-    setNewBranchName("");
-    setNewBranchPhone("");
-    setNewBranchAddress("");
-    setNewBranchArea("");
   };
 
   const handleAddToCart = (pid: number) => {
@@ -737,7 +1056,10 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
     if (!prod || prod.stockQuantity <= 0) return;
     const existing = cartItems.find((ci) => ci.productId === pid);
     if (existing) {
-      if (existing.quantity >= prod.stockQuantity) return;
+      if (existing.quantity >= prod.stockQuantity) {
+        showDbFeedback("error", `"${prod.name}"-এর সর্বোচ্চ মজুদ (${prod.stockQuantity}) পূর্ণ হয়েছে।`);
+        return;
+      }
       setCartItems(
         cartItems.map((ci) => (ci.productId === pid ? { ...ci, quantity: ci.quantity + 1 } : ci)),
       );
@@ -766,6 +1088,23 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
   const handleSaveInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0) return;
+
+    // Validate stock availability before mutating state
+    for (const ci of cartItems) {
+      const prod = products.find((p) => p.id === ci.productId);
+      if (!prod) {
+        showDbFeedback("error", "নির্বাচিত পণ্য খুঁজে পাওয়া যায়নি।");
+        return;
+      }
+      if (ci.quantity <= 0 || ci.quantity > prod.stockQuantity) {
+        showDbFeedback(
+          "error",
+          `"${prod.name}"-এর পর্যাপ্ত মজুদ নেই (চাহিদা: ${ci.quantity}, মজুদ: ${prod.stockQuantity})।`,
+        );
+        return;
+      }
+    }
+
     const invId = (invoices.length > 0 ? Math.max(...invoices.map((i) => i.id)) : 1000) + 1;
     const totalAmt = cartItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     const selectedBranch = branches.find((b) => b.id === invBranchId);
@@ -812,64 +1151,168 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
       };
     });
 
-    // Deduct stocks
-    let updatedProducts = [...products];
-    cartItems.forEach((ci) => {
-      updatedProducts = updatedProducts.map((p) =>
-        p.id === ci.productId ? { ...p, stockQuantity: Math.max(0, p.stockQuantity - ci.quantity) } : p,
-      );
-    });
-
-    const fullInv: StockInvoice = { ...newInv, items: newItems };
-
-    setInvoices([fullInv, ...invoices]);
-    setInvoiceItems([...invoiceItems, ...newItems]);
-    setProducts(updatedProducts);
-    setCartItems([]);
-    setShowCreateInvoiceModal(false);
-    setInvDespatchNo(`আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/`);
-
-    // Save to SQLite
+    // Save to SQLite first before committing local state
+    setDbSyncStatus("syncing");
     try {
-      await apiFetch("/api/stockproinvoices", {
+      const invRes = await apiFetch("/api/stockproinvoices", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: `inv-${invId}-${Date.now()}`,
+          numericId: invId,
           date: newInv.date,
           agentId: String(invBranchId),
+          branchName: newInv.branchName,
+          branchAddress: newInv.branchAddress,
+          branchDistrict: newInv.branchDistrict,
           totalAmount: totalAmt,
-          linkedPadNo: cartItems[0]?.padFrom ? String(cartItems[0].padFrom) : "-",
+          linkedPadNo: newInv.linkedPadNo,
           createdBy: currentUser.userId,
           despatchNo: newInv.despatchNo,
+          memoNo: newInv.memoNo,
+          subject: newInv.subject,
+          reference: newInv.reference,
+          suppliedBy: newInv.suppliedBy,
+          bearerName: newInv.bearerName,
+          authorizedOfficer: newInv.authorizedOfficer,
+          specialNotes: newInv.specialNotes,
           items: newItems,
         }),
       });
 
-      // Update remaining stock quantities in SQLite
+      if (!invRes.ok) {
+        const err = await invRes.json().catch(() => ({}));
+        setDbSyncStatus("offline");
+        showDbFeedback("error", err.error || "চালান ডাটাবেজে সংরক্ষিত হয়নি।");
+        return;
+      }
+
+      // Deduct stocks & persist each updated product
+      let updatedProducts = [...products];
       for (const ci of cartItems) {
+        updatedProducts = updatedProducts.map((p) =>
+          p.id === ci.productId ? { ...p, stockQuantity: Math.max(0, p.stockQuantity - ci.quantity) } : p,
+        );
         const p = updatedProducts.find((item) => item.id === ci.productId);
         if (p) {
           const targetId = p.dbId || `prod-${p.id}`;
-          await apiFetch(`/api/stockproproducts/${targetId}`, {
+          const putRes = await apiFetch(`/api/stockproproducts/${targetId}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               stockQuantity: p.stockQuantity,
             }),
           });
+          if (putRes.status === 404) {
+            await apiFetch("/api/stockproproducts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: targetId,
+                numericId: p.id,
+                name: p.name,
+                sku: p.sku,
+                category: p.category,
+                padType: p.padType,
+                costPrice: p.purchasePrice,
+                sellingPrice: p.sellingPrice,
+                stockQuantity: p.stockQuantity,
+              }),
+            });
+          }
         }
       }
+
+      const fullInv: StockInvoice = { ...newInv, items: newItems };
+      const outTx: StockTransaction[] = cartItems.map((ci, idx) => ({
+        id: transactions.length + idx + 1,
+        productId: ci.productId,
+        agentId: invBranchId,
+        type: "OUT",
+        quantity: ci.quantity,
+        date: newInv.date,
+        padNumber: ci.padFrom ? String(ci.padFrom) : undefined,
+        note: `Invoice #${invId} (${newInv.branchName})`,
+      }));
+      const nextTransactions = [...transactions, ...outTx];
+
+      setInvoices((prev) => [fullInv, ...prev]);
+      setInvoiceItems((prev) => [...prev, ...newItems]);
+      setProducts(updatedProducts);
+      setTransactions(nextTransactions);
+      await syncTransactionsToDb(nextTransactions);
+      setCartItems([]);
+      setShowCreateInvoiceModal(false);
+      setInvDespatchNo(`আঃকাঃ/প্রশা-১(১০)/২০২৪-২০২৫/`);
       setDbSyncStatus("synced");
+      showDbFeedback("success", `চালান #${invId} সফলভাবে সংরক্ষিত হয়েছে!`);
     } catch (err) {
       console.warn("Error saving invoice to SQLite:", err);
+      setDbSyncStatus("offline");
+      showDbFeedback("error", "চালান সংরক্ষণে সার্ভার ত্রুটি হয়েছে।");
     }
+  };
+
+  const printCurrentChallan = () => {
+    const el = document.getElementById("printable-challan-sheet");
+    if (!el) {
+      window.print();
+      return;
+    }
+    const printCss = Array.from(document.querySelectorAll("style, link[rel='stylesheet']"))
+      .map((node) => node.outerHTML)
+      .join("\n");
+    const existing = document.getElementById("stockpro-print-iframe");
+    if (existing) existing.remove();
+    const iframe = document.createElement("iframe");
+    iframe.id = "stockpro-print-iframe";
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      window.print();
+      return;
+    }
+    doc.open();
+    doc.write(`<!DOCTYPE html>
+<html lang="bn">
+<head>
+  <meta charset="UTF-8" />
+  <title>Stationery Supply Challan</title>
+  ${printCss}
+  <style>
+    @page { size: A4 portrait; margin: 12mm; }
+    body { margin: 0; padding: 0; background: #fff !important; color: #0f172a !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    .print\\:hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div style="position: relative; width: 100%; background: #fff;">
+    ${el.innerHTML}
+  </div>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.focus(); window.print(); }, 250);
+    });
+  </script>
+</body>
+</html>`);
+    doc.close();
+    setTimeout(() => {
+      if (document.body.contains(iframe)) iframe.remove();
+    }, 60000);
   };
 
   const handlePrintChallan = (inv: StockInvoice) => {
     setViewingInvoice(inv);
     setTimeout(() => {
-      window.print();
+      printCurrentChallan();
     }, 300);
   };
 
@@ -1050,8 +1493,22 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
               <>
                 <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-semibold">
                   <Database size={14} className="text-emerald-600" />
-                  <span>সেন্ট্রাল SQLite ডাটাবেজ</span>
-                  <span className={`w-2 h-2 rounded-full ${dbSyncStatus === "syncing" ? "bg-amber-500 animate-spin" : "bg-emerald-500 animate-pulse"}`}></span>
+                  <span>
+                    {dbSyncStatus === "offline"
+                      ? "অফলাইন ক্যাশ (সিঙ্ক বাকি)"
+                      : dbSyncStatus === "syncing"
+                        ? "ডাটাবেজ সিঙ্ক হচ্ছে..."
+                        : "সেন্ট্রাল SQLite ডাটাবেজ"}
+                  </span>
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      dbSyncStatus === "syncing"
+                        ? "bg-amber-500 animate-spin"
+                        : dbSyncStatus === "offline"
+                          ? "bg-rose-500"
+                          : "bg-emerald-500 animate-pulse"
+                    }`}
+                  ></span>
                 </div>
 
                 <button
@@ -1094,6 +1551,25 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
             )}
           </div>
         </header>
+
+        {dbFeedback && (
+          <div className="mx-6 mt-4">
+            <div
+              className={`p-3 rounded-xl border flex items-center gap-2 text-xs font-bold animate-fadeIn ${
+                dbFeedback.type === "error"
+                  ? "bg-rose-50 border-rose-200 text-rose-800"
+                  : "bg-emerald-50 border-emerald-200 text-emerald-800"
+              }`}
+            >
+              {dbFeedback.type === "error" ? (
+                <AlertTriangle size={16} className="text-rose-600 shrink-0" />
+              ) : (
+                <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+              )}
+              <span>{dbFeedback.text}</span>
+            </div>
+          </div>
+        )}
 
         {/* Tab 1: Dashboard */}
         {activeTab === "dashboard" && (
@@ -2098,7 +2574,10 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
 
         return (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto print:bg-white print:fixed print:inset-0 print:p-0 print:m-0 print:overflow-visible print:z-50">
-            <div className="bg-white rounded-xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto print:shadow-none print:max-h-none print:p-4 print:m-0 print:border-none print:w-full print:max-w-none print:relative print:overflow-visible relative text-slate-900 font-sans">
+            <div
+              id="printable-challan-sheet"
+              className="bg-white rounded-xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-4 max-h-[94vh] overflow-y-auto print:shadow-none print:max-h-none print:p-4 print:m-0 print:border-none print:w-full print:max-w-none print:relative print:overflow-visible relative text-slate-900 font-sans"
+            >
               {/* Global Dynamic Watermark */}
               <GlobalDocumentWatermark systemSettings={systemSettings} />
 
@@ -2258,7 +2737,7 @@ export function StockProTool({ currentUser, systemSettings, offices, onBack }: S
               {/* Action Buttons */}
               <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-200 print:hidden">
                 <button
-                  onClick={() => window.print()}
+                  onClick={printCurrentChallan}
                   className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow flex items-center gap-1.5 transition-all"
                 >
                   <span>🖨️</span>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { SkeletonTable } from '../../components/ui/Skeleton'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import {
   getDivisions, createDivision, updateDivision, deleteDivision,
   getRegions, createRegion, updateRegion, deleteRegion,
@@ -16,6 +17,7 @@ export default function BranchManagement() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editItem, setEditItem] = useState(null)
   const [formData, setFormData] = useState({})
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
 
   useEffect(() => { loadData() }, [activeTab])
 
@@ -66,8 +68,14 @@ export default function BranchManagement() {
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure?')) return
+  const handleDelete = (id) => {
+    setPendingDeleteId(id)
+  }
+
+  const confirmDelete = async () => {
+    const id = pendingDeleteId
+    setPendingDeleteId(null)
+    if (!id) return
     try {
       if (activeTab === 'divisions') await deleteDivision(id)
       if (activeTab === 'regions') await deleteRegion(id)
@@ -285,6 +293,15 @@ export default function BranchManagement() {
           </div>
         </div>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(pendingDeleteId)}
+        title="Delete Item"
+        message="Are you sure you want to delete this item? This action cannot be undone."
+        confirmText="Delete"
+        danger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   )
 }

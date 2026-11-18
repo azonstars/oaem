@@ -15,6 +15,7 @@ import {
 } from '../../services/advancedReportService'
 import { getDivisions, getRegions, getBranches } from '../../services/branchService'
 import { supabase } from '../../services/supabase'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 import * as XLSX from 'xlsx'
 
@@ -45,6 +46,7 @@ export default function AdvancedReportViewer() {
   const [showEdit, setShowEdit]   = useState(false)
   const [editDraft, setEditDraft] = useState(null) // local draft of selected template
   const [saving, setSaving]       = useState(false)
+  const [pendingDeleteId, setPendingDeleteId] = useState(null)
 
   const [fiscalMode, setFiscalMode] = useState(appSettings?.fiscal_year_mode !== false)
   const initRange    = getYearRangeToToday(appSettings?.fiscal_year_mode !== false)
@@ -537,11 +539,31 @@ export default function AdvancedReportViewer() {
       + (showSerial ? '<th rowspan="2" style="background:' + headerBg + ';color:' + headerColor + ';padding:' + hdrPad + ';border:' + getBorder('all') + ';text-align:center;font-size:' + fsPt + '">ক্রমিক</th>' : '')
       + '<th rowspan="2" style="background:' + headerBg + ';color:' + headerColor + ';padding:' + hdrPad + ';border:' + getBorder('all') + ';text-align:center;font-size:' + fsPt + '">' + rowHeader() + '</th>'
       + colsHtml + '</tr><tr>' + subColsHtml + '</tr></thead><tbody>' + dataHtml + '</tbody></table>'
-      + '<script>setTimeout(()=>window.print(),600)</script></body></html>'
+      + '<script>window.addEventListener("load",()=>setTimeout(()=>{window.focus();window.print()},350))</script></body></html>'
 
-    const w = window.open('', '_blank', 'width=1400,height=900')
-    w.document.write(html)
-    w.document.close()
+    const existing = document.getElementById('adv-report-print-iframe')
+    if (existing) existing.remove()
+    const iframe = document.createElement('iframe')
+    iframe.id = 'adv-report-print-iframe'
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.visibility = 'hidden'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentWindow?.document
+    if (!doc) {
+      window.print()
+      return
+    }
+    doc.open()
+    doc.write(html)
+    doc.close()
+    setTimeout(() => {
+      if (document.body.contains(iframe)) iframe.remove()
+    }, 60000)
   }
 
   // ── QUICK EDIT ───────────────────────────────────────────────────────────────
@@ -591,8 +613,14 @@ export default function AdvancedReportViewer() {
     finally { setSaving(false) }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete করবেন?')) return
+  const handleDelete = (id) => {
+    setPendingDeleteId(id)
+  }
+
+  const confirmDelete = async () => {
+    const id = pendingDeleteId
+    setPendingDeleteId(null)
+    if (!id) return
     try {
       await deleteAdvancedReportTemplate(id)
       toast.success('Deleted!')
@@ -941,6 +969,16 @@ export default function AdvancedReportViewer() {
           </div>
         </div>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(pendingDeleteId)}
+        title="রিপোর্ট টেমপ্লেট মুছুন"
+        message="Delete করবেন? এটি স্থায়ীভাবে মুছে যাবে।"
+        confirmText="Delete"
+        cancelText="বাতিল"
+        danger={true}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   )
 }

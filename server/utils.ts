@@ -2,7 +2,7 @@ import DOMPurify from "isomorphic-dompurify";
 
 export const ALLOWED_HTML_TAGS = [
   "p", "br", "strong", "b", "em", "i", "u", "span", "div",
-  "table", "thead", "tbody", "tr", "th", "td",
+  "table", "thead", "tbody", "tfoot", "colgroup", "col", "caption", "tr", "th", "td",
   "ul", "ol", "li", "h1", "h2", "h3", "h4", "hr",
   "s", "strike", "sub", "sup", "font", "blockquote", "pre", "code",
   "img", "svg", "path", "circle", "rect", "line", "g", "polygon", "polyline"

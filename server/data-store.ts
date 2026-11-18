@@ -344,7 +344,11 @@ export function getAvailableBalance(
   );
 
   categoryProposals.forEach((p: any) => {
-    const amt = Number(p.totalAmount || 0);
+    const amt = Number(
+      (p.status === "Sanctioned" && p.sanctionedAmount
+        ? p.sanctionedAmount
+        : p.totalAmount) || 0,
+    );
     if (p.status === "Pending") {
       totalPending += amt;
     } else {
@@ -523,7 +527,11 @@ export function getPostFactoBalanceInfo(
   );
 
   priorProposals.forEach((p: any) => {
-    totalSpent += Number(p.totalAmount || 0);
+    totalSpent += Number(
+      (p.status === "Sanctioned" && p.sanctionedAmount
+        ? p.sanctionedAmount
+        : p.totalAmount) || 0,
+    );
   });
 
   const available = totalAllocated - totalSpent;

@@ -29,8 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   handleReset = () => {
     try {
-      localStorage.clear();
       sessionStorage.clear();
+      localStorage.removeItem("govt_app_token");
+      localStorage.removeItem("govt_app_user");
+      localStorage.removeItem("govt_app_tab");
     } catch {
       // ignore
     }
@@ -61,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
               অ্যাপ্লিকেশন লোড হতে সমস্যা হয়েছে
             </h2>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-              ব্রাউজার ক্যাশ অথবা লোকাল ডেটা সংক্রান্ত কারণে পেজটি লোড হতে পারছে না। অনুগ্রহ করে রিলোড দিন অথবা ডেটা রিসেট করে পুনরায় প্রবেশ করুন।
+              সেশন অথবা ভিউ স্টেটের কারণে পেজটি লোড হতে পারছে না। অনুগ্রহ করে রিলোড দিন অথবা শুধুমাত্র সেশন রিসেট করে পুনরায় প্রবেশ করুন (আপনার সংরক্ষিত ডেটা অক্ষুণ্ণ থাকবে)।
             </p>
             {this.state.error && (
               <div className="mb-6 p-3 bg-slate-950/70 border border-slate-700/50 rounded-lg text-xs text-rose-300 text-left overflow-auto max-h-24 font-mono">
@@ -79,7 +81,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 onClick={this.handleReset}
                 className="flex-1 py-2.5 px-4 bg-slate-700 hover:bg-slate-600 font-medium rounded-xl transition text-sm text-slate-200"
               >
-                ক্যাশ রিসেট (Reset)
+                সেশন রিসেট (Reset)
               </button>
             </div>
           </div>

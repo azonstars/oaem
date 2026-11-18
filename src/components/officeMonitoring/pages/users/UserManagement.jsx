@@ -3,6 +3,7 @@ import { SkeletonTable } from '../../components/ui/Skeleton'
 import { getUsers, updateUser, toggleUserStatus, createUser, deleteUser } from '../../services/userService'
 import { getDivisions, getRegions, getBranches } from '../../services/branchService'
 import { ROLE_LABELS } from '../../constants/roles'
+import InAppConfirmModal from '../../components/ui/InAppConfirmModal'
 import toast from 'react-hot-toast'
 
 export default function UserManagement() {
@@ -26,6 +27,7 @@ export default function UserManagement() {
   })
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState(null)
 
   useEffect(() => { loadData() }, [])
 
@@ -130,8 +132,14 @@ export default function UserManagement() {
     }
   }
 
-  const handleDeleteUser = async (user) => {
-    if (!window.confirm(`"${user.full_name}" কে স্থায়ীভাবে ডিলিট করবেন?\n\nএই কাজটি আর ফেরানো যাবে না!`)) return
+  const handleDeleteUser = (user) => {
+    setConfirmDeleteUser(user)
+  }
+
+  const executeDeleteUser = async () => {
+    const user = confirmDeleteUser
+    if (!user) return
+    setConfirmDeleteUser(null)
     try {
       await deleteUser(user.id)
       toast.success(`"${user.full_name}" ডিলিট হয়েছে!`)
@@ -424,6 +432,15 @@ export default function UserManagement() {
           </div>
         </div>
       )}
+      <InAppConfirmModal
+        isOpen={Boolean(confirmDeleteUser)}
+        title="ব্যবহারকারী ডিলিট করবেন?"
+        message={`"${confirmDeleteUser?.full_name || ''}" কে স্থায়ীভাবে ডিলিট করবেন?\n\nএই কাজটি আর ফেরানো যাবে না!`}
+        confirmLabel="হ্যাঁ, ডিলিট করুন"
+        danger
+        onConfirm={executeDeleteUser}
+        onCancel={() => setConfirmDeleteUser(null)}
+      />
     </div>
   )
 }

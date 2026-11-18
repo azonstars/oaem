@@ -4629,7 +4629,11 @@ export function generatePostFactoSanctionNoteSheetHtml(
     price: proposal.totalAmount,
   };
 
-  const currentBill = Number(proposal.totalAmount || 0);
+  const currentBill = Number(
+    (proposal.status === "Sanctioned" && proposal.sanctionedAmount
+      ? proposal.sanctionedAmount
+      : proposal.totalAmount) || 0,
+  );
   const previousExpense =
     balanceInfo.previousExpense !== undefined
       ? Number(balanceInfo.previousExpense || 0)
@@ -4784,7 +4788,11 @@ export function generatePostFactoSanctionLetterHtml(
 ): string {
   const isBudget =
     proposal.sanctionType === "budget_allocation" || !proposal.sanctionType;
-  const currentBill = Number(proposal.totalAmount || 0);
+  const currentBill = Number(
+    (proposal.status === "Sanctioned" && proposal.sanctionedAmount
+      ? proposal.sanctionedAmount
+      : proposal.totalAmount) || 0,
+  );
   const amountWords = numberToBengaliWords(currentBill);
   const formattedAmount = convertToBengaliNumber(
     currentBill.toLocaleString("en-IN"),
